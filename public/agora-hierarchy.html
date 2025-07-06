@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agora Modül Hiyerarşisi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .hierarchy {
+            padding: 40px;
+        }
+
+        .tree {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .folder {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .folder:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #4facfe;
+        }
+
+        .folder-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .folder-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+            color: #4facfe;
+        }
+
+        .folder-title {
+            font-size: 1.2em;
+        }
+
+        .folder-description {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .files {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .file {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            transform: translateX(5px);
+        }
+
+        .file-icon {
+            font-size: 1.2em;
+            margin-right: 10px;
+            color: #2196f3;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .file-extension {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .legend h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .legend-icon {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .hierarchy {
+                padding: 20px;
+            }
+            
+            .files {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Agora Modül Hiyerarşisi</h1>
+            <p>Vue.js Video Konferans Sistemi - Modül Yapısı</p>
+        </div>
+
+        <div class="hierarchy">
+            <div class="tree">
+                <!-- Store Klasörü -->
+                <div class="folder">
+                    <div class="folder-header">
+                        <span class="folder-icon">📦</span>
+                        <span class="folder-title">store/</span>
+                    </div>
+                    <div class="folder-description">Pinia store'lar - State yönetimi</div>
+                    <div class="files">
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">index.js</span>
+                            <span class="file-extension">Ana store export</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">video.js</span>
+                            <span class="file-extension">Video/audio state</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">screenShare.js</span>
+                            <span class="file-extension">Ekran paylaşımı state</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">recording.js</span>
+                            <span class="file-extension">Recording state</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">whiteboard.js</span>
+                            <span class="file-extension">Whiteboard state</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Composables Klasörü -->
+                <div class="folder">
+                    <div class="folder-header">
+                        <span class="folder-icon">🔧</span>
+                        <span class="folder-title">composables/</span>
+                    </div>
+                    <div class="folder-description">Vue 3 composables - Logic yönetimi</div>
+                    <div class="files">
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">useAgora.js</span>
+                            <span class="file-extension">Ana Agora composable</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">useVideo.js</span>
+                            <span class="file-extension">Video/audio composable</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">useScreenShare.js</span>
+                            <span class="file-extension">Ekran paylaşımı</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">useRecording.js</span>
+                            <span class="file-extension">Kayıt</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">useWhiteboard.js</span>
+                            <span class="file-extension">Whiteboard</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Components Klasörü -->
+                <div class="folder">
+                    <div class="folder-header">
+                        <span class="folder-icon">🧩</span>
+                        <span class="folder-title">components/</span>
+                    </div>
+                    <div class="folder-description">Vue bileşenleri - UI yönetimi</div>
+                    <div class="files">
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">AgoraVideo.vue</span>
+                            <span class="file-extension">Video grid</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">AgoraControls.vue</span>
+                            <span class="file-extension">Kamera, mikrofon, ekran kontrolü</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">ScreenShare.vue</span>
+                            <span class="file-extension">Ekran görüntüleme</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">Recording.vue</span>
+                            <span class="file-extension">Kayıt görünümleri</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">Whiteboard.vue</span>
+                            <span class="file-extension">Whiteboard paneli</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Root Dosyalar -->
+                <div class="folder">
+                    <div class="folder-header">
+                        <span class="folder-icon">📋</span>
+                        <span class="folder-title">Root Dosyalar</span>
+                    </div>
+                    <div class="folder-description">Ana modül dosyaları</div>
+                    <div class="files">
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">events.js</span>
+                            <span class="file-extension">Agora event sabitleri</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">constants.js</span>
+                            <span class="file-extension">Sabit değerler (APP_ID vs.)</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">types.js</span>
+                            <span class="file-extension">Tip tanımları (JSDoc / TS)</span>
+                        </div>
+                        <div class="file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name">index.js</span>
+                            <span class="file-extension">Ana modül export</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Açıklama -->
+            <div class="legend">
+                <h3>📚 Modül Açıklaması</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-icon">📦</span>
+                        <span>Store: Pinia ile state yönetimi</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">🔧</span>
+                        <span>Composables: Vue 3 logic yönetimi</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">🧩</span>
+                        <span>Components: Vue UI bileşenleri</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">📋</span>
+                        <span>Root: Ana modül dosyaları</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dosyalara tıklama efekti
+        document.querySelectorAll('.file').forEach(file => {
+            file.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+
+        // Klasörlere hover efekti
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+            
+            folder.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html> 

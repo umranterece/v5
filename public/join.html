@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Konferans - Katılım</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .join-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .join-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .join-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .join-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .join-subtitle {
+            font-size: 1.1rem;
+            color: rgba(224, 224, 224, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #e0e0e0;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .form-input::placeholder {
+            color: rgba(224, 224, 224, 0.5);
+        }
+
+        .join-button {
+            width: 100%;
+            padding: 18px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+
+        .join-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .join-button:active {
+            transform: translateY(-1px);
+        }
+
+        .join-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            animation: none;
+        }
+
+        .loading {
+            display: none;
+            margin-left: 10px;
+        }
+
+        .loading.show {
+            display: inline-block;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            color: #51cf66;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .join-container {
+                padding: 15px;
+            }
+            
+            .join-card {
+                padding: 30px 20px;
+            }
+            
+            .join-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="join-container">
+        <div class="join-card">
+            <h1 class="join-title">Video Konferans</h1>
+            <p class="join-subtitle">Kanala katılmak için kanal adını girin</p>
+            
+            <form id="joinForm">
+                <div class="form-group">
+                    <label for="channelName" class="form-label">Kanal Adı</label>
+                    <input 
+                        type="text" 
+                        id="channelName" 
+                        class="form-input" 
+                        placeholder="Örn: toplantı-1"
+                        required
+                        autocomplete="off"
+                    >
+                </div>
+                
+                <button type="submit" class="join-button" id="joinButton">
+                    <span id="buttonText">Kanala Katıl</span>
+                    <span class="loading" id="loading">
+                        <div class="spinner"></div>
+                    </span>
+                </button>
+            </form>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('joinForm');
+        const channelInput = document.getElementById('channelName');
+        const joinButton = document.getElementById('joinButton');
+        const buttonText = document.getElementById('buttonText');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        function showLoading() {
+            joinButton.disabled = true;
+            buttonText.textContent = 'Katılıyor...';
+            loading.classList.add('show');
+            hideMessages();
+        }
+
+        function hideLoading() {
+            joinButton.disabled = false;
+            buttonText.textContent = 'Kanala Katıl';
+            loading.classList.remove('show');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            successMessage.classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+        }
+
+        async function getToken(channelName, uid) {
+            try {
+                const response = await fetch('https://umranterece.com/test/agora/createToken.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channel_name: channelName,
+                        uid: uid,
+                        role: 1,
+                        expire_time: 86400
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message || 'Token alınamadı');
+                }
+
+                return result.data;
+            } catch (error) {
+                console.error('Token alma hatası:', error);
+                throw new Error('Sunucudan token alınamadı');
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const channelName = channelInput.value.trim();
+            
+            if (!channelName) {
+                showError('Lütfen bir kanal adı girin');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                // Rastgele UID oluştur
+                const uid = Math.floor(Math.random() * 100000);
+                
+                // Token al
+                const tokenData = await getToken(channelName, uid);
+                
+                showSuccess('Token başarıyla alındı! Meeting sayfasına yönlendiriliyorsunuz...');
+                
+                // 2 saniye sonra meeting sayfasına yönlendir
+                setTimeout(() => {
+                    const params = new URLSearchParams({
+                        channel: channelName,
+                        uid: uid,
+                        token: tokenData.token,
+                        appId: tokenData.app_id
+                    });
+                    window.location.href = `meeting.html?${params.toString()}`;
+                }, 2000);
+                
+            } catch (error) {
+                showError(error.message);
+                hideLoading();
+            }
+        });
+
+        // Input focus efekti
+        channelInput.addEventListener('focus', () => {
+            hideMessages();
+        });
+
+        // Enter tuşu ile submit
+        channelInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                form.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html> 
