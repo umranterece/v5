@@ -119,7 +119,7 @@ const props = defineProps({
 const videoStore = useVideoStore()
 
 // Local state
-const channelName = ref('test')
+const channelName = ref(`test${Math.floor(1000 + Math.random() * 90000)}`)
 
 // Computed
 const isConnected = computed(() => videoStore.isConnected)
