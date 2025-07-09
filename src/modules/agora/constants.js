@@ -18,11 +18,13 @@ export const AGORA_CONFIG = {
   enableCloudProxy: false // Cloud proxy kapalı - daha hızlı
 }
 
-// Video Configuration
+// Kamera (video) için yüksek kalite ayarları
 export const VIDEO_CONFIG = {
-  encoderConfig: '240p_1', // Daha düşük çözünürlük - daha hızlı
-  facingMode: 'user',
-  optimizationMode: 'motion' // Hareket optimizasyonu - daha hızlı
+  encoderConfig: '1080p_1', // 1920x1080 çözünürlük
+  facingMode: 'user',       // Ön kamera (mobilde)
+  bitrateMin: 2000,         // Minimum bitrate (kbps)
+  bitrateMax: 4000,         // Maksimum bitrate (kbps)
+  frameRate: 30             // 30 FPS
 }
 
 // Audio Configuration
@@ -123,39 +125,11 @@ export const DEFAULTS = {
   ROLE_SUBSCRIBER: 0
 } 
 
-// Screen Share Configuration - Ekran paylaşımı için optimize edilmiş ayarlar
+// Ekran paylaşımı için yüksek kalite ayarları
 export const SCREEN_SHARE_CONFIG = {
-  // Hızlı başlatma için optimize edilmiş ayarlar
-  FAST_START: {
-    encoderConfig: '480p_1',
-    optimizationMode: 'detail',
-    bitrateMin: 500,
-    bitrateMax: 1500,
-    frameRate: 15,
-    width: 854,
-    height: 480,
-    captureWindow: true,
-    captureScreen: true,
-    audio: false
-  },
-  
-  // Yüksek kalite için ayarlar (isteğe bağlı)
-  HIGH_QUALITY: {
-    encoderConfig: '720p_1',
-    optimizationMode: 'motion',
-    bitrateMin: 1000,
-    bitrateMax: 3000,
-    frameRate: 30,
-    audio: false
-  },
-  
-  // Düşük kalite için ayarlar (düşük performanslı cihazlar)
-  LOW_QUALITY: {
-    encoderConfig: '360p_1',
-    optimizationMode: 'motion',
-    bitrateMin: 300,
-    bitrateMax: 800,
-    frameRate: 10,
-    audio: false
-  }
+  encoderConfig: '1080p_1',     // 1920x1080 çözünürlük
+  optimizationMode: 'detail',   // Detay için optimize
+  bitrateMin: 2000,             // Minimum bitrate (kbps)
+  bitrateMax: 4000,             // Maksimum bitrate (kbps)
+  frameRate: 30                 // 30 FPS
 } 

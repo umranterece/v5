@@ -11,6 +11,7 @@
         <!-- Video Area - Only show when connected -->
         <div v-if="isConnected" class="video-area">
           <AgoraVideo
+            ref="agoraVideoRef"
             :emitter="emitter"
             :screenEmitter="screenEmitter"
             :localUser="localUser || {}"
@@ -38,6 +39,8 @@
             :isScreenSharing="isScreenSharing"
             :onToggleScreenShare="toggleScreenShare"
             :supportsScreenShare="supportsScreenShare"
+            :settingsOpen="settingsOpen"
+            @open-settings="handleOpenSettings"
           />
         </div>
       </main>
@@ -180,6 +183,16 @@ const setupEventListeners = () => {
     console.log('Track readyState:', data.readyState)
     console.log('Track object:', data.track)
   })
+}
+
+const agoraVideoRef = ref(null)
+const settingsOpen = ref(false)
+
+function handleOpenSettings() {
+  if (agoraVideoRef.value && agoraVideoRef.value.openSettings) {
+    agoraVideoRef.value.openSettings()
+    settingsOpen.value = !settingsOpen.value
+  }
 }
 
 // Lifecycle

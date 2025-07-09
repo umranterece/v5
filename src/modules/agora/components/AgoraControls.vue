@@ -1,5 +1,16 @@
 <template>
   <div class="agora-controls">
+    <!-- Settings Button (top center) -->
+    <button
+      v-if="isConnected"
+      class="settings-button-top"
+      :class="{ 'purple-glow': props.settingsOpen }"
+      @click="$emit('open-settings')"
+      title="Ayarlar"
+    >
+      <span class="icon">⚙️</span>
+    </button>
+
     <!-- Join Form -->
     <div v-if="!isConnected" class="join-form">
       <div class="join-content">
@@ -80,6 +91,8 @@
       </button>
     </div>
 
+
+
     <!-- Status -->
     <div v-if="isConnected" class="status">
       <div class="status-item">
@@ -95,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAgoraStore } from '../store/index.js'
 
 // Props
@@ -113,7 +126,8 @@ const props = defineProps({
   onToggleMicrophone: { type: Function, default: () => {} },
   isScreenSharing: { type: Boolean, default: false },
   onToggleScreenShare: { type: Function, default: () => {} },
-  supportsScreenShare: { type: Boolean, default: false }
+  supportsScreenShare: { type: Boolean, default: false },
+  settingsOpen: { type: Boolean, default: false }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -144,6 +158,59 @@ const toggleCamera = () => {
 const toggleMicrophone = () => {
   props.onToggleMicrophone(!props.isLocalAudioMuted)
 }
+
+// Modal açıldığında body scroll'unu engelle
+const openSettings = () => {
+  // This function is no longer needed as the modal is removed.
+  // Keeping it here for now, but it will be removed in a subsequent edit.
+}
+
+// Modal kapandığında body scroll'unu geri aç
+const closeSettings = () => {
+  // This function is no longer needed as the modal is removed.
+  // Keeping it here for now, but it will be removed in a subsequent edit.
+}
+const videoDevices = ref([])
+const audioDevices = ref([])
+const selectedCameraId = ref('')
+const selectedMicId = ref('')
+const selectedVideoQuality = ref('1080p_1')
+const selectedScreenQuality = ref('1080p_1')
+
+const videoQualityPresets = [
+  { value: '360p_1', label: '360p (Düşük)' },
+  { value: '480p_1', label: '480p (Orta)' },
+  { value: '720p_1', label: '720p (Yüksek)' },
+  { value: '1080p_1', label: '1080p (Çok Yüksek)' }
+]
+const screenQualityPresets = [
+  { value: '360p_1', label: '360p (Düşük)' },
+  { value: '480p_1', label: '480p (Orta)' },
+  { value: '720p_1', label: '720p (Yüksek)' },
+  { value: '1080p_1', label: '1080p (Çok Yüksek)' }
+]
+
+// Cihaz listesini al
+const getDevices = async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices()
+  videoDevices.value = devices.filter(d => d.kind === 'videoinput')
+  audioDevices.value = devices.filter(d => d.kind === 'audioinput')
+  if (!selectedCameraId.value && videoDevices.value.length) selectedCameraId.value = videoDevices.value[0].deviceId
+  if (!selectedMicId.value && audioDevices.value.length) selectedMicId.value = audioDevices.value[0].deviceId
+}
+onMounted(getDevices)
+
+// Ayarları uygula ve parent'a bildir
+const emit = defineEmits(['settings-changed'])
+const applySettings = () => {
+  emit('settings-changed', {
+    cameraId: selectedCameraId.value,
+    micId: selectedMicId.value,
+    videoQuality: selectedVideoQuality.value,
+    screenQuality: selectedScreenQuality.value
+  })
+  // showSettings.value = false // This line is no longer needed
+}
 </script>
 
 <style scoped>
@@ -154,6 +221,7 @@ const toggleMicrophone = () => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  position: relative; /* Added for settings button positioning */
 }
 
 .join-form {
@@ -310,6 +378,7 @@ const toggleMicrophone = () => {
   gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 20px; /* Added margin to separate from settings button */
 }
 
 .control-button {
@@ -403,6 +472,198 @@ const toggleMicrophone = () => {
 .status-value {
   font-weight: 600;
   color: #e0e0e0;
+}
+
+/* Floating settings button (top-right) */
+.settings-fab {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  z-index: 1200;
+  background: rgba(34, 34, 34, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  backdrop-filter: blur(6px);
+}
+.settings-fab:hover {
+  background: rgba(60, 60, 60, 0.95);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  transform: scale(1.07);
+}
+
+/* Modern glassmorphic modal - fills .agora-controls */
+.agora-controls {
+  position: relative;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 20, 40, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+}
+.settings-modal-glass {
+  background: rgba(34, 34, 44, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.45);
+  padding: 32px 28px 28px 28px;
+  width: 100%;
+  max-width: 420px;
+  color: #fff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(16px);
+  animation: modalPopIn 0.25s cubic-bezier(.4,2,.6,1) 1;
+  box-sizing: border-box;
+  max-height: 90vh;
+}
+
+@keyframes modalPopIn {
+  0% { transform: scale(0.92) translateY(30px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.settings-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.settings-modal-icon {
+  font-size: 2.7rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 2px;
+}
+.settings-modal-glass h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+.settings-section {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.settings-section label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #bdbfff;
+  margin-bottom: 2px;
+}
+.settings-section select {
+  background: rgba(40,40,60,0.85);
+  color: #fff;
+  border: 1.5px solid #667eea;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+.settings-section select:focus {
+  border: 1.5px solid #764ba2;
+}
+.settings-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.save-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.12);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.save-button:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 4px 16px rgba(118,75,178,0.18);
+}
+.cancel-button {
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-button:hover {
+  background: #222;
+}
+
+
+
+/* Settings button (top center) */
+.settings-button-top {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(34, 34, 34, 0.9);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 10;
+}
+.settings-button-top:hover,
+.settings-button-top.active {
+  background: rgba(60, 60, 60, 0.95);
+  box-shadow: 0 4px 12px rgba(102,126,234,0.25), 0 0 0 4px #764ba2aa;
+  transform: translateX(-50%) scale(1.1);
+}
+.settings-button-top.purple-glow {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 0 0 4px #764ba2aa, 0 8px 32px rgba(102,126,234,0.25);
+  color: #fff;
 }
 
 @keyframes pulse {
