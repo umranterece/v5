@@ -10,51 +10,104 @@
       <main class="app-main">
         <!-- Video Area - Only show when connected -->
         <div v-if="isConnected" class="video-area">
-          <AgoraVideo :emitter="emitter" />
+          <AgoraVideo
+            :emitter="emitter"
+            :screenEmitter="screenEmitter"
+            :localUser="localUser || {}"
+            :remoteUsers="remoteUsers || []"
+            :allUsers="allUsers || []"
+            :localTracks="localTracks || {}"
+            :remoteTracks="remoteTracks || new Map()"
+          />
         </div>
 
         <!-- Controls Area -->
         <div class="controls-area">
           <AgoraControls
-            :on-join="handleJoin"
-            :on-leave="handleLeave"
-            :on-toggle-camera="handleToggleCamera"
-            :on-toggle-microphone="handleToggleMicrophone"
-            :is-joining="isJoining"
-            :is-leaving="isLeaving"
+            :channelName="channelName"
+            :isConnected="!!isConnected"
+            :isLocalVideoOff="!!isLocalVideoOff"
+            :isLocalAudioMuted="!!isLocalAudioMuted"
+            :connectedUsersCount="connectedUsersCount || 0"
+            :isJoining="!!isJoining"
+            :isLeaving="!!isLeaving"
+            :onJoin="handleJoin"
+            :onLeave="handleLeave"
+            :onToggleCamera="handleToggleCamera"
+            :onToggleMicrophone="handleToggleMicrophone"
+            :isScreenSharing="isScreenSharing"
+            :onToggleScreenShare="toggleScreenShare"
+            :supportsScreenShare="supportsScreenShare"
           />
         </div>
       </main>
+      
+      <!-- Stream Quality Bar - Temporarily disabled -->
+      <!-- <StreamQualityBar
+        :networkQuality="networkQuality"
+        :bitrate="bitrate"
+        :frameRate="frameRate"
+        :packetLoss="packetLoss"
+        :rtt="rtt"
+        :qualityLevel="qualityLevel"
+        :qualityColor="qualityColor"
+        :qualityPercentage="qualityPercentage"
+        :isConnected="!!isConnected"
+      /> -->
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import agoraModule from './modules/agora/index.js'
 
-const { useAgora, AgoraVideo, AgoraControls } = agoraModule
+const { useMeeting, AgoraVideo, AgoraControls, StreamQualityBar } = agoraModule
 
-// Main Agora composable - tüm Agora işlemlerini tek noktadan yönetir
+// Main Meeting composable - video konferans işlemlerini yönetir
 const {
   joinChannel,
   leaveChannel,
   toggleCamera,
   toggleMicrophone,
+  toggleScreenShare,
+  isScreenSharing,
   emitter,
+  screenEmitter,
   isJoining,
   isLeaving,
   cleanup,
   isConnected,
   localUser,
   remoteUsers,
+  allUsers,
+  connectedUsersCount,
+  isLocalVideoOff,
+  isLocalAudioMuted,
+  localTracks,
+  remoteTracks,
+  supportsScreenShare,
+  // Stream Quality
+  networkQuality,
+  bitrate,
+  frameRate,
+  packetLoss,
+  rtt,
+  qualityLevel,
+  qualityColor,
+  qualityPercentage,
   debugMicrophoneStatus
-} = useAgora()
+} = useMeeting()
+
+
+
+const channelName = ref('')
 
 // Join channel handler
-const handleJoin = async (channelName) => {
+const handleJoin = async (name) => {
   try {
-    await joinChannel(channelName)
+    channelName.value = name
+    await joinChannel(name)
   } catch (error) {
     console.error('Failed to join channel:', error)
     alert('Failed to join channel: ' + error.message)
@@ -65,6 +118,7 @@ const handleJoin = async (channelName) => {
 const handleLeave = async () => {
   try {
     await leaveChannel()
+    channelName.value = ''
   } catch (error) {
     console.error('Failed to leave channel:', error)
   }
@@ -106,11 +160,7 @@ const setupEventListeners = () => {
     console.log('Local audio ready:', data)
   })
 
-  emitter.on('remote-video-ready', (data) => {
-    console.log('Remote video ready:', data)
-    // Trigger video setup in AgoraVideo component
-    emitter.emit('setup-remote-video', data)
-  })
+
 
   emitter.on('remote-audio-ready', (data) => {
     console.log('Remote audio ready:', data)

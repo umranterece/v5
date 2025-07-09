@@ -43,19 +43,18 @@ Bu proje, Vue 3 ve Agora SDK kullanarak geliştirilmiş, modüler ve taşınabil
 ```
 src/modules/agora/
 ├── store/                 # Pinia state management
-│   ├── video.js          # Video/audio state
-│   ├── screenShare.js    # Screen share state
-│   ├── recording.js      # Recording state
-│   └── whiteboard.js     # Whiteboard state
+│   ├── index.js          # Ana store (video + screen)
+│   └── video.js          # Legacy video store
 ├── composables/          # Vue 3 composables
-│   ├── useAgora.js       # Ana composable
+│   ├── useMeeting.js     # Ana meeting composable
 │   ├── useVideo.js       # Video/audio logic
-│   ├── useScreenShare.js # Screen share logic
-│   ├── useRecording.js   # Recording logic
-│   └── useWhiteboard.js  # Whiteboard logic
+│   └── useScreenShare.js # Screen share logic
 ├── components/           # Vue components
 │   ├── AgoraVideo.vue    # Video grid
 │   └── AgoraControls.vue # Control panel
+├── services/             # Services
+│   ├── index.js          # Service exports
+│   └── tokenService.js   # Token management
 ├── constants.js          # Sabitler
 ├── events.js            # Event types
 ├── types.js             # Type definitions
@@ -104,7 +103,7 @@ http://localhost:5173
 ### Temel Kullanım
 
 ```javascript
-import { useAgora, AgoraVideo, AgoraControls } from '@/modules/agora'
+import { useMeeting, AgoraVideo, AgoraControls } from '@/modules/agora'
 
 export default {
   components: { AgoraVideo, AgoraControls },
@@ -115,23 +114,19 @@ export default {
       localUser,
       allUsers,
       connectedUsersCount,
-      initialize,
-      joinMeeting,
-      leaveMeeting,
+      isScreenSharing,
+      screenShareUser,
+      joinChannel,
+      leaveChannel,
       toggleCamera,
       toggleMicrophone,
       toggleScreenShare,
-      toggleRecording,
-      toggleWhiteboard
-    } = useAgora()
+      startScreenShare,
+      stopScreenShare
+    } = useMeeting()
 
     const joinMeeting = async () => {
-      await initialize({ appId: 'your-app-id' })
-      await joinMeeting({
-        token: 'user-token',
-        channelName: 'meeting-room',
-        userName: 'John Doe'
-      })
+      await joinChannel('meeting-room')
     }
 
     return {
@@ -139,13 +134,15 @@ export default {
       localUser,
       allUsers,
       connectedUsersCount,
+      isScreenSharing,
+      screenShareUser,
       joinMeeting,
-      leaveMeeting,
+      leaveChannel,
       toggleCamera,
       toggleMicrophone,
       toggleScreenShare,
-      toggleRecording,
-      toggleWhiteboard
+      startScreenShare,
+      stopScreenShare
     }
   }
 }
@@ -169,9 +166,11 @@ export default {
       :is-connected="isConnected"
       :is-video-off="localUser?.isVideoOff"
       :is-muted="localUser?.isMuted"
+      :is-screen-sharing="isScreenSharing"
       @toggle-camera="toggleCamera"
       @toggle-microphone="toggleMicrophone"
-      @leave-meeting="leaveMeeting"
+      @toggle-screen-share="toggleScreenShare"
+      @leave-meeting="leaveChannel"
     />
   </div>
 </template>
@@ -220,7 +219,7 @@ app.listen(3000)
 
 ## 🎯 API Referansı
 
-### useAgora Composable
+### useMeeting Composable
 
 #### State Properties
 - `isReady`: Modül hazır mı?

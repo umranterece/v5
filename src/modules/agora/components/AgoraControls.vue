@@ -14,7 +14,7 @@
         <div class="form-group">
           <div class="input-wrapper">
             <input
-              v-model="channelName"
+              v-model="channelInput"
               type="text"
               value="test"
               placeholder="Enter channel name"
@@ -25,7 +25,7 @@
           </div>
           <button 
             @click="joinChannel" 
-            :disabled="isJoining || !channelName.trim()"
+            :disabled="isJoining || !channelInput.trim()"
             class="join-button"
           >
             <span class="button-text">{{ isJoining ? 'Joining...' : 'Join Channel' }}</span>
@@ -57,6 +57,17 @@
         <span class="label">{{ isLocalAudioMuted ? 'Muted' : 'Unmuted' }}</span>
       </button>
 
+      <!-- Screen Share Toggle - Only show on desktop -->
+      <button
+        v-if="props.supportsScreenShare"
+        @click="props.onToggleScreenShare"
+        :class="['control-button', { active: props.isScreenSharing }]"
+        :title="props.isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'"
+      >
+        <span class="icon">{{ props.isScreenSharing ? '❌🖥️' : '🖥️' }}</span>
+        <span class="label">{{ props.isScreenSharing ? 'Stop Share' : 'Share Screen' }}</span>
+      </button>
+
       <!-- Leave Button -->
       <button 
         @click="leaveChannel"
@@ -85,54 +96,32 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useVideoStore } from '../store/video.js'
+import { useAgoraStore } from '../store/index.js'
 
 // Props
 const props = defineProps({
-  onJoin: {
-    type: Function,
-    required: true
-  },
-  onLeave: {
-    type: Function,
-    required: true
-  },
-  onToggleCamera: {
-    type: Function,
-    required: true
-  },
-  onToggleMicrophone: {
-    type: Function,
-    required: true
-  },
-  isJoining: {
-    type: Boolean,
-    default: false
-  },
-  isLeaving: {
-    type: Boolean,
-    default: false
-  }
+  channelName: { type: String, default: 'test' },
+  isConnected: { type: Boolean, default: false },
+  isLocalVideoOff: { type: Boolean, default: false },
+  isLocalAudioMuted: { type: Boolean, default: false },
+  connectedUsersCount: { type: Number, default: 0 },
+  isJoining: { type: Boolean, default: false },
+  isLeaving: { type: Boolean, default: false },
+  onJoin: { type: Function, default: () => {} },
+  onLeave: { type: Function, default: () => {} },
+  onToggleCamera: { type: Function, default: () => {} },
+  onToggleMicrophone: { type: Function, default: () => {} },
+  isScreenSharing: { type: Boolean, default: false },
+  onToggleScreenShare: { type: Function, default: () => {} },
+  supportsScreenShare: { type: Boolean, default: false }
 })
 
-// Store
-const videoStore = useVideoStore()
+const channelInput = ref(props.channelName || 'test')
 
-// Local state
-const channelName = ref(`test${Math.floor(1000 + Math.random() * 90000)}`)
-
-// Computed
-const isConnected = computed(() => videoStore.isConnected)
-const isLocalVideoOff = computed(() => videoStore.isLocalVideoOff)
-const isLocalAudioMuted = computed(() => videoStore.isLocalAudioMuted)
-const connectedUsersCount = computed(() => videoStore.connectedUsersCount)
-
-// Methods
 const joinChannel = async () => {
-  if (!channelName.value.trim() || props.isJoining) return
-  
+  if (!channelInput.value.trim() || props.isJoining) return
   try {
-    await props.onJoin(channelName.value.trim())
+    await props.onJoin(channelInput.value.trim())
   } catch (error) {
     console.error('Failed to join channel:', error)
   }
@@ -140,21 +129,20 @@ const joinChannel = async () => {
 
 const leaveChannel = async () => {
   if (props.isLeaving) return
-  
   try {
     await props.onLeave()
-    channelName.value = ''
+    channelInput.value = ''
   } catch (error) {
     console.error('Failed to leave channel:', error)
   }
 }
 
 const toggleCamera = () => {
-  props.onToggleCamera(!isLocalVideoOff.value)
+  props.onToggleCamera(!props.isLocalVideoOff)
 }
 
 const toggleMicrophone = () => {
-  props.onToggleMicrophone(!isLocalAudioMuted.value)
+  props.onToggleMicrophone(!props.isLocalAudioMuted)
 }
 </script>
 

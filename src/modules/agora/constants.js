@@ -2,20 +2,27 @@
  * Agora SDK Constants
  */
 
+// API Endpoints
+export const API_ENDPOINTS = {
+  CREATE_TOKEN: 'https://umranterece.com/test/agora/createToken.php'
+}
+
 // Agora Client Configuration
 export const AGORA_CONFIG = {
   mode: 'rtc',
-  codec: 'vp8',
+  codec: 'h264', // H264 daha hızlı
   enableDualStream: false, // Tek stream kullan - daha iyi performans
   enableAudioRecording: false, // Audio recording kapalı
-  enableVideoRecording: false // Video recording kapalı
+  enableVideoRecording: false, // Video recording kapalı
+  enableHighPerformance: true, // Yüksek performans modu
+  enableCloudProxy: false // Cloud proxy kapalı - daha hızlı
 }
 
 // Video Configuration
 export const VIDEO_CONFIG = {
-  encoderConfig: '360p_1',
+  encoderConfig: '240p_1', // Daha düşük çözünürlük - daha hızlı
   facingMode: 'user',
-  optimizationMode: 'detail'
+  optimizationMode: 'motion' // Hareket optimizasyonu - daha hızlı
 }
 
 // Audio Configuration
@@ -40,6 +47,24 @@ export const ERROR_CODES = {
 export const STORAGE_KEYS = {
   USER_PREFERENCES: 'agora_user_preferences',
   CHANNEL_NAME: 'agora_channel_name'
+}
+
+// User ID Ranges
+export const USER_ID_RANGES = {
+  VIDEO: {
+    MIN: 1000,
+    MAX: 2000
+  },
+  SCREEN_SHARE: {
+    MIN: 2000,
+    MAX: 3000
+  }
+}
+
+// Channel Names
+export const CHANNEL_NAMES = {
+  VIDEO: (baseName) => `${baseName}`,
+  SCREEN_SHARE: (baseName) => `${baseName}` // Aynı channel'a katıl
 }
 
 // Default Values

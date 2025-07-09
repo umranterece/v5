@@ -3,15 +3,22 @@
  * @module agora
  */
 
-// Main composable - Tüm Agora işlemlerini toplar
-export { useAgora } from './composables/useAgora.js'
+// Main composable - Video konferans işlemlerini yönetir
+export { useMeeting } from './composables/useMeeting.js'
+
+// Individual composables (internal use)
+export { useVideo } from './composables/useVideo.js'
+export { useScreenShare } from './composables/useScreenShare.js'
+export { useDeviceDetection } from './composables/useDeviceDetection.js'
 
 // Components
-export { default as AgoraVideo } from './components/AgoraVideo.vue'
-export { default as AgoraControls } from './components/AgoraControls.vue'
+export * from './components/index.js'
 
-// Store exports (gerekirse doğrudan erişim için)
-export { useVideoStore, initializeAgoraStores, resetAllAgoraStores } from './store/index.js'
+// Services
+export * from './services/index.js'
+
+// Store exports
+export { useAgoraStore } from './store/index.js'
 
 // Constants, Events, and Types
 export * from './constants.js'
@@ -28,24 +35,30 @@ export function initializeAgoraModule(pinia) {
   console.log('Agora module initialized with Pinia')
   
   // Store'ları initialize et
-  initializeAgoraStores()
+  // initializeAgoraStores() // Removed as per edit hint
 }
 
 // Import for default export
-import { useAgora } from './composables/useAgora.js'
-import AgoraVideo from './components/AgoraVideo.vue'
-import AgoraControls from './components/AgoraControls.vue'
-import { useVideoStore, initializeAgoraStores, resetAllAgoraStores } from './store/index.js'
+import { useMeeting } from './composables/useMeeting.js'
+import { useVideo } from './composables/useVideo.js'
+import { useScreenShare } from './composables/useScreenShare.js'
+import { useDeviceDetection } from './composables/useDeviceDetection.js'
+import { AgoraVideo, AgoraControls, StreamQualityBar } from './components/index.js'
+import { createToken } from './services/index.js'
+import { useAgoraStore } from './store/index.js' // Changed from initializeAgoraStores
 
 /**
  * Default export for the entire module
  */
 export default {
-  useAgora,
+  useMeeting,
+  useVideo,
+  useScreenShare,
+  useDeviceDetection,
   AgoraVideo,
   AgoraControls,
-  useVideoStore,
-  initializeAgoraStores,
-  resetAllAgoraStores,
+  StreamQualityBar,
+  createToken,
+  useAgoraStore,
   initializeAgoraModule
 } 
