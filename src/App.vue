@@ -60,9 +60,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import agoraModule from './modules/agora/index.js'
+import { useMeeting, AgoraVideo, AgoraControls, StreamQualityBar, initializeAgoraModule } from './modules/agora'
 
-const { useMeeting, AgoraVideo, AgoraControls, StreamQualityBar } = agoraModule
+// initializeAgoraModule sadece başlatma için çağrılır, destructure edilmez!
+// initializeAgoraModule(pinia) // Eğer burada gerekiyorsa
+
+// Artık AgoraControls ve StreamQualityBar doğrudan kullanılabilir
 
 // Main Meeting composable - video konferans işlemlerini yönetir
 const {

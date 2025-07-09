@@ -3,7 +3,7 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import agoraModule from './modules/agora/index.js'
+import { useMeeting, AgoraVideo, initializeAgoraModule } from './modules/agora'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -12,6 +12,6 @@ const pinia = createPinia()
 app.use(pinia)
 
 // Initialize Agora module
-agoraModule.initializeAgoraModule(pinia)
+initializeAgoraModule(pinia)
 
 app.mount('#app')

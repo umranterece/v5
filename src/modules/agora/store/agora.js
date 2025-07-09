@@ -1,37 +1,40 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
 
 /**
- * Agora Store - Video ve Screen Share client'larını yönetir
+ * Agora Store - Video ve Ekran Paylaşımı client'larını yönetir
+ * Bu store, Agora video konferans uygulamasının tüm state'ini yönetir.
+ * Video client, ekran paylaşımı client, kullanıcılar ve track'ler için merkezi state yönetimi sağlar.
  * @module store/agora
  */
 export const useAgoraStore = defineStore('agora', () => {
-  // Video Client State
-  const videoClient = ref(null)
-  const videoLocalUser = ref(null)
-  const videoRemoteUsers = ref([])
-  const videoLocalTracks = ref({ audio: null, video: null })
-  const videoRemoteTracks = ref(new Map())
-  const isVideoConnected = ref(false)
-  const isVideoInitialized = ref(false)
-  const isLocalVideoOff = ref(false)
-  const isLocalAudioMuted = ref(false)
+  // Video Client State - Video client durumu
+  const videoClient = ref(null) // Agora video client referansı
+  const videoLocalUser = ref(null) // Yerel video kullanıcısı
+  const videoRemoteUsers = ref([]) // Uzak video kullanıcıları listesi
+  const videoLocalTracks = ref({ audio: null, video: null }) // Yerel video track'leri
+  const videoRemoteTracks = ref(new Map()) // Uzak video track'leri
+  const isVideoConnected = ref(false) // Video bağlantı durumu
+  const isVideoInitialized = ref(false) // Video client başlatma durumu
+  const isLocalVideoOff = ref(false) // Yerel video kapalı mı?
+  const isLocalAudioMuted = ref(false) // Yerel ses kapalı mı?
 
-  // Screen Share Client State
-  const screenClient = ref(null)
-  const screenLocalUser = ref(null)
-  const screenRemoteUsers = ref([])
-  const screenLocalTracks = ref({ video: null })
-  const screenRemoteTracks = ref(new Map())
-  const isScreenConnected = ref(false)
-  const isScreenInitialized = ref(false)
-  const isScreenSharing = ref(false)
+  // Screen Share Client State - Ekran paylaşımı client durumu
+  const screenClient = ref(null) // Agora ekran paylaşımı client referansı
+  const screenLocalUser = ref(null) // Yerel ekran paylaşımı kullanıcısı
+  const screenRemoteUsers = ref([]) // Uzak ekran paylaşımı kullanıcıları
+  const screenLocalTracks = ref({ video: null }) // Yerel ekran paylaşımı track'leri
+  const screenRemoteTracks = ref(new Map()) // Uzak ekran paylaşımı track'leri
+  const isScreenConnected = ref(false) // Ekran paylaşımı bağlantı durumu
+  const isScreenInitialized = ref(false) // Ekran paylaşımı client başlatma durumu
+  const isScreenSharing = ref(false) // Ekran paylaşımı aktif mi?
 
-  // Computed Properties
+  // Computed Properties - Hesaplanmış özellikler
   const allVideoUsers = computed(() => {
     const users = [...videoRemoteUsers.value]
     if (videoLocalUser.value) {
-      users.unshift(videoLocalUser.value)
+      users.unshift(videoLocalUser.value) // Yerel kullanıcıyı başa ekle
     }
     return users
   })
@@ -39,30 +42,30 @@ export const useAgoraStore = defineStore('agora', () => {
   const allScreenUsers = computed(() => {
     const users = [...screenRemoteUsers.value]
     if (screenLocalUser.value) {
-      users.unshift(screenLocalUser.value)
+      users.unshift(screenLocalUser.value) // Yerel ekran kullanıcısını başa ekle
     }
     return users
   })
 
   const allUsers = computed(() => {
-    return [...allVideoUsers.value, ...allScreenUsers.value]
+    return [...allVideoUsers.value, ...allScreenUsers.value] // Tüm kullanıcıları birleştir
   })
 
-  const connectedUsersCount = computed(() => allUsers.value.length)
+  const connectedUsersCount = computed(() => allUsers.value.length) // Bağlı kullanıcı sayısı
 
   const hasLocalVideo = computed(() => 
-    videoLocalTracks.value.video && !isLocalVideoOff.value
+    videoLocalTracks.value.video && !isLocalVideoOff.value // Yerel video var mı?
   )
 
   const hasLocalAudio = computed(() => 
-    videoLocalTracks.value.audio && !isLocalAudioMuted.value
+    videoLocalTracks.value.audio && !isLocalAudioMuted.value // Yerel ses var mı?
   )
 
   const hasLocalScreenShare = computed(() => 
-    screenLocalTracks.value.video && isScreenSharing.value
+    screenLocalTracks.value.video && isScreenSharing.value // Yerel ekran paylaşımı var mı?
   )
 
-  // Helper functions to check if UID belongs to local user
+  // Helper functions to check if UID belongs to local user - UID'nin yerel kullanıcıya ait olup olmadığını kontrol eder
   const isLocalVideoUID = (uid) => {
     return videoLocalUser.value && videoLocalUser.value.uid === uid
   }
@@ -72,10 +75,10 @@ export const useAgoraStore = defineStore('agora', () => {
   }
 
   const isLocalUID = (uid) => {
-    return isLocalVideoUID(uid) || isLocalScreenUID(uid)
+    return isLocalVideoUID(uid) || isLocalScreenUID(uid) // Video veya ekran paylaşımı yerel UID'si mi?
   }
 
-  // Video Actions
+  // Video Actions - Video işlemleri
   const setVideoClient = (client) => {
     videoClient.value = client
   }
@@ -95,8 +98,10 @@ export const useAgoraStore = defineStore('agora', () => {
   const addVideoRemoteUser = (user) => {
     const existingIndex = videoRemoteUsers.value.findIndex(u => u.uid === user.uid)
     if (existingIndex >= 0) {
+      // Mevcut kullanıcıyı güncelle
       videoRemoteUsers.value[existingIndex] = { ...videoRemoteUsers.value[existingIndex], ...user }
     } else {
+      // Yeni kullanıcı ekle
       videoRemoteUsers.value.push(user)
     }
   }
@@ -104,14 +109,15 @@ export const useAgoraStore = defineStore('agora', () => {
   const removeVideoRemoteUser = (uid) => {
     const index = videoRemoteUsers.value.findIndex(u => u.uid === uid)
     if (index >= 0) {
-      videoRemoteUsers.value.splice(index, 1)
+      videoRemoteUsers.value.splice(index, 1) // Kullanıcıyı listeden çıkar
     }
-    videoRemoteTracks.value.delete(uid)
+    videoRemoteTracks.value.delete(uid) // Track'leri de temizle
   }
 
   const setVideoLocalTrack = (type, track) => {
     videoLocalTracks.value[type] = track
     
+    // Yerel kullanıcı durumunu güncelle
     if (videoLocalUser.value) {
       if (type === 'video') {
         videoLocalUser.value.hasVideo = !!track
@@ -125,7 +131,7 @@ export const useAgoraStore = defineStore('agora', () => {
 
   const setVideoRemoteTrack = (uid, type, track) => {
     if (!videoRemoteTracks.value.has(uid)) {
-      videoRemoteTracks.value.set(uid, {})
+      videoRemoteTracks.value.set(uid, {}) // Kullanıcı için track objesi oluştur
     }
     videoRemoteTracks.value.get(uid)[type] = track
   }
@@ -133,7 +139,7 @@ export const useAgoraStore = defineStore('agora', () => {
   const setLocalVideoOff = (off) => {
     isLocalVideoOff.value = off
     if (videoLocalTracks.value.video) {
-      videoLocalTracks.value.video.setEnabled(!off)
+      videoLocalTracks.value.video.setEnabled(!off) // Track'i etkinleştir/devre dışı bırak
     }
     if (videoLocalUser.value) {
       videoLocalUser.value.isVideoOff = off
@@ -147,7 +153,7 @@ export const useAgoraStore = defineStore('agora', () => {
     }
   }
 
-  // Screen Share Actions
+  // Screen Share Actions - Ekran paylaşımı işlemleri
   const setScreenClient = (client) => {
     screenClient.value = client
   }
@@ -167,8 +173,10 @@ export const useAgoraStore = defineStore('agora', () => {
   const addScreenRemoteUser = (user) => {
     const existingIndex = screenRemoteUsers.value.findIndex(u => u.uid === user.uid)
     if (existingIndex >= 0) {
+      // Mevcut kullanıcıyı güncelle
       screenRemoteUsers.value[existingIndex] = { ...screenRemoteUsers.value[existingIndex], ...user }
     } else {
+      // Yeni kullanıcı ekle
       screenRemoteUsers.value.push(user)
     }
   }
@@ -176,31 +184,39 @@ export const useAgoraStore = defineStore('agora', () => {
   const removeScreenRemoteUser = (uid) => {
     const index = screenRemoteUsers.value.findIndex(u => u.uid === uid)
     if (index >= 0) {
-      screenRemoteUsers.value.splice(index, 1)
+      screenRemoteUsers.value.splice(index, 1) // Kullanıcıyı listeden çıkar
     }
-    screenRemoteTracks.value.delete(uid)
+    screenRemoteTracks.value.delete(uid) // Track'leri de temizle
   }
 
   const setScreenLocalTrack = (track) => {
+    console.log('=== SET SCREEN LOCAL TRACK ===')
+    console.log('Track:', track)
+    console.log('Track valid:', track && typeof track.setEnabled === 'function')
+    
     screenLocalTracks.value.video = track
     
-    if (track) {
-      // Track varsa screen share kullanıcısını oluştur veya güncelle
+    if (track && typeof track.setEnabled === 'function') {
+      // Sadece geçerli track varsa ekran paylaşımı kullanıcısını oluştur
       if (!screenLocalUser.value) {
-        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Screen UID range
-        screenLocalUser.value = {
+        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Ekran UID aralığı
+        const screenUser = {
           uid: screenUID,
-          name: `Screen Share ${screenUID}`,
+          name: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
           isLocal: true,
           hasVideo: true,
           isScreenShare: true
         }
+        screenLocalUser.value = screenUser
+        console.log('Screen local user created (valid track):', screenUser)
       } else {
         screenLocalUser.value.hasVideo = true
         screenLocalUser.value.isScreenShare = true
+        console.log('Screen local user updated (valid track):', screenLocalUser.value)
       }
     } else {
-      // Track yoksa screen share kullanıcısını kaldır
+      // Track yoksa veya geçersizse ekran paylaşımı kullanıcısını kaldır
+      console.log('Removing screen local user (no valid track)')
       screenLocalUser.value = null
     }
   }
@@ -210,32 +226,41 @@ export const useAgoraStore = defineStore('agora', () => {
   }
 
   const setScreenSharing = (sharing) => {
+    console.log('=== SET SCREEN SHARING ===')
+    console.log('Sharing:', sharing)
+    console.log('Has valid track:', screenLocalTracks.value.video && typeof screenLocalTracks.value.video.setEnabled === 'function')
+    
     isScreenSharing.value = sharing
     
-    // Screen sharing başladığında local screen share kullanıcısını ekle
-    if (sharing && screenLocalTracks.value.video) {
-      // Eğer screen local user yoksa oluştur
+    // Ekran paylaşımı başladığında yerel ekran paylaşımı kullanıcısını ekle
+    if (sharing && screenLocalTracks.value.video && typeof screenLocalTracks.value.video.setEnabled === 'function') {
+      // Eğer ekran yerel kullanıcı yoksa oluştur
       if (!screenLocalUser.value) {
-        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Screen UID range
+        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Ekran UID aralığı
         screenLocalUser.value = {
           uid: screenUID,
-          name: `Screen Share ${screenUID}`,
+          name: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
           isLocal: true,
           hasVideo: true,
           isScreenShare: true
         }
+        console.log('Screen local user created in setScreenSharing:', screenLocalUser.value)
       } else {
         // Mevcut kullanıcıyı güncelle
         screenLocalUser.value.hasVideo = true
         screenLocalUser.value.isScreenShare = true
+        console.log('Screen local user updated in setScreenSharing:', screenLocalUser.value)
       }
     } else if (!sharing) {
-      // Screen sharing durduğunda local screen share kullanıcısını kaldır
+      // Ekran paylaşımı durduğunda yerel ekran paylaşımı kullanıcısını kaldır
+      console.log('Removing screen local user (sharing stopped)')
       screenLocalUser.value = null
+    } else {
+      console.log('Not creating screen user - no valid track or sharing not active')
     }
   }
 
-  // Reset Actions
+  // Reset Actions - Sıfırlama işlemleri
   const resetVideo = () => {
     videoClient.value = null
     videoLocalUser.value = null
@@ -260,12 +285,12 @@ export const useAgoraStore = defineStore('agora', () => {
   }
 
   const reset = () => {
-    resetVideo()
-    resetScreen()
+    resetVideo() // Video durumunu sıfırla
+    resetScreen() // Ekran paylaşımı durumunu sıfırla
   }
 
   return {
-    // Video State
+    // Video State - Video durumu
     videoClient,
     videoLocalUser,
     videoRemoteUsers,
@@ -276,7 +301,7 @@ export const useAgoraStore = defineStore('agora', () => {
     isLocalVideoOff,
     isLocalAudioMuted,
 
-    // Screen State
+    // Screen State - Ekran paylaşımı durumu
     screenClient,
     screenLocalUser,
     screenRemoteUsers,
@@ -286,7 +311,7 @@ export const useAgoraStore = defineStore('agora', () => {
     isScreenInitialized,
     isScreenSharing,
 
-    // Computed
+    // Computed - Hesaplanmış değerler
     allVideoUsers,
     allScreenUsers,
     allUsers,
@@ -295,7 +320,7 @@ export const useAgoraStore = defineStore('agora', () => {
     hasLocalAudio,
     hasLocalScreenShare,
 
-    // Video Actions
+    // Video Actions - Video işlemleri
     setVideoClient,
     setVideoConnected,
     setVideoInitialized,
@@ -307,7 +332,7 @@ export const useAgoraStore = defineStore('agora', () => {
     setLocalVideoOff,
     setLocalAudioMuted,
 
-    // Screen Actions
+    // Screen Actions - Ekran paylaşımı işlemleri
     setScreenClient,
     setScreenConnected,
     setScreenInitialized,
@@ -318,12 +343,12 @@ export const useAgoraStore = defineStore('agora', () => {
     setScreenRemoteTrack,
     setScreenSharing,
 
-    // Reset Actions
+    // Reset Actions - Sıfırlama işlemleri
     resetVideo,
     resetScreen,
     reset,
 
-    // Helper Functions
+    // Helper Functions - Yardımcı fonksiyonlar
     isLocalVideoUID,
     isLocalScreenUID,
     isLocalUID

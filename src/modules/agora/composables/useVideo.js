@@ -1,40 +1,48 @@
 import { ref, onUnmounted } from 'vue'
 import AgoraRTC from 'agora-rtc-sdk-ng'
 import mitt from 'mitt'
-import { AGORA_CONFIG, USER_ID_RANGES, CHANNEL_NAMES } from '../constants.js'
+import { AGORA_CONFIG, USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName } from '../constants.js'
 import { useTrackManagement } from './useTrackManagement.js'
 
 /**
- * Video/Audio Composable - Video client işlemlerini yönetir
+ * Video/Ses Composable - Video client işlemlerini yönetir
+ * Bu composable, Agora video client'ının başlatılması, kanala katılma, track yönetimi
+ * ve uzak kullanıcılarla iletişim işlemlerini yönetir.
  * @module composables/useVideo
  */
 export function useVideo(agoraStore) {
-  const client = ref(null)
-  const emitter = mitt()
+  const client = ref(null) // Agora client referansı
+  const emitter = mitt() // Olay yayıncısı
   
-  const isJoining = ref(false)
-  const isLeaving = ref(false)
+  const isJoining = ref(false) // Kanala katılma durumu
+  const isLeaving = ref(false) // Kanaldan ayrılma durumu
   
-  // Track management
-  const remoteAudioTracks = ref(new Map())
-  const remoteVideoTracks = ref(new Map())
+  // Track yönetimi - Uzak kullanıcıların track'lerini saklar
+  const remoteAudioTracks = ref(new Map()) // Uzak ses track'leri
+  const remoteVideoTracks = ref(new Map()) // Uzak video track'leri
   
-  // Pending subscriptions
+  // Bekleyen abonelikler - Track'ler henüz hazır olmadığında bekletilir
   const pendingSubscriptions = ref(new Map())
   
-  // Debounce for camera toggle
+  // Kamera toggle için debounce - Hızlı tıklamaları önler
   let cameraToggleTimeout = null
   let isCameraToggling = false
 
-  // Track management composable
+  // Track yönetimi composable'ı
   const { isTrackValid, createAudioTrack, createVideoTrack, cleanupTrack } = useTrackManagement()
 
-  // Generate UID for video
+  /**
+   * Video için UID oluşturur
+   * @returns {number} Video için benzersiz UID
+   */
   const generateVideoUID = () => {
     return Math.floor(Math.random() * (USER_ID_RANGES.VIDEO.MAX - USER_ID_RANGES.VIDEO.MIN)) + USER_ID_RANGES.VIDEO.MIN
   }
 
-  // Initialize client
+  /**
+   * Video client'ını başlatır
+   * @param {string} appId - Agora uygulama ID'si
+   */
   const initializeClient = async (appId) => {
     try {
       const agoraClient = AgoraRTC.createClient(AGORA_CONFIG)
@@ -43,12 +51,20 @@ export function useVideo(agoraStore) {
       setupEventListeners(agoraClient)
       agoraStore.setVideoInitialized(true)
     } catch (error) {
-      console.error('Failed to initialize video client:', error)
+      console.error('Video client\'ı başlatılamadı:', error)
       throw error
     }
   }
 
-  // Join channel
+  /**
+   * Video kanalına katılır
+   * @param {Object} params - Katılma parametreleri
+   * @param {string} params.token - Agora token'ı
+   * @param {string} params.channelName - Kanal adı
+   * @param {number} params.uid - Kullanıcı ID'si
+   * @param {string} params.userName - Kullanıcı adı
+   * @param {string} params.appId - Agora uygulama ID'si
+   */
   const joinChannel = async ({ token, channelName, uid, userName = 'User', appId }) => {
     if (isJoining.value) return
 
@@ -59,15 +75,15 @@ export function useVideo(agoraStore) {
         await initializeClient(appId)
       }
 
-      // Clear previous state
+      // Önceki durumu temizle
       remoteAudioTracks.value.clear()
       remoteVideoTracks.value.clear()
       pendingSubscriptions.value.clear()
 
-      // Set local user
+      // Yerel kullanıcıyı ayarla
       const localUser = {
         uid,
-        name: userName,
+        name: getUserDisplayName(uid, userName),
         isLocal: true,
         hasVideo: false,
         hasAudio: false,
@@ -77,11 +93,11 @@ export function useVideo(agoraStore) {
       }
       agoraStore.setVideoLocalUser(localUser)
 
-      // Join video channel
+      // Video kanalına katıl
       const videoChannelName = CHANNEL_NAMES.VIDEO(channelName)
       await client.value.join(appId, videoChannelName, token, uid)
       
-      // Create and publish tracks
+      // Yerel track'leri oluştur ve yayınla
       await createLocalTracks()
       
       agoraStore.setVideoConnected(true)
@@ -90,19 +106,22 @@ export function useVideo(agoraStore) {
       
     } catch (error) {
       isJoining.value = false
-      console.error('Failed to join video channel:', error)
+      console.error('Video kanalına katılma başarısız:', error)
       throw error
     }
   }
 
-  // Leave channel
+  /**
+   * Video kanalından ayrılır
+   * Tüm track'leri temizler ve client'ı sıfırlar
+   */
   const leaveChannel = async () => {
     if (!client.value) return
 
     try {
       isLeaving.value = true
       
-      // Stop local tracks
+      // Yerel track'leri durdur
       if (agoraStore.videoLocalTracks.audio) {
         cleanupTrack(agoraStore.videoLocalTracks.audio)
       }
@@ -113,22 +132,25 @@ export function useVideo(agoraStore) {
       await client.value.leave()
       agoraStore.resetVideo()
       
-      // Clear state
+      // Durumu temizle
       remoteAudioTracks.value.clear()
       remoteVideoTracks.value.clear()
       pendingSubscriptions.value.clear()
       
     } catch (error) {
-      console.error('Failed to leave video channel:', error)
+      console.error('Video kanalından ayrılma başarısız:', error)
     } finally {
       isLeaving.value = false
     }
   }
 
-  // Create local tracks
+  /**
+   * Yerel track'leri oluşturur
+   * Ses ve video track'lerini oluşturur ve yayınlar
+   */
   const createLocalTracks = async () => {
     try {
-      // Create audio track
+      // Ses track'i oluştur
       const audioResult = await createAudioTrack()
       if (audioResult.success) {
         agoraStore.setVideoLocalTrack('audio', audioResult.track)
@@ -139,7 +161,7 @@ export function useVideo(agoraStore) {
         agoraStore.setLocalAudioMuted(true)
       }
 
-      // Create video track
+      // Video track'i oluştur
       const videoResult = await createVideoTrack()
       if (videoResult.success) {
         agoraStore.setVideoLocalTrack('video', videoResult.track)
@@ -150,7 +172,7 @@ export function useVideo(agoraStore) {
         agoraStore.setLocalVideoOff(true)
       }
 
-      // Publish tracks
+      // Track'leri yayınla
       const tracksToPublish = [];
       if (agoraStore.videoLocalTracks.audio) tracksToPublish.push(agoraStore.videoLocalTracks.audio);
       if (agoraStore.videoLocalTracks.video) tracksToPublish.push(agoraStore.videoLocalTracks.video);
@@ -159,12 +181,15 @@ export function useVideo(agoraStore) {
       }
 
     } catch (error) {
-      console.error('Failed to create local tracks:', error)
+      console.error('Yerel track\'ler oluşturulamadı:', error)
       throw error
     }
   }
 
-  // Toggle camera
+  /**
+   * Kamerayı açıp kapatır
+   * @param {boolean} off - Kamera kapatılacak mı?
+   */
   const toggleCamera = async (off) => {
     if (isCameraToggling) return
     
@@ -176,6 +201,7 @@ export function useVideo(agoraStore) {
     
     try {
       if (off) {
+        // Kamerayı kapat
         if (agoraStore.videoLocalTracks.video && isTrackValid(agoraStore.videoLocalTracks.video)) {
           await client.value.unpublish(agoraStore.videoLocalTracks.video)
           cleanupTrack(agoraStore.videoLocalTracks.video)
@@ -183,6 +209,7 @@ export function useVideo(agoraStore) {
         }
         agoraStore.setLocalVideoOff(true)
       } else {
+        // Kamerayı aç
         const videoResult = await createVideoTrack()
         if (videoResult.success) {
           agoraStore.setVideoLocalTrack('video', videoResult.track)
@@ -192,7 +219,7 @@ export function useVideo(agoraStore) {
         }
       }
     } catch (error) {
-      console.error('Failed to toggle camera:', error)
+      console.error('Kamera değiştirilemedi:', error)
       throw error
     } finally {
       cameraToggleTimeout = setTimeout(() => {
@@ -201,7 +228,10 @@ export function useVideo(agoraStore) {
     }
   }
 
-  // Toggle microphone
+  /**
+   * Mikrofonu açıp kapatır
+   * @param {boolean} muted - Mikrofon kapatılacak mı?
+   */
   const toggleMicrophone = async (muted) => {
     try {
       if (muted) {
@@ -225,12 +255,15 @@ export function useVideo(agoraStore) {
         }
       }
     } catch (error) {
-      console.error('Failed to toggle microphone:', error)
+      console.error('Mikrofon değiştirilemedi:', error)
       throw error
     }
   }
 
-  // Process pending subscriptions
+  /**
+   * Bekleyen abonelikleri işler
+   * @param {number} uid - Kullanıcı ID'si
+   */
   const processPendingSubscriptions = async (uid) => {
     const pending = pendingSubscriptions.value.get(uid)
     if (!pending) return
@@ -239,14 +272,19 @@ export function useVideo(agoraStore) {
       try {
         await subscribeToUserTrack(uid, mediaType)
       } catch (error) {
-        console.error(`Failed to process pending ${mediaType} subscription for user ${uid}:`, error)
+        console.error(`Bekleyen ${mediaType} aboneliği işlenemedi kullanıcı ${uid} için:`, error)
       }
     }
     
     pendingSubscriptions.value.delete(uid)
   }
 
-  // Subscribe to user track
+  /**
+   * Kullanıcının track'ine abone olur
+   * @param {number} uid - Kullanıcı ID'si
+   * @param {string} mediaType - Medya türü ('audio' veya 'video')
+   * @param {number} retryCount - Tekrar deneme sayısı
+   */
   const subscribeToUserTrack = async (uid, mediaType, retryCount = 0) => {
     try {
       const users = client.value.remoteUsers || []
@@ -290,22 +328,32 @@ export function useVideo(agoraStore) {
         }
       }
     } catch (error) {
-      console.error(`Failed to subscribe to ${mediaType} from user ${uid}:`, error)
+      console.error(`Kullanıcı ${uid}'den ${mediaType} aboneliği başarısız:`, error)
       throw error
     }
   }
 
-  // Setup event listeners
+  /**
+   * Event listener'ları ayarlar
+   * @param {Object} client - Agora client
+   */
   const setupEventListeners = (client) => {
     if (!client) return
 
-    // User joined
+    // Kullanıcı katıldı
     client.on('user-joined', (user) => {
-      if (agoraStore.isLocalUID(user.uid)) return
-      
+      if (agoraStore.isLocalUID(user.uid)) return;
+      // UID zaten herhangi bir remote listede varsa ekleme
+      if (
+        agoraStore.videoRemoteUsers.some(u => u.uid === user.uid) ||
+        agoraStore.screenRemoteUsers.some(u => u.uid === user.uid)
+      ) {
+        console.log('Remote user zaten mevcut, tekrar eklenmedi:', user.uid)
+        return;
+      }
       const remoteUser = {
         uid: user.uid,
-        name: `User ${user.uid}`,
+        name: getRemoteUserDisplayName(user),
         isLocal: false,
         hasVideo: false,
         hasAudio: false,
@@ -315,11 +363,10 @@ export function useVideo(agoraStore) {
       }
       agoraStore.addVideoRemoteUser(remoteUser)
       emitter.emit('user-joined', remoteUser)
-      
       processPendingSubscriptions(user.uid)
-    })
+    });
 
-    // User left
+    // Kullanıcı ayrıldı
     client.on('user-left', (user) => {
       if (agoraStore.isLocalUID(user.uid)) return
       
@@ -331,7 +378,7 @@ export function useVideo(agoraStore) {
       emitter.emit('user-left', { uid: user.uid })
     })
 
-    // User published
+    // Kullanıcı yayınlandı
     client.on('user-published', async (user, mediaType) => {
       if (agoraStore.isLocalUID(user.uid)) return
       
@@ -348,7 +395,7 @@ export function useVideo(agoraStore) {
       try {
         await subscribeToUserTrack(user.uid, mediaType)
       } catch (error) {
-        console.error('Failed to subscribe to', mediaType, 'from video user', user.uid, ':', error)
+        console.error('Video kullanıcısından abone olunamadı', mediaType, user.uid, ':', error)
       }
 
       const updates = {};
@@ -362,7 +409,7 @@ export function useVideo(agoraStore) {
       }
     })
 
-    // User unpublished
+    // Kullanıcı yayından kaldırıldı
     client.on('user-unpublished', (user, mediaType) => {
       if (agoraStore.isLocalUID(user.uid)) return
       
@@ -397,7 +444,7 @@ export function useVideo(agoraStore) {
       }
     })
 
-    // Connection state
+    // Bağlantı durumu
     client.on('connection-state-change', (curState) => {
       const connected = curState === 'CONNECTED'
       agoraStore.setVideoConnected(connected)
@@ -405,7 +452,10 @@ export function useVideo(agoraStore) {
     })
   }
 
-  // Cleanup
+  /**
+   * Tüm kaynakları temizler
+   * Event listener'ları kaldırır ve client'ı sıfırlar
+   */
   const cleanup = () => {
     if (client.value) {
       client.value.removeAllListeners()

@@ -1,12 +1,15 @@
 /**
- * Agora Services Exports
+ * Agora Servisleri Dışa Aktarımı
+ * Bu dosya, tüm Agora servislerini merkezi bir noktadan dışa aktarır.
+ * Servisler modüler yapıda organize edilmiştir ve buradan tek noktadan erişilebilir.
  * @module services
  */
 
-// Token service
+// Token servisi - Agora token oluşturma işlemleri
 export { createToken } from './tokenService.js'
 
-// Future services (placeholder exports)
-// export { createRecording } from './recordingService.js'
-// export { createWhiteboard } from './whiteboardService.js'
-// export { createChat } from './chatService.js' 
+// Gelecekteki servisler (yer tutucu dışa aktarımlar)
+// Bu servisler ileride eklenebilir ve buradan dışa aktarılacak
+// export { createRecording } from './recordingService.js' // Kayıt servisi
+// export { createWhiteboard } from './whiteboardService.js' // Beyaz tahta servisi
+// export { createChat } from './chatService.js' // Sohbet servisi 

@@ -1,30 +1,36 @@
 import { ref, onMounted } from 'vue'
 
 /**
- * Device Detection Composable - Cihaz türünü tespit eder
+ * Cihaz Tespiti Composable - Kullanıcının cihaz türünü tespit eder ve ekran paylaşımı desteğini kontrol eder
+ * Bu composable, mobil, tablet ve desktop cihazları ayırt eder ve ekran paylaşımı özelliğinin
+ * desteklenip desteklenmediğini belirler.
  * @module composables/useDeviceDetection
  */
 export function useDeviceDetection() {
-  const isMobile = ref(false)
-  const isTablet = ref(false)
-  const isDesktop = ref(false)
-  const supportsScreenShare = ref(false)
+  const isMobile = ref(false) // Mobil cihaz kontrolü
+  const isTablet = ref(false) // Tablet cihaz kontrolü
+  const isDesktop = ref(false) // Desktop cihaz kontrolü
+  const supportsScreenShare = ref(false) // Ekran paylaşımı desteği kontrolü
 
+  /**
+   * Cihaz türünü tespit eder ve ekran paylaşımı desteğini kontrol eder
+   * User agent string'ini analiz ederek cihaz türünü belirler
+   */
   const detectDevice = () => {
     const userAgent = navigator.userAgent.toLowerCase()
     const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone']
     const tabletKeywords = ['ipad', 'tablet', 'playbook']
     
-    // Mobil tespiti
+    // Mobil cihaz tespiti - User agent'ta mobil anahtar kelimeleri arar
     isMobile.value = mobileKeywords.some(keyword => userAgent.includes(keyword))
     
-    // Tablet tespiti
+    // Tablet cihaz tespiti - User agent'ta tablet anahtar kelimeleri arar
     isTablet.value = tabletKeywords.some(keyword => userAgent.includes(keyword))
     
-    // Desktop tespiti
+    // Desktop cihaz tespiti - Mobil veya tablet değilse desktop olarak kabul eder
     isDesktop.value = !isMobile.value && !isTablet.value
     
-    // Screen share desteği tespiti
+    // Ekran paylaşımı desteği tespiti - Sadece desktop cihazlarda ve getDisplayMedia API'si desteklenen tarayıcılarda
     supportsScreenShare.value = isDesktop.value && 
       'getDisplayMedia' in navigator.mediaDevices &&
       !userAgent.includes('mobile') &&
@@ -32,7 +38,7 @@ export function useDeviceDetection() {
       !userAgent.includes('iphone') &&
       !userAgent.includes('ipad')
     
-    console.log('Device detection:', {
+    console.log('Cihaz tespiti tamamlandı:', {
       isMobile: isMobile.value,
       isTablet: isTablet.value,
       isDesktop: isDesktop.value,
@@ -41,6 +47,7 @@ export function useDeviceDetection() {
     })
   }
 
+  // Component mount olduğunda cihaz tespitini başlat
   onMounted(() => {
     detectDevice()
   })

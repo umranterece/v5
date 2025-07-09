@@ -8,18 +8,20 @@ import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
 
 /**
- * Meeting Composable - Video konferans işlemlerini yönetir
+ * Toplantı Composable - Video konferans işlemlerini yönetir ve tüm alt composable'ları koordine eder
+ * Bu composable, video, ekran paylaşımı, cihaz tespiti ve yayın kalitesi işlemlerini birleştirir
+ * ve tek bir interface üzerinden tüm toplantı işlemlerini yönetir.
  * @module composables/useMeeting
  */
 export function useMeeting() {
   // Store'ları initialize et
   const agoraStore = useAgoraStore()
-  const currentChannel = ref('')
+  const currentChannel = ref('') // Mevcut kanal adını tutar
   
-  // Device detection
+  // Cihaz tespiti composable'ından ekran paylaşımı desteğini al
   const { supportsScreenShare } = useDeviceDetection()
   
-  // Stream quality monitoring
+  // Yayın kalitesi izleme composable'ından tüm özellikleri al
   const {
     networkQuality,
     bitrate,
@@ -47,7 +49,7 @@ export function useMeeting() {
     cleanup: cleanupVideo
   } = useVideo(agoraStore)
   
-  // Screen share composable'ından tüm işlemleri al
+  // Ekran paylaşımı composable'ından tüm işlemleri al
   const {
     joinScreenChannel,
     leaveScreenChannel,
@@ -61,21 +63,24 @@ export function useMeeting() {
     cleanup: cleanupScreen
   } = useScreenShare(agoraStore)
 
-  // Computed properties
-  const isConnected = computed(() => agoraStore.isVideoConnected)
-  const isInitialized = computed(() => agoraStore.isVideoInitialized)
-  const localUser = computed(() => agoraStore.videoLocalUser)
-  const remoteUsers = computed(() => agoraStore.videoRemoteUsers)
-  const allUsers = computed(() => agoraStore.allUsers)
-  const connectedUsersCount = computed(() => agoraStore.connectedUsersCount)
-  const isLocalVideoOff = computed(() => agoraStore.isLocalVideoOff)
-  const isLocalAudioMuted = computed(() => agoraStore.isLocalAudioMuted)
-  const isScreenSharing = computed(() => agoraStore.isScreenSharing)
-  const screenShareUser = computed(() => agoraStore.screenLocalUser)
-  const localTracks = computed(() => agoraStore.videoLocalTracks)
-  const remoteTracks = computed(() => agoraStore.videoRemoteTracks)
+  // Computed properties - Store'dan gelen değerleri reactive olarak hesapla
+  const isConnected = computed(() => agoraStore.isVideoConnected) // Video bağlantısı durumu
+  const isInitialized = computed(() => agoraStore.isVideoInitialized) // Video client başlatma durumu
+  const localUser = computed(() => agoraStore.videoLocalUser) // Yerel kullanıcı bilgileri
+  const remoteUsers = computed(() => agoraStore.videoRemoteUsers) // Uzak kullanıcılar listesi
+  const allUsers = computed(() => agoraStore.allUsers) // Tüm kullanıcılar (yerel + uzak + ekran paylaşımı)
+  const connectedUsersCount = computed(() => agoraStore.connectedUsersCount) // Bağlı kullanıcı sayısı
+  const isLocalVideoOff = computed(() => agoraStore.isLocalVideoOff) // Yerel video kapalı mı?
+  const isLocalAudioMuted = computed(() => agoraStore.isLocalAudioMuted) // Yerel ses kapalı mı?
+  const isScreenSharing = computed(() => agoraStore.isScreenSharing) // Ekran paylaşımı aktif mi?
+  const screenShareUser = computed(() => agoraStore.screenLocalUser) // Ekran paylaşımı kullanıcısı
+  const localTracks = computed(() => agoraStore.videoLocalTracks) // Yerel track'ler
+  const remoteTracks = computed(() => agoraStore.videoRemoteTracks) // Uzak track'ler
 
-  // Join channel with token handling
+  /**
+   * Kanala katılma işlemi - Token yönetimi ile birlikte
+   * @param {string} channelName - Katılınacak kanal adı
+   */
   const joinChannel = async (channelName) => {
     try {
       // Sadece video için UID oluştur
@@ -90,47 +95,52 @@ export function useMeeting() {
         uid: videoUID,
         userName: `${DEFAULTS.USER_NAME} ${videoUID}`
       })
-      agoraStore.videoChannelName = channelName // <-- store'a kaydet
+      agoraStore.videoChannelName = channelName // Store'a kanal adını kaydet
       currentChannel.value = channelName
       
-      // Stream quality monitoring başlat
+      // Yayın kalitesi izlemeyi başlat
       if (agoraStore.videoClient) {
         startMonitoring(agoraStore.videoClient)
       }
       
-      console.log('Successfully joined video channel:', channelName)
+      console.log('Video kanalına başarıyla katılındı:', channelName)
     } catch (error) {
-      console.error('Failed to join video channel:', error)
+      console.error('Video kanalına katılma başarısız:', error)
       throw error
     }
   }
 
-  // Leave channel
+  /**
+   * Kanaldan ayrılma işlemi - Hem video hem ekran paylaşımı kanallarından çıkar
+   */
   const leaveChannel = async () => {
     try {
       await leaveVideoChannel()
       await leaveScreenChannel()
       currentChannel.value = ''
       
-      // Stream quality monitoring durdur
+      // Yayın kalitesi izlemeyi durdur
       stopMonitoring()
       
-      console.log('Successfully left both channels')
+      console.log('Her iki kanaldan da başarıyla ayrılındı')
     } catch (error) {
-      console.error('Failed to leave channels:', error)
+      console.error('Kanallardan ayrılma başarısız:', error)
       throw error
     }
   }
 
-  // Debug function to check microphone status
+  /**
+   * Mikrofon durumunu debug etmek için yardımcı fonksiyon
+   * Mikrofon track'inin durumunu ve store'daki değerleri kontrol eder
+   */
   const debugMicrophoneStatus = () => {
-    console.log('=== MICROPHONE STATUS DEBUG ===')
+    console.log('=== MİKROFON DURUMU DEBUG ===')
     console.log('Store isLocalAudioMuted:', agoraStore.isLocalAudioMuted)
     console.log('Store localTracks.audio:', agoraStore.videoLocalTracks.audio)
     
     if (agoraStore.videoLocalTracks.audio) {
       const audioTrack = agoraStore.videoLocalTracks.audio
-      console.log('Audio track details:', {
+      console.log('Ses track detayları:', {
         enabled: audioTrack.enabled,
         readyState: audioTrack.readyState,
         muted: audioTrack.muted,
@@ -139,18 +149,20 @@ export function useMeeting() {
         kind: audioTrack.kind
       })
     } else {
-      console.log('No audio track found in store')
+      console.log('Store\'da ses track\'i bulunamadı')
     }
   }
   
-  // Combined cleanup
+  /**
+   * Tüm kaynakları temizle - Video ve ekran paylaşımı composable'larını temizler
+   */
   const cleanup = () => {
     cleanupVideo()
     cleanupScreen()
   }
 
   return {
-    // State
+    // State - Durum değişkenleri
     isConnected,
     isInitialized,
     localUser,
@@ -168,7 +180,7 @@ export function useMeeting() {
     isLeaving: isVideoLeaving,
     currentChannel,
     
-    // Stream Quality
+    // Yayın Kalitesi - Stream quality değerleri
     networkQuality,
     bitrate,
     frameRate,
@@ -178,25 +190,25 @@ export function useMeeting() {
     qualityColor,
     qualityPercentage,
     
-    // Event emitters
+    // Event emitters - Olay yayıncıları
     emitter: videoEmitter,
     screenEmitter,
     
-    // Video Methods
+    // Video Metodları - Video işlemleri
     joinChannel,
     leaveChannel,
     toggleCamera,
     toggleMicrophone,
     
-    // Screen Share Methods
+    // Ekran Paylaşımı Metodları - Screen share işlemleri
     toggleScreenShare,
     startScreenShare,
     stopScreenShare,
     
-    // Cleanup
+    // Temizlik - Cleanup işlemleri
     cleanup,
     
-    // Debug Methods
+    // Debug Metodları - Hata ayıklama işlemleri
     debugMicrophoneStatus
   }
 } 

@@ -8,7 +8,7 @@
       v-if="localUser"
       :user="localUser"
       :has-video="hasLocalVideo"
-      :video-ref="localVideoRef"
+      :video-ref="el => setLocalVideoRef(el)"
       :is-local="true"
     />
 
@@ -49,7 +49,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['set-video-ref'])
+const emit = defineEmits(['set-video-ref', 'set-local-video-ref'])
 
 // Computed
 const hasLocalVideo = computed(() => {
@@ -60,10 +60,29 @@ const hasLocalVideo = computed(() => {
 })
 
 const screenShareUsers = computed(() => {
-  return props.allUsers.filter(u => u.isScreenShare && u.isLocal)
+  const users = props.allUsers.filter(u => u.isScreenShare)
+  console.log('Screen share users computed:', users)
+  return users
 })
 
 // Methods
+const setLocalVideoRef = (el) => {
+  console.log('=== SET LOCAL VIDEO REF ===')
+  console.log('Element:', el)
+  console.log('Local video ref prop:', props.localVideoRef)
+  
+  // Yerel video referansını parent component'e ilet
+  if (props.localVideoRef && typeof props.localVideoRef === 'object' && 'value' in props.localVideoRef) {
+    props.localVideoRef.value = el
+    console.log('Local video ref set successfully:', el)
+  } else {
+    console.warn('Local video ref prop is not a valid ref object')
+  }
+  
+  // Parent component'e emit et
+  emit('set-local-video-ref', el)
+}
+
 const setVideoRef = (el, uid) => {
   emit('set-video-ref', el, uid)
 }

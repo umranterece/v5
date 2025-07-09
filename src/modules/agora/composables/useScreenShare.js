@@ -1,46 +1,63 @@
 import { ref, onUnmounted } from 'vue'
 import AgoraRTC from 'agora-rtc-sdk-ng'
 import mitt from 'mitt'
-import { AGORA_CONFIG, USER_ID_RANGES } from '../constants.js'
+import { AGORA_CONFIG, USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
 import { useTrackManagement } from './useTrackManagement.js'
 
 /**
- * Screen Share Composable - Ekran paylaşımı işlemlerini yönetir
+ * Ekran Paylaşımı Composable - Ekran paylaşımı işlemlerini yönetir
+ * Bu composable, kullanıcının ekranını veya uygulama penceresini paylaşmasını sağlar.
+ * Ekran paylaşımı için ayrı bir Agora client kullanır ve video kanalı ile aynı kanala katılır.
  * @module composables/useScreenShare
  */
 export function useScreenShare(agoraStore) {
-  const emitter = mitt()
-  const isJoining = ref(false)
-  const isLeaving = ref(false)
+  const emitter = mitt() // Olay yayıncısı
+  const isJoining = ref(false) // Kanala katılma durumu
+  const isLeaving = ref(false) // Kanaldan ayrılma durumu
   
-  // Pending subscriptions
+  // Bekleyen abonelikler - Track'ler henüz hazır olmadığında bekletilir
   const pendingSubscriptions = ref(new Map())
 
-  // Track management composable
+  // Track yönetimi composable'ı
   const { isTrackValid, createScreenTrack, cleanupTrack } = useTrackManagement()
 
-  // Generate UID for screen share
+  /**
+   * Ekran paylaşımı için UID oluşturur
+   * @returns {number} Ekran paylaşımı için benzersiz UID
+   */
   const generateScreenUID = () => {
     return Math.floor(Math.random() * (USER_ID_RANGES.SCREEN_SHARE.MAX - USER_ID_RANGES.SCREEN_SHARE.MIN)) + USER_ID_RANGES.SCREEN_SHARE.MIN
   }
 
-  // Initialize screen client
+  /**
+   * Ekran paylaşımı client'ını başlatır
+   * @param {string} appId - Agora uygulama ID'si
+   * @returns {Promise<Object>} Başlatılan client
+   */
   const initializeScreenClient = async (appId) => {
     try {
       const client = AgoraRTC.createClient(AGORA_CONFIG)
       agoraStore.setScreenClient(client)
       setupScreenEventListeners(client)
       agoraStore.setScreenInitialized(true)
-      console.log('Screen client initialized')
+      console.log('Ekran paylaşımı client\'ı başlatıldı')
       return client
     } catch (error) {
-      console.error('Failed to initialize screen client:', error)
+      console.error('Ekran paylaşımı client\'ı başlatılamadı:', error)
       throw error
     }
   }
 
-  // Join screen channel
+  /**
+   * Ekran paylaşımı kanalına katılır
+   * @param {Object} params - Katılma parametreleri
+   * @param {string} params.token - Agora token'ı
+   * @param {string} params.channelName - Kanal adı
+   * @param {number} params.uid - Kullanıcı ID'si
+   * @param {string} params.userName - Kullanıcı adı
+   * @param {string} params.appId - Agora uygulama ID'si
+   */
   const joinScreenChannel = async ({ token, channelName, uid, userName = 'Screen User', appId }) => {
     if (isJoining.value) return
 
@@ -52,10 +69,10 @@ export function useScreenShare(agoraStore) {
         client = await initializeScreenClient(appId)
       }
 
-      // Clear previous state
+      // Önceki durumu temizle
       pendingSubscriptions.value.clear()
 
-      // Set local screen user
+      // Yerel ekran kullanıcısını ayarla
       const localUser = {
         uid,
         name: userName,
@@ -65,9 +82,9 @@ export function useScreenShare(agoraStore) {
       }
       agoraStore.setScreenLocalUser(localUser)
 
-      // Join screen channel - aynı channel'a katıl
+      // Ekran paylaşımı kanalına katıl - Video kanalı ile aynı kanala katılır
       await client.join(appId, channelName, token, uid)
-      console.log('Joined screen channel successfully:', channelName)
+      console.log('Ekran paylaşımı kanalına başarıyla katılındı:', channelName)
       
       agoraStore.setScreenConnected(true)
       isJoining.value = false
@@ -75,12 +92,14 @@ export function useScreenShare(agoraStore) {
       
     } catch (error) {
       isJoining.value = false
-      console.error('Failed to join screen channel:', error)
+      console.error('Ekran paylaşımı kanalına katılma başarısız:', error)
       throw error
     }
   }
 
-  // Leave screen channel
+  /**
+   * Ekran paylaşımı kanalından ayrılır
+   */
   const leaveScreenChannel = async () => {
     const client = agoraStore.screenClient
     if (!client) return
@@ -88,7 +107,7 @@ export function useScreenShare(agoraStore) {
     try {
       isLeaving.value = true
       
-      // Stop screen track
+      // Ekran track'ini durdur
       if (agoraStore.screenLocalTracks.video) {
         cleanupTrack(agoraStore.screenLocalTracks.video)
       }
@@ -96,103 +115,112 @@ export function useScreenShare(agoraStore) {
       await client.leave()
       agoraStore.resetScreen()
       
-      // Clear state
+      // Durumu temizle
       pendingSubscriptions.value.clear()
       
     } catch (error) {
-      console.error('Failed to leave screen channel:', error)
+      console.error('Ekran paylaşımı kanalından ayrılma başarısız:', error)
     } finally {
       isLeaving.value = false
     }
   }
 
-  // Start screen share
+  /**
+   * Ekran paylaşımını başlatır
+   * Kullanıcıdan ekran seçmesini ister ve seçilen ekranı yayınlar
+   * @returns {Promise<Object>} Ekran track'i
+   */
   const startScreenShare = async () => {
     try {
-      console.log('Starting screen share with publish...')
+      console.log('Ekran paylaşımı başlatılıyor...')
       
-      // Mobil cihaz kontrolü
+      // Mobil cihaz kontrolü - Mobil cihazlarda ekran paylaşımı desteklenmez
       const userAgent = navigator.userAgent.toLowerCase()
       const isMobile = ['mobile', 'android', 'iphone', 'ipad', 'ipod'].some(keyword => userAgent.includes(keyword))
       
       if (isMobile) {
-        throw new Error('Screen sharing is not supported on mobile devices')
+        throw new Error('Mobil cihazlarda ekran paylaşımı desteklenmez')
       }
       
-      // getDisplayMedia desteği kontrolü
+      // getDisplayMedia desteği kontrolü - Tarayıcı desteğini kontrol eder
       if (!('getDisplayMedia' in navigator.mediaDevices)) {
-        throw new Error('Screen sharing is not supported in this browser')
+        throw new Error('Bu tarayıcıda ekran paylaşımı desteklenmez')
       }
       
-      // Önce video channel'a katılıp katılmadığını kontrol et
+      // Önce video kanalına katılıp katılmadığını kontrol et
       const baseChannelName = agoraStore.videoChannelName
       if (!baseChannelName) {
-        throw new Error('No video channel joined, cannot start screen share!')
+        throw new Error('Video kanalına katılı değil, ekran paylaşımı başlatılamaz!')
       }
 
-      // Screen share track'ini oluştur (kullanıcı ekran seçimi yapar)
+      // ÖNCE EKRAN TRACK'İNİ OLUŞTUR (kullanıcı seçimi burada yapılır)
+      console.log('Ekran track\'i oluşturuluyor (kullanıcı ekran seçecek)...')
       const screenResult = await createScreenTrack()
       if (!screenResult.success) {
-        throw new Error('Failed to create screen track')
+        if (screenResult.error && screenResult.error.message.includes('iptal')) {
+          throw new Error('Ekran paylaşımı iptal edildi')
+        } else {
+          throw new Error('Ekran track\'i oluşturulamadı: ' + (screenResult.error?.message || 'Bilinmeyen hata'))
+        }
       }
       const screenTrack = screenResult.track
 
-      console.log('Screen share track created successfully')
+      console.log('Ekran paylaşımı track\'i başarıyla oluşturuldu - kullanıcı ekran seçti')
 
-      // Screen client'ı initialize et (eğer yoksa)
+      // EKRAN SEÇİMİ BAŞARILI OLDUKTAN SONRA UID VE TOKEN AL
+      const screenUID = generateScreenUID()
+      console.log('Ekran UID\'si oluşturuldu:', screenUID)
+
+      // Ekran kanalı için token al
+      console.log('Ekran kanalı için token alınıyor:', baseChannelName)
+      const tokenData = await createToken(baseChannelName, screenUID)
+      console.log('Ekran kanalı için token alındı')
+
+      // Ekran client'ını başlat (eğer yoksa)
       if (!agoraStore.screenClient) {
-        console.log('Initializing screen client...')
+        console.log('Ekran client\'ı başlatılıyor...')
         await initializeScreenClient(agoraStore.appId)
       }
 
-      // Screen UID oluştur
-      const screenUID = generateScreenUID()
-      console.log('Generated screen UID:', screenUID)
-
-      // Screen channel için token al
-      console.log('Getting token for screen channel:', baseChannelName)
-      const tokenData = await createToken(baseChannelName, screenUID)
-      console.log('Token received for screen channel')
-
-      // Screen channel'a katıl
-      console.log('Joining screen channel:', baseChannelName)
+      // Ekran kanalına katıl
+      console.log('Ekran kanalına katılınıyor:', baseChannelName)
       await joinScreenChannel({
         token: tokenData.token,
         channelName: baseChannelName,
         uid: screenUID,
-        userName: `Screen Share ${screenUID}`,
+        userName: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
         appId: tokenData.app_id
       })
 
-      // Screen track'i publish et
-      console.log('Publishing screen track...')
-      await agoraStore.screenClient.publish(screenTrack)
-      console.log('Screen track published successfully')
-
-      // Update store
+      // EKRAN SEÇİMİ BAŞARILI OLDUKTAN SONRA STORE'U GÜNCELLE
       agoraStore.setScreenLocalTrack(screenTrack)
       agoraStore.setScreenSharing(true)
       
+      // Ekran track'ini yayınla
+      console.log('Ekran track\'i yayınlanıyor...')
+      await agoraStore.screenClient.publish(screenTrack)
+      console.log('Ekran track\'i başarıyla yayınlandı')
+      
       // Chrome'un "Paylaşımı durdur" butonunu handle et
       screenTrack.on('track-ended', () => {
-        console.log('Screen share track ended by Chrome')
+        console.log('Chrome tarafından ekran paylaşımı track\'i sonlandırıldı')
         stopScreenShare()
       })
       
-      console.log('Screen share started successfully with publish')
-      console.log('Screen share user added to allUsers:', agoraStore.screenLocalUser)
-      console.log('All users count:', agoraStore.allUsers.length)
-      console.log('All users:', agoraStore.allUsers)
+      console.log('Ekran paylaşımı başarıyla başlatıldı')
+      console.log('Ekran paylaşımı kullanıcısı tüm kullanıcılara eklendi:', agoraStore.screenLocalUser)
+      console.log('Toplam kullanıcı sayısı:', agoraStore.allUsers.length)
+      console.log('Tüm kullanıcılar:', agoraStore.allUsers)
       emitter.emit('screen-share-started', { track: screenTrack })
       
       return screenTrack
       
     } catch (error) {
-      console.error('Failed to start screen share:', error)
+      console.error('Ekran paylaşımı başlatılamadı:', error)
       
       // Eğer track oluşturulduysa ama sonrasında hata olduysa, track'i temizle
       if (error.message !== 'Invalid screen track' && error.message !== 'No video channel joined, cannot start screen share!') {
-        console.log('Cleaning up screen track due to error...')
+        console.log('Hata nedeniyle ekran track\'i temizleniyor...')
         try {
           // Track'i temizlemeye çalış (eğer varsa)
           if (agoraStore.screenLocalTracks.video) {
@@ -201,7 +229,7 @@ export function useScreenShare(agoraStore) {
             agoraStore.setScreenLocalTrack(null)
           }
         } catch (cleanupError) {
-          console.warn('Failed to cleanup screen track:', cleanupError)
+          console.warn('Ekran track\'i temizlenirken hata oluştu:', cleanupError)
         }
       }
       
@@ -209,7 +237,10 @@ export function useScreenShare(agoraStore) {
     }
   }
 
-  // Stop screen share
+  /**
+   * Ekran paylaşımını durdurur
+   * Track'i yayından kaldırır, durdurur ve temizler
+   */
   const stopScreenShare = async () => {
     try {
       const screenTrack = agoraStore.screenLocalTracks.video
@@ -218,9 +249,9 @@ export function useScreenShare(agoraStore) {
       if (screenTrack) {
         // Unpublish track (eğer client varsa)
         if (screenClient) {
-          console.log('Unpublishing screen track...')
+          console.log('Ekran paylaşımı track\'i yayından kaldırılıyor...')
           await screenClient.unpublish(screenTrack)
-          console.log('Screen track unpublished successfully')
+          console.log('Ekran paylaşımı track\'i başarıyla yayından kaldırıldı')
         }
 
         // Stop and close track
@@ -230,28 +261,31 @@ export function useScreenShare(agoraStore) {
         // Track event listener'ını temizle
         screenTrack.off('track-ended')
         
-        // Screen channel'dan çık
+        // Ekran kanalından çık
         if (screenClient) {
-          console.log('Leaving screen channel...')
+          console.log('Ekran kanalından ayrılınıyor...')
           await leaveScreenChannel()
         }
         
-        // Update store
+        // Store'u güncelle
         agoraStore.setScreenLocalTrack(null)
         agoraStore.setScreenSharing(false)
         
-        console.log('Screen share stopped successfully with unpublish')
-        console.log('Screen share user removed from allUsers')
+        console.log('Ekran paylaşımı başarıyla durduruldu')
+        console.log('Ekran paylaşımı kullanıcısı tüm kullanıcılardan kaldırıldı')
         emitter.emit('screen-share-stopped')
       }
       
     } catch (error) {
-      console.error('Failed to stop screen share:', error)
+      console.error('Ekran paylaşımı durdurulamadı:', error)
       throw error
     }
   }
 
-  // Toggle screen share
+  /**
+   * Ekran paylaşımını açıp kapatır
+   * Eğer aktifse durdurur, değilse başlatır
+   */
   const toggleScreenShare = async () => {
     if (agoraStore.isScreenSharing) {
       await stopScreenShare()
@@ -260,7 +294,11 @@ export function useScreenShare(agoraStore) {
     }
   }
 
-  // Subscribe to remote screen share
+  /**
+   * Uzak ekran paylaşımına abone olur
+   * @param {number} uid - Kullanıcı ID'si
+   * @param {number} retryCount - Tekrar deneme sayısı
+   */
   const subscribeToRemoteScreen = async (uid, retryCount = 0) => {
     try {
       const client = agoraStore.screenClient
@@ -271,24 +309,24 @@ export function useScreenShare(agoraStore) {
       
       if (!user) {
         if (retryCount < 3) {
-          console.log(`Screen user ${uid} not found, retrying in 1 second... (attempt ${retryCount + 1})`)
+          console.log(`Ekran paylaşımı kullanıcısı ${uid} bulunamadı, 1 saniye sonra tekrar deneniyor... (deneme ${retryCount + 1})`)
           setTimeout(() => subscribeToRemoteScreen(uid, retryCount + 1), 1000)
           return
         } else {
-          console.warn(`Screen user ${uid} not found after ${retryCount} retries`)
+          console.warn(`Ekran paylaşımı kullanıcısı ${uid} bulunamadı, ${retryCount} denemeden sonra`)
           return
         }
       }
 
       // Subscribe to screen track
       await client.subscribe(user, 'video')
-      console.log('Subscribed to screen share from user', uid)
+      console.log('Ekran paylaşımı kullanıcısından abone olundu:', uid)
       
       const track = user.videoTrack
       if (track) {
         agoraStore.setScreenRemoteTrack(uid, track)
         
-        // Update user state
+        // Kullanıcı durumunu güncelle
         const currentUser = agoraStore.screenRemoteUsers.find(u => u.uid === uid)
         if (currentUser) {
           const updatedUser = { ...currentUser, hasVideo: true }
@@ -299,43 +337,51 @@ export function useScreenShare(agoraStore) {
       }
       
     } catch (error) {
-      console.error(`Failed to subscribe to screen share from user ${uid}:`, error)
+      console.error(`Ekran paylaşımı kullanıcısından abone olunamadı ${uid}:`, error)
       throw error
     }
   }
 
-  // Setup event listeners
+  /**
+   * Ekran paylaşımı event listener'larını ayarlar
+   * @param {Object} client - Agora client
+   */
   const setupScreenEventListeners = (client) => {
     if (!client) return
 
-    // Screen user joined
+    // Ekran kullanıcısı katıldı
     client.on('user-joined', (user) => {
-      console.log('Screen user joined:', user.uid)
-      
-      // Eğer bu UID local kullanıcının UID'si ise (video veya screen), remote olarak ekleme
+      console.log('Ekran kullanıcısı katıldı:', user.uid)
       if (agoraStore.isLocalUID(user.uid)) {
-        console.log('Ignoring local user in screen client:', user.uid)
-        return
+        console.log('Yerel kullanıcı ekran client\'ında yoksayılıyor:', user.uid)
+        return;
       }
-      
+      // UID zaten herhangi bir remote listede varsa ekleme
+      if (
+        agoraStore.videoRemoteUsers.some(u => u.uid === user.uid) ||
+        agoraStore.screenRemoteUsers.some(u => u.uid === user.uid)
+      ) {
+        console.log('Remote user zaten mevcut, tekrar eklenmedi (screen):', user.uid)
+        return;
+      }
       const remoteUser = {
         uid: user.uid,
-        name: `Screen Share ${user.uid}`,
+        name: getRemoteUserDisplayName(user.uid, 'Ekran Paylaşımı'),
         isLocal: false,
         hasVideo: false,
         isScreenShare: true
       }
       agoraStore.addScreenRemoteUser(remoteUser)
       emitter.emit('screen-user-joined', remoteUser)
-    })
+    });
 
-    // Screen user left
+    // Ekran kullanıcısı ayrıldı
     client.on('user-left', (user) => {
-      console.log('Screen user left:', user.uid)
+      console.log('Ekran kullanıcısı ayrıldı:', user.uid)
       
-      // Eğer bu UID local kullanıcının UID'si ise (video veya screen), çıkarma
+      // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), çıkar
       if (agoraStore.isLocalUID(user.uid)) {
-        console.log('Ignoring local user left in screen client:', user.uid)
+        console.log('Yerel kullanıcı ayrıldı ekran client\'ında yoksayılıyor:', user.uid)
         return
       }
       
@@ -343,13 +389,13 @@ export function useScreenShare(agoraStore) {
       emitter.emit('screen-user-left', { uid: user.uid })
     })
 
-    // Screen user published
+    // Ekran kullanıcısı yayınlandı
     client.on('user-published', async (user, mediaType) => {
-      console.log('Screen user published:', user.uid, mediaType)
+      console.log('Ekran kullanıcısı yayınlandı:', user.uid, mediaType)
       
-      // Eğer bu UID local kullanıcının UID'si ise (video veya screen), işleme
+      // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), işleme
       if (agoraStore.isLocalUID(user.uid)) {
-        console.log('Ignoring local user published in screen client:', user.uid, mediaType)
+        console.log('Yerel kullanıcı yayınlandı ekran client\'ında yoksayılıyor:', user.uid, mediaType)
         return
       }
       
@@ -357,18 +403,18 @@ export function useScreenShare(agoraStore) {
         try {
           await subscribeToRemoteScreen(user.uid)
         } catch (error) {
-          console.error('Failed to subscribe to screen share:', error)
+          console.error('Ekran paylaşımından abone olunamadı:', error)
         }
       }
     })
 
-    // Screen user unpublished
+    // Ekran kullanıcısı yayından kaldırıldı
     client.on('user-unpublished', (user, mediaType) => {
-      console.log('Screen user unpublished:', user.uid, mediaType)
+      console.log('Ekran kullanıcısı yayından kaldırıldı:', user.uid, mediaType)
       
-      // Eğer bu UID local kullanıcının UID'si ise (video veya screen), işleme
+      // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), işleme
       if (agoraStore.isLocalUID(user.uid)) {
-        console.log('Ignoring local user unpublished in screen client:', user.uid, mediaType)
+        console.log('Yerel kullanıcı yayından kaldırıldı ekran client\'ında yoksayılıyor:', user.uid, mediaType)
         return
       }
       
@@ -378,7 +424,7 @@ export function useScreenShare(agoraStore) {
       }
     })
 
-    // Connection state
+    // Bağlantı durumu
     client.on('connection-state-change', (curState) => {
       const connected = curState === 'CONNECTED'
       agoraStore.setScreenConnected(connected)
@@ -386,7 +432,10 @@ export function useScreenShare(agoraStore) {
     })
   }
 
-  // Cleanup
+  /**
+   * Tüm kaynakları temizler
+   * Event listener'ları kaldırır ve client'ı sıfırlar
+   */
   const cleanup = () => {
     if (agoraStore.screenClient) {
       agoraStore.screenClient.removeAllListeners()

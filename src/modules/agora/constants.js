@@ -61,6 +61,51 @@ export const USER_ID_RANGES = {
   }
 }
 
+// User Type Detection Functions - Kullanıcı tipini UID'ye göre belirler
+export const getUserType = (uid) => {
+  if (uid >= USER_ID_RANGES.VIDEO.MIN && uid < USER_ID_RANGES.VIDEO.MAX) {
+    return 'VIDEO'
+  } else if (uid >= USER_ID_RANGES.SCREEN_SHARE.MIN && uid < USER_ID_RANGES.SCREEN_SHARE.MAX) {
+    return 'SCREEN_SHARE'
+  } else {
+    return 'UNKNOWN'
+  }
+}
+
+export const isVideoUser = (uid) => {
+  return uid >= USER_ID_RANGES.VIDEO.MIN && uid < USER_ID_RANGES.VIDEO.MAX
+}
+
+export const isScreenShareUser = (uid) => {
+  return uid >= USER_ID_RANGES.SCREEN_SHARE.MIN && uid < USER_ID_RANGES.SCREEN_SHARE.MAX
+}
+
+export const getUserDisplayName = (uid, baseName = 'User') => {
+  const userType = getUserType(uid)
+  
+  switch (userType) {
+    case 'VIDEO':
+      return `${baseName} ${uid}`
+    case 'SCREEN_SHARE':
+      return `Ekran Paylaşımı ${uid} (You)`
+    default:
+      return `${baseName} ${uid}`
+  }
+}
+
+export const getRemoteUserDisplayName = (uid, baseName = 'User') => {
+  const userType = getUserType(uid)
+  
+  switch (userType) {
+    case 'VIDEO':
+      return `${baseName} ${uid}`
+    case 'SCREEN_SHARE':
+      return `Ekran Paylaşımı ${uid}`
+    default:
+      return `${baseName} ${uid}`
+  }
+}
+
 // Channel Names
 export const CHANNEL_NAMES = {
   VIDEO: (baseName) => `${baseName}`,
@@ -76,4 +121,41 @@ export const DEFAULTS = {
   TOKEN_EXPIRE_TIME: 86400, // 24 hours
   ROLE_PUBLISHER: 1,
   ROLE_SUBSCRIBER: 0
+} 
+
+// Screen Share Configuration - Ekran paylaşımı için optimize edilmiş ayarlar
+export const SCREEN_SHARE_CONFIG = {
+  // Hızlı başlatma için optimize edilmiş ayarlar
+  FAST_START: {
+    encoderConfig: '480p_1',
+    optimizationMode: 'detail',
+    bitrateMin: 500,
+    bitrateMax: 1500,
+    frameRate: 15,
+    width: 854,
+    height: 480,
+    captureWindow: true,
+    captureScreen: true,
+    audio: false
+  },
+  
+  // Yüksek kalite için ayarlar (isteğe bağlı)
+  HIGH_QUALITY: {
+    encoderConfig: '720p_1',
+    optimizationMode: 'motion',
+    bitrateMin: 1000,
+    bitrateMax: 3000,
+    frameRate: 30,
+    audio: false
+  },
+  
+  // Düşük kalite için ayarlar (düşük performanslı cihazlar)
+  LOW_QUALITY: {
+    encoderConfig: '360p_1',
+    optimizationMode: 'motion',
+    bitrateMin: 300,
+    bitrateMax: 800,
+    frameRate: 10,
+    audio: false
+  }
 } 
