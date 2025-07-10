@@ -4,10 +4,12 @@
       :local-user="localUser"
       :remote-users="remoteUsers"
       :all-users="allUsers"
-      :local-tracks="localTracks"
+      :local-tracks="localTracksFromStore"
       :local-video-ref="localVideoRef"
+      :local-screen-ref="localScreenRef"
       @set-video-ref="setVideoRef"
       @set-local-video-ref="setLocalVideoRef"
+      @set-local-screen-ref="setLocalScreenRef"
     />
 
     <!-- Settings Modal Overlay -->
@@ -59,11 +61,13 @@
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { useAgoraStore } from '../store/index.js'
 import VideoGrid from './VideoGrid.vue'
+import { useLogger } from '../composables/index.js'
+
+const { logUI, logError } = useLogger()
 
 // Props
 const props = defineProps({
-  emitter: { type: Object, default: () => ({}) },
-  screenEmitter: { type: Object, default: () => ({}) },
+  centralEmitter: { type: Object, default: () => ({}) },
   localUser: { type: Object, default: () => ({}) },
   remoteUsers: { type: Array, default: () => [] },
   allUsers: { type: Array, default: () => [] },
@@ -71,71 +75,137 @@ const props = defineProps({
   remoteTracks: { type: Object, default: () => new Map() }
 })
 
+// Store'dan local tracks'leri al
+const agoraStore = useAgoraStore()
+const localTracksFromStore = computed(() => ({
+  video: agoraStore.tracks.local.video.video,
+  screen: {
+    video: agoraStore.tracks.local.screen.video
+  }
+}))
+
 // Refs
 const localVideoRef = ref(null)
+const localScreenRef = ref(null)
 const videoRefs = ref(new Map())
 const isSettingUpLocalVideo = ref(false) // Prevent recursive calls
 
 // Methods
 const setLocalVideoRef = (el) => {
-  console.log('=== SET LOCAL VIDEO REF IN AGORA VIDEO ===')
-  console.log('Element:', el)
-  console.log('Previous local video ref:', localVideoRef.value)
+  logUI('Yerel video referansı ayarlanıyor', { element: !!el, previousRef: !!localVideoRef.value })
   
   // Only update if the element actually changed
   if (localVideoRef.value !== el) {
     localVideoRef.value = el
-    console.log('New local video ref:', localVideoRef.value)
+    logUI('Yerel video referansı güncellendi', { newRef: !!localVideoRef.value })
     
     // Eğer video track varsa hemen oynatmayı dene
     if (el && props.localTracks.video && !isSettingUpLocalVideo.value) {
-      console.log('Video element set, attempting to play local video...')
+      logUI('Video elementi ayarlandı, yerel video oynatılmaya çalışılıyor')
       setupLocalVideo()
     }
   } else {
-    console.log('Local video ref unchanged, skipping setup')
+    logUI('Yerel video referansı değişmedi, kurulum atlanıyor')
+  }
+}
+
+const setLocalScreenRef = (el) => {
+  logUI('Yerel ekran paylaşımı referansı ayarlanıyor', { 
+    element: !!el, 
+    previousRef: !!localScreenRef.value,
+    elementType: el?.constructor?.name,
+    elementId: el?.id,
+    elementClass: el?.className
+  })
+  
+  // Only update if the element actually changed
+  if (localScreenRef.value !== el) {
+    localScreenRef.value = el
+    logUI('Yerel ekran paylaşımı referansı güncellendi', { 
+      newRef: !!localScreenRef.value,
+      refType: el?.constructor?.name
+    })
+    
+    // Eğer ekran paylaşımı aktifse hemen oynatmayı dene
+    const agoraStore = useAgoraStore()
+    if (el && agoraStore.isScreenSharing && agoraStore.tracks.local.screen.video) {
+      logUI('Ekran paylaşımı elementi ayarlandı, yerel ekran paylaşımı oynatılmaya çalışılıyor', {
+        isScreenSharing: agoraStore.isScreenSharing,
+        hasScreenTrack: !!agoraStore.tracks.local.screen.video,
+        trackId: agoraStore.tracks.local.screen.video?.id
+      })
+      setupLocalScreenVideo()
+    } else {
+      logUI('Ekran paylaşımı elementi ayarlandı ama oynatma koşulları sağlanmadı', {
+        hasElement: !!el,
+        isScreenSharing: agoraStore.isScreenSharing,
+        hasScreenTrack: !!agoraStore.tracks.local.screen.video
+      })
+    }
+  } else {
+    logUI('Yerel ekran paylaşımı referansı değişmedi, kurulum atlanıyor')
   }
 }
 
 const setVideoRef = (el, uid) => {
-  console.log('=== SET VIDEO REF DEBUG ===')
-  console.log('Setting video ref for UID:', uid)
-  console.log('Element:', el)
-  console.log('Element type:', el?.constructor?.name)
+  logUI('Video referansı ayarlanıyor', { uid, element: !!el, elementType: el?.constructor?.name })
   
   if (el) {
     videoRefs.value.set(uid, el)
-    console.log('Video ref set successfully for UID:', uid)
+    logUI('Video referansı başarıyla ayarlandı', { uid })
   } else {
-    console.log('Video ref cleared for UID:', uid)
+    logUI('Video referansı temizlendi', { uid })
   }
 }
 
 const playVideo = async (track, element) => {
-  console.log('=== PLAY VIDEO DEBUG ===')
-  console.log('Track:', track)
-  console.log('Element:', element)
-  console.log('Track type:', track?.constructor?.name)
-  console.log('Element type:', element?.constructor?.name)
+  logUI('Video oynatılıyor', { 
+    trackType: track?.constructor?.name, 
+    elementType: element?.constructor?.name,
+    trackId: track?.id,
+    trackEnabled: track?.enabled,
+    trackReadyState: track?.readyState,
+    elementExists: !!element
+  })
   
-  if (track && element) {
-    try {
-      console.log('Calling track.play()...')
-      await track.play(element)
-      console.log('Track.play() completed successfully')
-    } catch (err) {
-      console.error('Failed to play video track:', err)
-      console.error('Error details:', {
-        message: err.message,
-        stack: err.stack,
-        trackState: track?.readyState,
-        trackEnabled: track?.enabled,
-        elementInnerHTML: element?.innerHTML
-      })
-      throw err
+  if (!track) {
+    logUI('Video oynatılamıyor - track sağlanmadı')
+    return
+  }
+  
+  if (!element) {
+    logUI('Video oynatılamıyor - element sağlanmadı')
+    return
+  }
+  
+  try {
+    // Track'in durumunu kontrol et
+    if (track.readyState === 'ended') {
+      logUI('Track sonlandı, oynatılamıyor', { trackId: track.id })
+      return
     }
-  } else {
-    console.warn('Cannot play video - missing track or element')
+    
+    // Track'i etkinleştir (eğer setEnabled fonksiyonu varsa)
+    if (!track.enabled && typeof track.setEnabled === 'function') {
+      logUI('Track devre dışı, etkinleştiriliyor', { trackId: track.id })
+      track.setEnabled(true)
+    } else if (!track.enabled) {
+      logUI('Track devre dışı ama setEnabled fonksiyonu mevcut değil', { trackId: track.id })
+    }
+    
+    logUI('track.play() çağrılıyor', { trackId: track.id })
+    await track.play(element)
+    logUI('track.play() başarıyla tamamlandı', { trackId: track.id })
+    
+  } catch (err) {
+    logError(err, { 
+      context: 'playVideo',
+      trackId: track?.id,
+      trackState: track?.readyState,
+      trackEnabled: track?.enabled,
+      elementType: element?.constructor?.name
+    })
+    throw err
   }
 }
 
@@ -144,7 +214,7 @@ const playAudio = async (track) => {
     try {
       await track.play()
     } catch (err) {
-      console.error('Failed to play audio track:', err)
+      logError(err, { context: 'playAudio' })
     }
   }
 }
@@ -152,46 +222,225 @@ const playAudio = async (track) => {
 const setupLocalVideo = async () => {
   // Prevent recursive calls
   if (isSettingUpLocalVideo.value) {
-    console.log('=== SETUP LOCAL VIDEO SKIPPED - ALREADY RUNNING ===')
+    logUI('Yerel video kurulumu atlandı - zaten çalışıyor')
     return
   }
   
-  const videoTrack = props.localTracks.video
+  const videoTrack = agoraStore.tracks.local.video.video
   
-  console.log('=== SETUP LOCAL VIDEO DEBUG ===')
-  console.log('Video track:', videoTrack)
-  console.log('Local video ref:', localVideoRef.value)
-  console.log('Has video track:', !!videoTrack)
-  console.log('Has video ref:', !!localVideoRef.value)
+  logUI('Setup local video debug', {
+    videoTrack: !!videoTrack,
+    localVideoRef: !!localVideoRef.value,
+    hasVideoTrack: !!videoTrack,
+    hasVideoRef: !!localVideoRef.value,
+    isScreenSharing: agoraStore.isScreenSharing,
+    hasScreenTrack: !!agoraStore.tracks.local.screen.video
+  })
   
+  // Yerel video alanında her zaman kamera track'ini oynat (ekran paylaşımı değil)
   if (videoTrack && localVideoRef.value) {
     try {
       isSettingUpLocalVideo.value = true
-      console.log('Attempting to play local video track...')
+      logUI('Yerel kamera track\'i oynatılmaya çalışılıyor', {
+        trackId: videoTrack.id,
+        trackEnabled: videoTrack.enabled,
+        trackReadyState: videoTrack.readyState
+      })
+      
+      // Element'i temizle
+      localVideoRef.value.innerHTML = ''
+      
       await playVideo(videoTrack, localVideoRef.value)
-      console.log('Local video track played successfully')
+      logUI('Yerel kamera track\'i başarıyla oynatıldı')
     } catch (error) {
-      console.error('Failed to setup local video:', error)
+      logError(error, { context: 'setupLocalVideo' })
     } finally {
       isSettingUpLocalVideo.value = false
     }
   } else {
-    console.warn('Cannot setup local video - missing track or ref')
-    console.log('Video track exists:', !!videoTrack)
-    console.log('Video ref exists:', !!localVideoRef.value)
+    logUI('Yerel video kurulamıyor - track veya ref eksik', {
+      videoTrackExists: !!videoTrack,
+      videoRefExists: !!localVideoRef.value,
+      screenTrackExists: !!agoraStore.tracks.local.screen.video,
+      isScreenSharing: agoraStore.isScreenSharing
+    })
+  }
+}
+
+const setupLocalScreenVideo = async () => {
+  const agoraStore = useAgoraStore()
+  
+  logUI('Setup local screen video debug', {
+    localScreenRef: !!localScreenRef.value,
+    hasScreenTrack: !!agoraStore.tracks.local.screen.video,
+    isScreenSharing: agoraStore.isScreenSharing,
+    screenTrackId: agoraStore.tracks.local.screen.video?.id,
+    screenTrackEnabled: agoraStore.tracks.local.screen.video?.enabled,
+    screenTrackReadyState: agoraStore.tracks.local.screen.video?.readyState,
+    refElementType: localScreenRef.value?.constructor?.name,
+    refElementId: localScreenRef.value?.id
+  })
+  
+  // Yerel ekran paylaşımı alanında ekran track'ini oynat
+  if (agoraStore.isScreenSharing && agoraStore.tracks.local.screen.video && localScreenRef.value) {
+    try {
+      logUI('Yerel ekran paylaşımı track\'i oynatılmaya çalışılıyor', {
+        trackId: agoraStore.tracks.local.screen.video.id,
+        trackEnabled: agoraStore.tracks.local.screen.video.enabled,
+        trackReadyState: agoraStore.tracks.local.screen.video.readyState,
+        elementType: localScreenRef.value.constructor.name,
+        elementId: localScreenRef.value.id
+      })
+      
+      // Element'i temizle
+      localScreenRef.value.innerHTML = ''
+      
+      await playVideo(agoraStore.tracks.local.screen.video, localScreenRef.value)
+      logUI('Yerel ekran paylaşımı track\'i başarıyla oynatıldı')
+    } catch (error) {
+      logError(error, { context: 'setupLocalScreenVideo' })
+    }
+  } else {
+    logUI('Yerel ekran paylaşımı kurulamıyor - track veya ref eksik', {
+      screenRefExists: !!localScreenRef.value,
+      screenTrackExists: !!agoraStore.tracks.local.screen.video,
+      isScreenSharing: agoraStore.isScreenSharing,
+      missingRef: !localScreenRef.value,
+      missingTrack: !agoraStore.tracks.local.screen.video,
+      notScreenSharing: !agoraStore.isScreenSharing
+    })
   }
 }
 
 const setupSpecificRemoteVideo = async (uid) => {
+  logUI('Belirli uzak video kurulumu', { uid })
+  
   const element = videoRefs.value.get(uid)
-  const track = props.remoteTracks.get(uid)?.video
+  const agoraStore = useAgoraStore()
+  
+  // Track'i bul - önce remote tracks'tan kontrol et
+  let track = props.remoteTracks.get(uid)?.video
+  
+  // Eğer remote tracks'ta yoksa, store'dan kontrol et
+  if (!track) {
+    track = agoraStore.tracks.remote.get(uid)?.video
+    logUI('Track props\'ta bulunamadı, store kontrol ediliyor', { uid, foundInStore: !!track })
+  }
+  
+  // Eğer hala yoksa, client'ların remote users'larından kontrol et
+  if (!track) {
+    const videoClient = agoraStore.clients.video.client
+    const screenClient = agoraStore.clients.screen.client
+    
+    if (videoClient && videoClient.remoteUsers) {
+      const videoUser = videoClient.remoteUsers.find(u => u.uid === uid)
+      if (videoUser && videoUser.videoTrack) {
+        track = videoUser.videoTrack
+        logUI('Video client uzak kullanıcılarında track bulundu', { uid })
+        
+        // Track'i store'a da kaydet
+        agoraStore.setRemoteTrack(uid, 'video', track)
+      }
+    }
+    
+    if (!track && screenClient && screenClient.remoteUsers) {
+      const screenUser = screenClient.remoteUsers.find(u => u.uid === uid)
+      if (screenUser && screenUser.videoTrack) {
+        track = screenUser.videoTrack
+        logUI('Ekran client uzak kullanıcılarında track bulundu', { uid })
+        
+        // Track'i store'a da kaydet
+        agoraStore.setRemoteTrack(uid, 'video', track)
+      }
+    }
+  }
+  
+  // Eğer hala yoksa, local screen track'ini kontrol et
+  if (!track) {
+    const screenUser = props.allUsers.find(user => user.uid === uid && user.isScreenShare && user.isLocal)
+    if (screenUser && agoraStore.tracks.local.screen.video) {
+      track = agoraStore.tracks.local.screen.video
+      logUI('UID için yerel ekran track\'i bulundu', { uid })
+    }
+  }
+  
+  // Son olarak, client'ların remote users'larından kontrol et
+  if (!track) {
+    const videoClient = agoraStore.clients.video.client
+    const screenClient = agoraStore.clients.screen.client
+    
+    if (videoClient && videoClient.remoteUsers) {
+      const videoUser = videoClient.remoteUsers.find(u => u.uid === uid)
+      if (videoUser && videoUser.videoTrack) {
+        track = videoUser.videoTrack
+        logUI('Video client uzak kullanıcılarında track bulundu', { uid })
+      }
+    }
+    
+    if (!track && screenClient && screenClient.remoteUsers) {
+      const screenUser = screenClient.remoteUsers.find(u => u.uid === uid)
+      if (screenUser && screenUser.videoTrack) {
+        track = screenUser.videoTrack
+        logUI('Ekran client uzak kullanıcılarında track bulundu', { uid })
+      }
+    }
+  }
+  
+  logUI('Belirli uzak video kurulum detayları', {
+    elementFound: !!element,
+    trackFound: !!track,
+    trackType: track?.constructor?.name,
+    trackId: track?.id,
+    trackEnabled: track?.enabled,
+    trackReadyState: track?.readyState
+  })
   
   if (track && element) {
     try {
+      // Kullanıcı tipini kontrol et
+      const user = props.allUsers.find(u => u.uid === uid)
+      const isScreenShare = user?.isScreenShare
+      
+      logUI('UID için video oynatılıyor', { 
+        uid, 
+        trackId: track.id, 
+        isScreenShare,
+        trackEnabled: track.enabled,
+        trackReadyState: track.readyState
+      })
+      
+      // Element'i temizle
+      element.innerHTML = ''
+      
+      // Ekran paylaşımı için track'i etkinleştir
+      if (isScreenShare && track.setEnabled) {
+        try {
+          track.setEnabled(true)
+          logUI('Ekran paylaşımı track\'i etkinleştirildi', { uid })
+        } catch (enableError) {
+          logWarn('Ekran paylaşımı track\'i etkinleştirilemedi:', enableError)
+        }
+      }
+      
+      // Track'i oynat
       await playVideo(track, element)
+      logUI('UID için video başarıyla oynatıldı', { uid, isScreenShare })
+      
+      // Store'a track'i kaydet
+      if (!agoraStore.tracks.remote.has(uid)) {
+        agoraStore.tracks.remote.set(uid, {})
+      }
+      agoraStore.tracks.remote.get(uid).video = track
+      
     } catch (error) {
-      console.error(`Failed to setup video for user ${uid}:`, error)
+      logError(error, { context: 'setupSpecificRemoteVideo', uid })
     }
+  } else {
+    logUI(`${uid} UID'si için video kurulamıyor - element veya track eksik`, {
+      elementExists: !!element,
+      trackExists: !!track,
+      uid
+    })
   }
 }
 
@@ -209,7 +458,7 @@ const setupRemoteAudios = async () => {
       try {
         await playAudio(tracks.audio)
       } catch (error) {
-        console.error(`Failed to setup audio for user ${uid}:`, error)
+        logError(error, { context: 'setupRemoteAudios', uid })
       }
     }
   }
@@ -217,95 +466,145 @@ const setupRemoteAudios = async () => {
 
 // Event listeners
 const setupEventListeners = () => {
-  props.emitter.on('setup-remote-video', (data) => {
+  logUI('Merkezi event sistemi kullanılıyor')
+  
+  // centralEmitter'ın varlığını kontrol et
+  if (!props.centralEmitter || typeof props.centralEmitter.on !== 'function') {
+    logUI('centralEmitter mevcut değil veya geçersiz')
+    return
+  }
+  
+  // Önceki event listener'ları temizle
+  props.centralEmitter.off('setup-remote-video')
+  props.centralEmitter.off('local-video-ready')
+  props.centralEmitter.off('remote-video-unpublished')
+  props.centralEmitter.off('remote-video-ready')
+  props.centralEmitter.off('remote-audio-ready')
+  props.centralEmitter.off('remote-screen-ready')
+  props.centralEmitter.off('screen-share-started')
+  props.centralEmitter.off('screen-share-stopped')
+  
+  props.centralEmitter.on('setup-remote-video', (data) => {
     setupSpecificRemoteVideo(data.uid)
   })
   
-  props.emitter.on('local-video-ready', async (data) => {
-    console.log('=== LOCAL VIDEO READY EVENT ===')
-    console.log('Event data:', data)
-    console.log('Local video ref before nextTick:', localVideoRef.value)
+  props.centralEmitter.on('local-video-ready', async (data) => {
+    logUI('Yerel video hazır event (merkezi)', { data, clientType: data.clientType })
     
     await nextTick()
-    console.log('Local video ref after nextTick:', localVideoRef.value)
-    
     await setupLocalVideo()
   })
   
-  props.emitter.on('remote-video-unpublished', (data) => {
+  props.centralEmitter.on('remote-video-unpublished', (data) => {
     const element = videoRefs.value.get(data.uid)
     if (element) {
       element.innerHTML = ''
     }
   })
   
-  props.emitter.on('remote-video-ready', async (data) => {
-    await nextTick()
-    await setupSpecificRemoteVideo(data.uid)
+  props.centralEmitter.on('remote-video-ready', async (data) => {
+    logUI('Uzak video hazır event (merkezi)', { data, clientType: data.clientType })
+    
+    // Track'i hemen store'a kaydet
+    const agoraStore = useAgoraStore()
+    if (data.track) {
+      agoraStore.setRemoteTrack(data.uid, 'video', data.track)
+      logUI('Track store\'a kaydedildi', { uid: data.uid, trackId: data.track.id })
+    }
+    
+    // Ekran paylaşımı kullanıcısı için özel işlem
+    const user = agoraStore.users.remote.find(u => u.uid === data.uid)
+    const isScreenShare = user?.isScreenShare
+    
+    if (isScreenShare) {
+      logUI('Ekran paylaşımı kullanıcısı için özel video kurulumu', { uid: data.uid })
+      
+      // Ekran paylaşımı için daha hızlı kurulum
+      setTimeout(async () => {
+        await setupSpecificRemoteVideo(data.uid)
+      }, 10)
+      
+      setTimeout(async () => {
+        await setupSpecificRemoteVideo(data.uid)
+      }, 50)
+    } else {
+      // Normal video için standart kurulum
+      await setupSpecificRemoteVideo(data.uid)
+      
+      setTimeout(async () => {
+        await setupSpecificRemoteVideo(data.uid)
+      }, 100)
+      
+      await nextTick()
+      await setupSpecificRemoteVideo(data.uid)
+      
+      setTimeout(async () => {
+        await setupSpecificRemoteVideo(data.uid)
+      }, 500)
+    }
   })
   
-  props.emitter.on('remote-audio-ready', async (data) => {
+  props.centralEmitter.on('remote-audio-ready', async (data) => {
     const audioTrack = data.track
     if (audioTrack) {
       try {
         await playAudio(audioTrack)
       } catch (error) {
-        console.error(`Failed to play remote audio for user ${data.uid}:`, error)
+        logError(error, { context: 'remote-audio-ready', uid: data.uid })
       }
     }
   })
   
-  // Screen share events
-  props.screenEmitter.on('remote-screen-ready', async (data) => {
+  props.centralEmitter.on('remote-screen-ready', async (data) => {
+    logUI('Uzak ekran hazır event (merkezi)', { data, clientType: data.clientType })
+    
+    // Hemen video setup'ı dene
+    setupSpecificRemoteVideo(data.uid)
+    
+    // Kısa bir gecikme ile tekrar dene
+    setTimeout(async () => {
+      await setupSpecificRemoteVideo(data.uid)
+    }, 50)
+    
+    // nextTick ile de tekrar dene
     await nextTick()
     await setupSpecificRemoteVideo(data.uid)
   })
   
-  props.screenEmitter.on('screen-share-started', async (data) => {
-    console.log('=== SCREEN SHARE STARTED EVENT ===')
-    console.log('Event data:', data)
+  props.centralEmitter.on('screen-share-started', async (data) => {
+    logUI('Ekran paylaşımı başladı event (merkezi)', { data, clientType: data.clientType })
     
     const agoraStore = useAgoraStore()
     
-    if (agoraStore.isScreenSharing && agoraStore.screenLocalTracks.video) {
-      const screenUser = props.allUsers.find(user => user.isScreenShare && user.isLocal)
-      if (screenUser) {
-        console.log('Screen user found:', screenUser)
-        
-        // Video element'i hemen bul ve track'i oynat
-        const element = videoRefs.value.get(screenUser.uid)
-        if (element) {
-          console.log('Video element found, playing screen track immediately...')
-          try {
-            await playVideo(agoraStore.screenLocalTracks.video, element)
-            console.log('Screen track played successfully')
-          } catch (error) {
-            console.error('Failed to start local screen share video:', error)
-          }
-        } else {
-          console.log('Video element not found, waiting for next tick...')
-          await nextTick()
-          const elementAfterTick = videoRefs.value.get(screenUser.uid)
-          if (elementAfterTick) {
-            try {
-              await playVideo(agoraStore.screenLocalTracks.video, elementAfterTick)
-              console.log('Screen track played successfully after nextTick')
-            } catch (error) {
-              console.error('Failed to start local screen share video after nextTick:', error)
-            }
-          } else {
-            console.warn('Video element still not found after nextTick')
-          }
-        }
-      } else {
-        console.warn('Screen user not found in allUsers')
-      }
+    if (agoraStore.isScreenSharing && agoraStore.tracks.local.screen.video) {
+      logUI('Yerel ekran paylaşımı başladı, yerel video yeniden kuruluyor')
+      
+      // Kısa bir gecikme ile yerel video'yu kur (DOM güncellemesi için)
+      setTimeout(async () => {
+        await setupLocalVideo()
+      }, 50)
+      
+      // Eğer hala çalışmıyorsa, birkaç kez daha dene
+      setTimeout(async () => {
+        await setupLocalVideo()
+      }, 200)
+      
+      setTimeout(async () => {
+        await setupLocalVideo()
+      }, 500)
+      
+      // nextTick ile de tekrar dene
+      await nextTick()
+      await setupLocalVideo()
     } else {
-      console.warn('Screen sharing not active or no screen track')
+      logUI('Ekran paylaşımı aktif değil veya ekran track\'i yok', {
+        isScreenSharing: agoraStore.isScreenSharing,
+        hasScreenTrack: !!agoraStore.tracks.local.screen.video
+      })
     }
   })
   
-  props.screenEmitter.on('screen-share-stopped', async () => {
+  props.centralEmitter.on('screen-share-stopped', async () => {
     await nextTick()
     
     const agoraStore = useAgoraStore()
@@ -358,13 +657,13 @@ async function fetchDevices() {
     if (!selectedMicId.value && audioDevices.value.length > 0) {
       selectedMicId.value = audioDevices.value[0].deviceId
     }
-  } catch (err) {
-    console.error('Cihazlar alınamadı:', err)
-  }
+      } catch (err) {
+      logError(err, { context: 'fetchDevices' })
+    }
 }
 
 function openSettings() {
-  console.log('openSettings called in AgoraVideo.vue')
+  logUI('AgoraVideo.vue\'de openSettings çağrıldı')
   showSettings.value = !showSettings.value
   if (showSettings.value) fetchDevices()
 }
@@ -399,20 +698,62 @@ watch(() => props.localUser?.hasVideo, async (hasVideo) => {
   }
 })
 
+// Ekran paylaşımı için özel watcher
+watch(() => props.allUsers, async (newUsers) => {
+  const screenUser = newUsers.find(user => user.isScreenShare && user.isLocal)
+  if (screenUser && screenUser.hasVideo) {
+    logUI('Ekran paylaşımı kullanıcısı tespit edildi, ekran videosu kuruluyor')
+    await nextTick()
+    await setupSpecificRemoteVideo(screenUser.uid)
+  }
+}, { deep: true })
+
+// Ekran paylaşımı durumu için özel watcher
+watch(() => {
+  const agoraStore = useAgoraStore()
+  return agoraStore.isScreenSharing
+}, async (isScreenSharing) => {
+  if (isScreenSharing) {
+    logUI('Ekran paylaşımı başladı, yerel ekran paylaşımı kuruluyor')
+    await nextTick()
+    await setupLocalScreenVideo()
+  }
+})
+
 // Lifecycle
 onMounted(async () => {
-  setupEventListeners()
+  // centralEmitter hazır olduğunda event listener'ları kur
+  if (props.centralEmitter && typeof props.centralEmitter.on === 'function') {
+    setupEventListeners()
+  }
+  
   await setupLocalVideo()
   await setupRemoteVideos()
   await setupRemoteAudios()
 })
 
+// centralEmitter değiştiğinde event listener'ları yeniden kur
+watch(() => props.centralEmitter, (newEmitter, oldEmitter) => {
+  if (newEmitter && typeof newEmitter.on === 'function' && newEmitter !== oldEmitter) {
+    logUI('centralEmitter değişti, event listener\'lar yeniden kuruluyor')
+    setupEventListeners()
+  }
+}, { immediate: true })
+
 onUnmounted(() => {
   videoRefs.value.clear()
-  props.emitter.off('setup-remote-video')
-  props.screenEmitter.off('remote-screen-ready')
-  props.screenEmitter.off('screen-share-started')
-  props.screenEmitter.off('screen-share-stopped')
+  
+  // centralEmitter varsa event listener'ları temizle
+  if (props.centralEmitter && typeof props.centralEmitter.off === 'function') {
+    props.centralEmitter.off('setup-remote-video')
+    props.centralEmitter.off('local-video-ready')
+    props.centralEmitter.off('remote-video-unpublished')
+    props.centralEmitter.off('remote-video-ready')
+    props.centralEmitter.off('remote-audio-ready')
+    props.centralEmitter.off('remote-screen-ready')
+    props.centralEmitter.off('screen-share-started')
+    props.centralEmitter.off('screen-share-stopped')
+  }
 })
 </script>
 
@@ -422,7 +763,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #0f0f0f;
   overflow: hidden;
 }
 

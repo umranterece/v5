@@ -7,4 +7,10 @@
 
 import { useAgoraStore } from './agora.js'
 
-export { useAgoraStore } 
+export { useAgoraStore }
+
+// TODO: Create separate store files for better modularity:
+// - video.js: Video-specific state management
+// - screen.js: Screen sharing state management
+// - recording.js: Recording state management
+// - whiteboard.js: Whiteboard state management 

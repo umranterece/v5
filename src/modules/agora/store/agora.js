@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useLogger } from '../composables/useLogger.js'
+
+const { logStore, logError } = useLogger()
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
 
 /**
@@ -9,348 +12,411 @@ import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShar
  * @module store/agora
  */
 export const useAgoraStore = defineStore('agora', () => {
-  // Video Client State - Video client durumu
-  const videoClient = ref(null) // Agora video client referansı
-  const videoLocalUser = ref(null) // Yerel video kullanıcısı
-  const videoRemoteUsers = ref([]) // Uzak video kullanıcıları listesi
-  const videoLocalTracks = ref({ audio: null, video: null }) // Yerel video track'leri
-  const videoRemoteTracks = ref(new Map()) // Uzak video track'leri
-  const isVideoConnected = ref(false) // Video bağlantı durumu
-  const isVideoInitialized = ref(false) // Video client başlatma durumu
-  const isLocalVideoOff = ref(false) // Yerel video kapalı mı?
-  const isLocalAudioMuted = ref(false) // Yerel ses kapalı mı?
+  // Unified Client State - Birleştirilmiş client durumu
+  const clients = ref({
+    video: {
+      client: null,
+      isConnected: false,
+      isInitialized: false
+    },
+    screen: {
+      client: null,
+      isConnected: false,
+      isInitialized: false
+    }
+  })
 
-  // Screen Share Client State - Ekran paylaşımı client durumu
-  const screenClient = ref(null) // Agora ekran paylaşımı client referansı
-  const screenLocalUser = ref(null) // Yerel ekran paylaşımı kullanıcısı
-  const screenRemoteUsers = ref([]) // Uzak ekran paylaşımı kullanıcıları
-  const screenLocalTracks = ref({ video: null }) // Yerel ekran paylaşımı track'leri
-  const screenRemoteTracks = ref(new Map()) // Uzak ekran paylaşımı track'leri
-  const isScreenConnected = ref(false) // Ekran paylaşımı bağlantı durumu
-  const isScreenInitialized = ref(false) // Ekran paylaşımı client başlatma durumu
-  const isScreenSharing = ref(false) // Ekran paylaşımı aktif mi?
+  // Unified User State - Birleştirilmiş kullanıcı durumu
+  const users = ref({
+    local: {
+      video: null,
+      screen: null
+    },
+    remote: [] // Tüm uzak kullanıcılar tek listede
+  })
+
+  // Unified Track State - Birleştirilmiş track durumu
+  const tracks = ref({
+    local: {
+      video: { audio: null, video: null },
+      screen: { video: null }
+    },
+    remote: new Map() // UID -> { audio, video, screen }
+  })
+
+  // Unified Control State - Birleştirilmiş kontrol durumu
+  const controls = ref({
+    isLocalVideoOff: false,
+    isLocalAudioMuted: false,
+    isScreenSharing: false
+  })
+
+  // Session State - Oturum durumu
+  const session = ref({
+    videoChannelName: null,
+    appId: null
+  })
+
+  // Device State - Cihaz durumu
+  const devices = ref({
+    hasCamera: false,
+    hasMicrophone: false,
+    cameraPermission: 'unknown', // 'granted', 'denied', 'unknown'
+    microphonePermission: 'unknown', // 'granted', 'denied', 'unknown'
+    cameraTrack: null,
+    microphoneTrack: null
+  })
 
   // Computed Properties - Hesaplanmış özellikler
-  const allVideoUsers = computed(() => {
-    const users = [...videoRemoteUsers.value]
-    if (videoLocalUser.value) {
-      users.unshift(videoLocalUser.value) // Yerel kullanıcıyı başa ekle
-    }
-    return users
-  })
-
-  const allScreenUsers = computed(() => {
-    const users = [...screenRemoteUsers.value]
-    if (screenLocalUser.value) {
-      users.unshift(screenLocalUser.value) // Yerel ekran kullanıcısını başa ekle
-    }
-    return users
-  })
-
   const allUsers = computed(() => {
-    return [...allVideoUsers.value, ...allScreenUsers.value] // Tüm kullanıcıları birleştir
+    const all = [...users.value.remote]
+    
+    // Yerel video kullanıcısını ekle
+    if (users.value.local.video) {
+      all.unshift(users.value.local.video)
+    }
+    
+    // Yerel ekran kullanıcısını ekle
+    if (users.value.local.screen) {
+      all.unshift(users.value.local.screen)
+    }
+    
+    return all
   })
 
-  const connectedUsersCount = computed(() => allUsers.value.length) // Bağlı kullanıcı sayısı
+  const connectedUsersCount = computed(() => allUsers.value.length)
 
   const hasLocalVideo = computed(() => 
-    videoLocalTracks.value.video && !isLocalVideoOff.value // Yerel video var mı?
+    tracks.value.local.video.video && !controls.value.isLocalVideoOff
   )
 
   const hasLocalAudio = computed(() => 
-    videoLocalTracks.value.audio && !isLocalAudioMuted.value // Yerel ses var mı?
+    tracks.value.local.video.audio && !controls.value.isLocalAudioMuted
   )
 
   const hasLocalScreenShare = computed(() => 
-    screenLocalTracks.value.video && isScreenSharing.value // Yerel ekran paylaşımı var mı?
+    tracks.value.local.screen.video && controls.value.isScreenSharing
   )
 
-  // Helper functions to check if UID belongs to local user - UID'nin yerel kullanıcıya ait olup olmadığını kontrol eder
+  const videoChannelName = computed(() => session.value.videoChannelName)
+  const appId = computed(() => session.value.appId)
+
+  // Device computed properties
+  const canUseCamera = computed(() => 
+    devices.value.hasCamera && devices.value.cameraPermission === 'granted'
+  )
+  
+  const canUseMicrophone = computed(() => 
+    devices.value.hasMicrophone && devices.value.microphonePermission === 'granted'
+  )
+  
+  const isLocalVideoOff = computed(() => 
+    controls.value.isLocalVideoOff
+  )
+  
+  const isLocalAudioMuted = computed(() => 
+    controls.value.isLocalAudioMuted
+  )
+
+  const isScreenSharing = computed(() => 
+    controls.value.isScreenSharing
+  )
+
+  // Helper functions
+  const isLocalUID = (uid) => {
+    return (users.value.local.video && users.value.local.video.uid === uid) ||
+           (users.value.local.screen && users.value.local.screen.uid === uid)
+  }
+
   const isLocalVideoUID = (uid) => {
-    return videoLocalUser.value && videoLocalUser.value.uid === uid
+    return users.value.local.video && users.value.local.video.uid === uid
   }
 
   const isLocalScreenUID = (uid) => {
-    return screenLocalUser.value && screenLocalUser.value.uid === uid
+    return users.value.local.screen && users.value.local.screen.uid === uid
   }
 
-  const isLocalUID = (uid) => {
-    return isLocalVideoUID(uid) || isLocalScreenUID(uid) // Video veya ekran paylaşımı yerel UID'si mi?
+  // Client Actions - Client işlemleri
+  const setClient = (type, client) => {
+    clients.value[type].client = client
   }
 
-  // Video Actions - Video işlemleri
-  const setVideoClient = (client) => {
-    videoClient.value = client
+  const setClientConnected = (type, connected) => {
+    clients.value[type].isConnected = connected
   }
 
-  const setVideoConnected = (connected) => {
-    isVideoConnected.value = connected
+  const setClientInitialized = (type, initialized) => {
+    clients.value[type].isInitialized = initialized
   }
 
-  const setVideoInitialized = (initialized) => {
-    isVideoInitialized.value = initialized
+  // User Actions - Kullanıcı işlemleri
+  const setLocalUser = (type, user) => {
+    users.value.local[type] = user
   }
 
-  const setVideoLocalUser = (user) => {
-    videoLocalUser.value = user
-  }
-
-  const addVideoRemoteUser = (user) => {
-    const existingIndex = videoRemoteUsers.value.findIndex(u => u.uid === user.uid)
+  const addRemoteUser = (user) => {
+    const existingIndex = users.value.remote.findIndex(u => u.uid === user.uid)
     if (existingIndex >= 0) {
       // Mevcut kullanıcıyı güncelle
-      videoRemoteUsers.value[existingIndex] = { ...videoRemoteUsers.value[existingIndex], ...user }
+      users.value.remote[existingIndex] = { ...users.value.remote[existingIndex], ...user }
     } else {
       // Yeni kullanıcı ekle
-      videoRemoteUsers.value.push(user)
+      users.value.remote.push(user)
     }
   }
 
-  const removeVideoRemoteUser = (uid) => {
-    const index = videoRemoteUsers.value.findIndex(u => u.uid === uid)
+  const removeRemoteUser = (uid) => {
+    const index = users.value.remote.findIndex(u => u.uid === uid)
     if (index >= 0) {
-      videoRemoteUsers.value.splice(index, 1) // Kullanıcıyı listeden çıkar
+      users.value.remote.splice(index, 1)
     }
-    videoRemoteTracks.value.delete(uid) // Track'leri de temizle
+    tracks.value.remote.delete(uid)
   }
 
-  const setVideoLocalTrack = (type, track) => {
-    videoLocalTracks.value[type] = track
+  // Track Actions - Track işlemleri
+  const setLocalTrack = (type, trackType, track) => {
+    tracks.value.local[type][trackType] = track
     
     // Yerel kullanıcı durumunu güncelle
-    if (videoLocalUser.value) {
+    const localUser = users.value.local[type]
+    if (localUser) {
       if (type === 'video') {
-        videoLocalUser.value.hasVideo = !!track
-        videoLocalUser.value.isVideoOff = !track || isLocalVideoOff.value
-      } else if (type === 'audio') {
-        videoLocalUser.value.hasAudio = !!track
-        videoLocalUser.value.isMuted = !track || isLocalAudioMuted.value
+        if (trackType === 'video') {
+          localUser.hasVideo = !!track
+          localUser.isVideoOff = !track || controls.value.isLocalVideoOff
+        } else if (trackType === 'audio') {
+          localUser.hasAudio = !!track
+          localUser.isMuted = !track || controls.value.isLocalAudioMuted
+        }
+      } else if (type === 'screen') {
+        localUser.hasVideo = !!track
       }
     }
   }
 
-  const setVideoRemoteTrack = (uid, type, track) => {
-    if (!videoRemoteTracks.value.has(uid)) {
-      videoRemoteTracks.value.set(uid, {}) // Kullanıcı için track objesi oluştur
+  const setRemoteTrack = (uid, type, track) => {
+    if (!tracks.value.remote.has(uid)) {
+      tracks.value.remote.set(uid, {})
     }
-    videoRemoteTracks.value.get(uid)[type] = track
+    tracks.value.remote.get(uid)[type] = track
   }
 
-  const setLocalVideoOff = (off) => {
-    isLocalVideoOff.value = off
-    if (videoLocalTracks.value.video) {
-      videoLocalTracks.value.video.setEnabled(!off) // Track'i etkinleştir/devre dışı bırak
+  // Yeni eklenen fonksiyon: remote track'i kaldır
+  const removeRemoteTrack = (uid, type) => {
+    if (tracks.value.remote.has(uid)) {
+      const userTracks = tracks.value.remote.get(uid)
+      if (userTracks && userTracks[type]) {
+        delete userTracks[type]
+      }
+      // Eğer kullanıcının hiç track'i kalmadıysa, tamamen kaldır
+      if (Object.keys(userTracks).length === 0) {
+        tracks.value.remote.delete(uid)
+      }
     }
-    if (videoLocalUser.value) {
-      videoLocalUser.value.isVideoOff = off
+  }
+
+  // Control Actions - Kontrol işlemleri
+  const setLocalVideoOff = (off) => {
+    controls.value.isLocalVideoOff = off
+    if (tracks.value.local.video.video) {
+      tracks.value.local.video.video.setEnabled(!off)
+    }
+    if (users.value.local.video) {
+      users.value.local.video.isVideoOff = off
     }
   }
 
   const setLocalAudioMuted = (muted) => {
-    isLocalAudioMuted.value = muted
-    if (videoLocalUser.value) {
-      videoLocalUser.value.isMuted = muted
+    controls.value.isLocalAudioMuted = muted
+    // Track'i devre dışı bırakma işlemini toggleMicrophone fonksiyonunda yapıyoruz
+    // Burada sadece state'i güncelliyoruz
+    if (users.value.local.video) {
+      users.value.local.video.isMuted = muted
     }
-  }
-
-  // Screen Share Actions - Ekran paylaşımı işlemleri
-  const setScreenClient = (client) => {
-    screenClient.value = client
-  }
-
-  const setScreenConnected = (connected) => {
-    isScreenConnected.value = connected
-  }
-
-  const setScreenInitialized = (initialized) => {
-    isScreenInitialized.value = initialized
-  }
-
-  const setScreenLocalUser = (user) => {
-    screenLocalUser.value = user
-  }
-
-  const addScreenRemoteUser = (user) => {
-    const existingIndex = screenRemoteUsers.value.findIndex(u => u.uid === user.uid)
-    if (existingIndex >= 0) {
-      // Mevcut kullanıcıyı güncelle
-      screenRemoteUsers.value[existingIndex] = { ...screenRemoteUsers.value[existingIndex], ...user }
-    } else {
-      // Yeni kullanıcı ekle
-      screenRemoteUsers.value.push(user)
-    }
-  }
-
-  const removeScreenRemoteUser = (uid) => {
-    const index = screenRemoteUsers.value.findIndex(u => u.uid === uid)
-    if (index >= 0) {
-      screenRemoteUsers.value.splice(index, 1) // Kullanıcıyı listeden çıkar
-    }
-    screenRemoteTracks.value.delete(uid) // Track'leri de temizle
-  }
-
-  const setScreenLocalTrack = (track) => {
-    console.log('=== SET SCREEN LOCAL TRACK ===')
-    console.log('Track:', track)
-    console.log('Track valid:', track && typeof track.setEnabled === 'function')
-    
-    screenLocalTracks.value.video = track
-    
-    if (track && typeof track.setEnabled === 'function') {
-      // Sadece geçerli track varsa ekran paylaşımı kullanıcısını oluştur
-      if (!screenLocalUser.value) {
-        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Ekran UID aralığı
-        const screenUser = {
-          uid: screenUID,
-          name: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
-          isLocal: true,
-          hasVideo: true,
-          isScreenShare: true
-        }
-        screenLocalUser.value = screenUser
-        console.log('Screen local user created (valid track):', screenUser)
-      } else {
-        screenLocalUser.value.hasVideo = true
-        screenLocalUser.value.isScreenShare = true
-        console.log('Screen local user updated (valid track):', screenLocalUser.value)
-      }
-    } else {
-      // Track yoksa veya geçersizse ekran paylaşımı kullanıcısını kaldır
-      console.log('Removing screen local user (no valid track)')
-      screenLocalUser.value = null
-    }
-  }
-
-  const setScreenRemoteTrack = (uid, track) => {
-    screenRemoteTracks.value.set(uid, { video: track })
   }
 
   const setScreenSharing = (sharing) => {
-    console.log('=== SET SCREEN SHARING ===')
-    console.log('Sharing:', sharing)
-    console.log('Has valid track:', screenLocalTracks.value.video && typeof screenLocalTracks.value.video.setEnabled === 'function')
+    controls.value.isScreenSharing = sharing
     
-    isScreenSharing.value = sharing
-    
-    // Ekran paylaşımı başladığında yerel ekran paylaşımı kullanıcısını ekle
-    if (sharing && screenLocalTracks.value.video && typeof screenLocalTracks.value.video.setEnabled === 'function') {
-      // Eğer ekran yerel kullanıcı yoksa oluştur
-      if (!screenLocalUser.value) {
-        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000 // Ekran UID aralığı
-        screenLocalUser.value = {
+    if (sharing && tracks.value.local.screen.video) {
+      if (!users.value.local.screen) {
+        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000
+        users.value.local.screen = {
           uid: screenUID,
           name: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
           isLocal: true,
           hasVideo: true,
           isScreenShare: true
         }
-        console.log('Screen local user created in setScreenSharing:', screenLocalUser.value)
       } else {
-        // Mevcut kullanıcıyı güncelle
-        screenLocalUser.value.hasVideo = true
-        screenLocalUser.value.isScreenShare = true
-        console.log('Screen local user updated in setScreenSharing:', screenLocalUser.value)
+        users.value.local.screen.hasVideo = true
+        users.value.local.screen.isScreenShare = true
       }
     } else if (!sharing) {
-      // Ekran paylaşımı durduğunda yerel ekran paylaşımı kullanıcısını kaldır
-      console.log('Removing screen local user (sharing stopped)')
-      screenLocalUser.value = null
-    } else {
-      console.log('Not creating screen user - no valid track or sharing not active')
+      users.value.local.screen = null
+    }
+  }
+
+  // Device Actions - Cihaz işlemleri
+  const setDeviceStatus = (deviceType, status) => {
+    if (deviceType === 'camera') {
+      devices.value.hasCamera = status.hasDevice
+      devices.value.cameraPermission = status.permission
+      devices.value.cameraTrack = status.track
+    } else if (deviceType === 'microphone') {
+      devices.value.hasMicrophone = status.hasDevice
+      devices.value.microphonePermission = status.permission
+      devices.value.microphoneTrack = status.track
+    }
+  }
+
+  const updateDevicePermissions = async () => {
+    try {
+      // Kamera izni kontrolü
+      const cameraPermission = await navigator.permissions.query({ name: 'camera' })
+      devices.value.cameraPermission = cameraPermission.state
+      
+      // Mikrofon izni kontrolü
+      const microphonePermission = await navigator.permissions.query({ name: 'microphone' })
+      devices.value.microphonePermission = microphonePermission.state
+      
+      logStore('Cihaz izinleri güncellendi', {
+        camera: devices.value.cameraPermission,
+        microphone: devices.value.microphonePermission
+      })
+    } catch (error) {
+      logError(error, { context: 'updateDevicePermissions' })
     }
   }
 
   // Reset Actions - Sıfırlama işlemleri
-  const resetVideo = () => {
-    videoClient.value = null
-    videoLocalUser.value = null
-    videoRemoteUsers.value = []
-    videoLocalTracks.value = { audio: null, video: null }
-    videoRemoteTracks.value.clear()
-    isVideoConnected.value = false
-    isVideoInitialized.value = false
-    isLocalVideoOff.value = false
-    isLocalAudioMuted.value = false
+  const resetClient = (type) => {
+    clients.value[type] = {
+      client: null,
+      isConnected: false,
+      isInitialized: false
+    }
   }
 
-  const resetScreen = () => {
-    screenClient.value = null
-    screenLocalUser.value = null
-    screenRemoteUsers.value = []
-    screenLocalTracks.value = { video: null }
-    screenRemoteTracks.value.clear()
-    isScreenConnected.value = false
-    isScreenInitialized.value = false
-    isScreenSharing.value = false
+  const resetUsers = (type) => {
+    if (type) {
+      users.value.local[type] = null
+    } else {
+      users.value.local = { video: null, screen: null }
+      users.value.remote = []
+    }
+  }
+
+  const resetTracks = (type) => {
+    if (type) {
+      tracks.value.local[type] = type === 'video' ? { audio: null, video: null } : { video: null }
+    } else {
+      tracks.value.local = {
+        video: { audio: null, video: null },
+        screen: { video: null }
+      }
+      tracks.value.remote.clear()
+    }
+  }
+
+  const resetControls = () => {
+    controls.value = {
+      isLocalVideoOff: false,
+      isLocalAudioMuted: false,
+      isScreenSharing: false
+    }
+  }
+
+  // Session Actions - Oturum işlemleri
+  const setVideoChannelName = (channelName) => {
+    session.value.videoChannelName = channelName
+  }
+
+  const setAppId = (appId) => {
+    session.value.appId = appId
+  }
+
+  const resetSession = () => {
+    session.value = {
+      videoChannelName: null,
+      appId: null
+    }
+  }
+
+  const resetDevices = () => {
+    devices.value = {
+      hasCamera: false,
+      hasMicrophone: false,
+      cameraPermission: 'unknown',
+      microphonePermission: 'unknown',
+      cameraTrack: null,
+      microphoneTrack: null
+    }
   }
 
   const reset = () => {
-    resetVideo() // Video durumunu sıfırla
-    resetScreen() // Ekran paylaşımı durumunu sıfırla
+    resetClient('video')
+    resetClient('screen')
+    resetUsers()
+    resetTracks()
+    resetControls()
+    resetSession()
+    resetDevices()
   }
 
-  return {
-    // Video State - Video durumu
-    videoClient,
-    videoLocalUser,
-    videoRemoteUsers,
-    videoLocalTracks,
-    videoRemoteTracks,
-    isVideoConnected,
-    isVideoInitialized,
-    isLocalVideoOff,
-    isLocalAudioMuted,
 
-    // Screen State - Ekran paylaşımı durumu
-    screenClient,
-    screenLocalUser,
-    screenRemoteUsers,
-    screenLocalTracks,
-    screenRemoteTracks,
-    isScreenConnected,
-    isScreenInitialized,
-    isScreenSharing,
+
+  return {
+    // Unified State - Birleştirilmiş durum
+    clients,
+    users,
+    tracks,
+    controls,
+    session,
+    devices,
 
     // Computed - Hesaplanmış değerler
-    allVideoUsers,
-    allScreenUsers,
     allUsers,
     connectedUsersCount,
     hasLocalVideo,
     hasLocalAudio,
     hasLocalScreenShare,
+    videoChannelName,
+    appId,
+    canUseCamera,
+    canUseMicrophone,
+    isLocalVideoOff,
+    isLocalAudioMuted,
+    isScreenSharing,
 
-    // Video Actions - Video işlemleri
-    setVideoClient,
-    setVideoConnected,
-    setVideoInitialized,
-    setVideoLocalUser,
-    addVideoRemoteUser,
-    removeVideoRemoteUser,
-    setVideoLocalTrack,
-    setVideoRemoteTrack,
+    // Unified Actions - Birleştirilmiş işlemler
+    setClient,
+    setClientConnected,
+    setClientInitialized,
+    setLocalUser,
+    addRemoteUser,
+    removeRemoteUser,
+    setLocalTrack,
+    setRemoteTrack,
+    removeRemoteTrack,
     setLocalVideoOff,
     setLocalAudioMuted,
-
-    // Screen Actions - Ekran paylaşımı işlemleri
-    setScreenClient,
-    setScreenConnected,
-    setScreenInitialized,
-    setScreenLocalUser,
-    addScreenRemoteUser,
-    removeScreenRemoteUser,
-    setScreenLocalTrack,
-    setScreenRemoteTrack,
     setScreenSharing,
-
-    // Reset Actions - Sıfırlama işlemleri
-    resetVideo,
-    resetScreen,
+    setDeviceStatus,
+    updateDevicePermissions,
+    setVideoChannelName,
+    setAppId,
+    resetClient,
+    resetUsers,
+    resetTracks,
+    resetControls,
+    resetSession,
+    resetDevices,
     reset,
 
-    // Helper Functions - Yardımcı fonksiyonlar
+    // Helper
+    isLocalUID,
     isLocalVideoUID,
-    isLocalScreenUID,
-    isLocalUID
+    isLocalScreenUID
   }
 }) 

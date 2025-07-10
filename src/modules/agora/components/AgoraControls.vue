@@ -1,15 +1,8 @@
 <template>
   <div class="agora-controls">
-    <!-- Settings Button (top center) -->
-    <button
-      v-if="isConnected"
-      class="settings-button-top"
-      :class="{ 'purple-glow': props.settingsOpen }"
-      @click="$emit('open-settings')"
-      title="Ayarlar"
-    >
-      <span class="icon">⚙️</span>
-    </button>
+    <!-- Settings and Log Buttons (top center) -->
+    <div v-if="isConnected" class="top-buttons">
+    </div>
 
     <!-- Join Form -->
     <div v-if="!isConnected" class="join-form">
@@ -17,9 +10,9 @@
         <div class="join-header">
           <div class="logo">
             <div class="logo-icon">🎥</div>
-            <h2>Video Conference</h2>
+            <h2>Video Konferans</h2>
           </div>
-          <p class="join-subtitle">Enter a channel name to start or join a meeting</p>
+          <p class="join-subtitle">Bir toplantıya başlamak veya katılmak için kanal adı girin</p>
         </div>
         
         <div class="form-group">
@@ -28,7 +21,7 @@
               v-model="channelInput"
               type="text"
               value="test"
-              placeholder="Enter channel name"
+              placeholder="Kanal adı girin"
               class="channel-input"
               @keyup.enter="joinChannel"
             />
@@ -39,33 +32,37 @@
             :disabled="isJoining || !channelInput.trim()"
             class="join-button"
           >
-            <span class="button-text">{{ isJoining ? 'Joining...' : 'Join Channel' }}</span>
+            <span class="button-text">{{ isJoining ? 'Katılıyor...' : 'Kanala Katıl' }}</span>
             <div class="button-glow"></div>
           </button>
         </div>
       </div>
     </div>
 
+
+
     <!-- Controls -->
-    <div v-else class="controls">
+    <div v-if="isConnected" class="controls">
       <!-- Camera Toggle -->
       <button 
         @click="toggleCamera"
-        :class="['control-button', { active: !isLocalVideoOff }]"
-        :title="isLocalVideoOff ? 'Turn on camera' : 'Turn off camera'"
+        :class="['control-button', { active: !isLocalVideoOff && canUseCamera, disabled: !canUseCamera }]"
+        :disabled="!canUseCamera"
+        :title="getCameraTitle"
       >
-        <span class="icon">{{ isLocalVideoOff ? '📹' : '📹' }}</span>
-        <span class="label">{{ isLocalVideoOff ? 'Camera Off' : 'Camera On' }}</span>
+        <span class="icon">{{ getCameraIcon }}</span>
+        <span class="label">{{ getCameraLabel }}</span>
       </button>
 
       <!-- Microphone Toggle -->
       <button 
         @click="toggleMicrophone"
-        :class="['control-button', { active: !isLocalAudioMuted }]"
-        :title="isLocalAudioMuted ? 'Unmute microphone' : 'Mute microphone'"
+        :class="['control-button', { active: !isLocalAudioMuted && canUseMicrophone, disabled: !canUseMicrophone }]"
+        :disabled="!canUseMicrophone"
+        :title="getMicrophoneTitle"
       >
-        <span class="icon">{{ isLocalAudioMuted ? '🔇' : '🎤' }}</span>
-        <span class="label">{{ isLocalAudioMuted ? 'Muted' : 'Unmuted' }}</span>
+        <span class="icon">{{ getMicrophoneIcon }}</span>
+        <span class="label">{{ getMicrophoneLabel }}</span>
       </button>
 
       <!-- Screen Share Toggle - Only show on desktop -->
@@ -73,10 +70,10 @@
         v-if="props.supportsScreenShare"
         @click="props.onToggleScreenShare"
         :class="['control-button', { active: props.isScreenSharing }]"
-        :title="props.isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'"
+        :title="props.isScreenSharing ? 'Ekran Paylaşımını Durdur' : 'Ekran Paylaşımını Başlat'"
       >
         <span class="icon">{{ props.isScreenSharing ? '❌🖥️' : '🖥️' }}</span>
-        <span class="label">{{ props.isScreenSharing ? 'Stop Share' : 'Share Screen' }}</span>
+        <span class="label">{{ props.isScreenSharing ? 'Paylaşımı Durdur' : 'Ekranı Paylaş' }}</span>
       </button>
 
       <!-- Leave Button -->
@@ -84,32 +81,21 @@
         @click="leaveChannel"
         :disabled="isLeaving"
         class="control-button leave-button"
-        title="Leave channel"
+        title="Kanaldan ayrıl"
       >
         <span class="icon">📞</span>
-        <span class="label">{{ isLeaving ? 'Leaving...' : 'Leave' }}</span>
+        <span class="label">{{ isLeaving ? 'Ayrılıyor...' : 'Ayrıl' }}</span>
       </button>
     </div>
 
-
-
-    <!-- Status -->
-    <div v-if="isConnected" class="status">
-      <div class="status-item">
-        <span class="status-label">Connected:</span>
-        <span class="status-value">{{ channelName }}</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Users:</span>
-        <span class="status-value">{{ connectedUsersCount }}</span>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useAgoraStore } from '../store/index.js'
+import { useLogger } from '../composables/index.js'
+
+const { trackUserAction, logError, logUI } = useLogger()
 
 // Props
 const props = defineProps({
@@ -117,6 +103,8 @@ const props = defineProps({
   isConnected: { type: Boolean, default: false },
   isLocalVideoOff: { type: Boolean, default: false },
   isLocalAudioMuted: { type: Boolean, default: false },
+  canUseCamera: { type: Boolean, default: true },
+  canUseMicrophone: { type: Boolean, default: true },
   connectedUsersCount: { type: Number, default: 0 },
   isJoining: { type: Boolean, default: false },
   isLeaving: { type: Boolean, default: false },
@@ -127,7 +115,14 @@ const props = defineProps({
   isScreenSharing: { type: Boolean, default: false },
   onToggleScreenShare: { type: Function, default: () => {} },
   supportsScreenShare: { type: Boolean, default: false },
-  settingsOpen: { type: Boolean, default: false }
+  settingsOpen: { type: Boolean, default: false },
+  // Network Quality Props
+  networkQualityLevel: { type: String, default: 'Unknown' },
+  networkQualityColor: { type: String, default: '#6b7280' },
+  networkBitrate: { type: Number, default: 0 },
+  networkFrameRate: { type: Number, default: 0 },
+  networkRtt: { type: Number, default: 0 },
+  networkPacketLoss: { type: Number, default: 0 }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -135,29 +130,87 @@ const channelInput = ref(props.channelName || 'test')
 const joinChannel = async () => {
   if (!channelInput.value.trim() || props.isJoining) return
   try {
+    trackUserAction('joinChannel', { channelName: channelInput.value.trim() })
     await props.onJoin(channelInput.value.trim())
   } catch (error) {
-    console.error('Failed to join channel:', error)
+    logError(error, { context: 'joinChannel', channelName: channelInput.value.trim() })
   }
 }
 
 const leaveChannel = async () => {
   if (props.isLeaving) return
   try {
+    trackUserAction('leaveChannel', { channelName: props.channelName })
     await props.onLeave()
     channelInput.value = ''
   } catch (error) {
-    console.error('Failed to leave channel:', error)
+    logError(error, { context: 'leaveChannel', channelName: props.channelName })
   }
 }
 
 const toggleCamera = () => {
-  props.onToggleCamera(!props.isLocalVideoOff)
+  const newVideoOffState = !props.isLocalVideoOff
+  logUI('Kamera değiştir', {
+    currentState: props.isLocalVideoOff ? 'off' : 'on',
+    newState: newVideoOffState ? 'off' : 'on',
+    canUseCamera: props.canUseCamera
+  })
+  
+  trackUserAction('toggleCamera', { 
+    currentState: props.isLocalVideoOff ? 'off' : 'on',
+    newState: newVideoOffState ? 'off' : 'on'
+  })
+  props.onToggleCamera(newVideoOffState)
 }
 
 const toggleMicrophone = () => {
-  props.onToggleMicrophone(!props.isLocalAudioMuted)
+  if (props.canUseMicrophone) {
+    const newMutedState = !props.isLocalAudioMuted
+    logUI('Mikrofon değiştir', {
+      currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
+      newState: newMutedState ? 'muted' : 'unmuted',
+      canUseMicrophone: props.canUseMicrophone
+    })
+    
+    trackUserAction('toggleMicrophone', { 
+      currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
+      newState: newMutedState ? 'muted' : 'unmuted'
+    })
+    props.onToggleMicrophone(newMutedState)
+  }
 }
+
+// Helper functions for camera
+const getCameraIcon = computed(() => {
+  if (!props.canUseCamera) return '🚫📹'
+  return props.isLocalVideoOff ? '📹' : '📹'
+})
+
+const getCameraLabel = computed(() => {
+  if (!props.canUseCamera) return 'Kamera Yok'
+  return props.isLocalVideoOff ? 'Kamera Kapalı' : 'Kamera Açık'
+})
+
+const getCameraTitle = computed(() => {
+  if (!props.canUseCamera) return 'Kamera mevcut değil'
+  return props.isLocalVideoOff ? 'Kamerayı aç' : 'Kamerayı kapat'
+})
+
+// Helper functions for microphone
+const getMicrophoneIcon = computed(() => {
+  if (!props.canUseMicrophone) return '🚫🎤'
+  return props.isLocalAudioMuted ? '🔇' : '🎤'
+})
+
+const getMicrophoneLabel = computed(() => {
+  if (!props.canUseMicrophone) return 'Mikrofon Yok'
+  return props.isLocalAudioMuted ? 'Sessiz' : 'Sesli'
+})
+
+const getMicrophoneTitle = computed(() => {
+  if (!props.canUseMicrophone) return 'Mikrofon mevcut değil'
+  return props.isLocalAudioMuted ? 'Mikrofonu aç' : 'Mikrofonu kapat'
+})
 
 // Modal açıldığında body scroll'unu engelle
 const openSettings = () => {
@@ -201,7 +254,7 @@ const getDevices = async () => {
 onMounted(getDevices)
 
 // Ayarları uygula ve parent'a bildir
-const emit = defineEmits(['settings-changed'])
+const emit = defineEmits(['settings-changed', 'open-settings', 'open-logs'])
 const applySettings = () => {
   emit('settings-changed', {
     cameraId: selectedCameraId.value,
@@ -215,10 +268,10 @@ const applySettings = () => {
 
 <style scoped>
 .agora-controls {
-  padding: 20px;
+  padding: 8px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   position: relative; /* Added for settings button positioning */
@@ -375,24 +428,24 @@ const applySettings = () => {
 
 .controls {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 20px; /* Added margin to separate from settings button */
+  margin-top: 8px; /* Added margin to separate from settings button */
 }
 
 .control-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: 4px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 100px;
+  min-width: 70px;
   backdrop-filter: blur(10px);
 }
 
@@ -434,45 +487,19 @@ const applySettings = () => {
 }
 
 .icon {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   text-align: center;
   color: #e0e0e0;
 }
 
-.status {
-  margin-top: 20px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-}
 
-.status-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
 
-.status-item:last-child {
-  margin-bottom: 0;
-}
 
-.status-label {
-  font-weight: 500;
-  color: #a0a0a0;
-}
-
-.status-value {
-  font-weight: 600;
-  color: #e0e0e0;
-}
 
 /* Floating settings button (top-right) */
 .settings-fab {
@@ -631,12 +658,19 @@ const applySettings = () => {
 
 
 
-/* Settings button (top center) */
-.settings-button-top {
+/* Top buttons container */
+.top-buttons {
   position: absolute;
   top: -8px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+/* Settings button (top center) */
+.settings-button-top {
   background: rgba(34, 34, 34, 0.9);
   color: #fff;
   border: none;
@@ -652,14 +686,66 @@ const applySettings = () => {
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.1);
-  z-index: 10;
+}
+
+/* Log button (top center) */
+.log-button-top {
+  background: rgba(34, 34, 34, 0.9);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .settings-button-top:hover,
 .settings-button-top.active {
   background: rgba(60, 60, 60, 0.95);
   box-shadow: 0 4px 12px rgba(102,126,234,0.25), 0 0 0 4px #764ba2aa;
-  transform: translateX(-50%) scale(1.1);
+  transform: scale(1.1);
 }
+
+.log-button-top:hover {
+  background: rgba(60, 60, 60, 0.95);
+  box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
+  transform: scale(1.1);
+}
+
+/* Info button (top center) */
+.info-button-top {
+  background: rgba(34, 34, 34, 0.9);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.info-button-top:hover,
+.info-button-top.active {
+  background: rgba(60, 60, 60, 0.95);
+  box-shadow: 0 4px 12px rgba(34,197,94,0.25), 0 0 0 4px #22c55eaa;
+  transform: scale(1.1);
+}
+
+
 .settings-button-top.purple-glow {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-shadow: 0 0 0 4px #764ba2aa, 0 8px 32px rgba(102,126,234,0.25);
@@ -673,6 +759,228 @@ const applySettings = () => {
   50% {
     transform: scale(1.05);
   }
+}
+
+/* Collapsible Sidebar */
+.sidebar-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-content {
+  width: 320px;
+  max-height: calc(100vh - 40px);
+  background: rgba(26, 26, 46, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow-y: auto;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-open .sidebar-content {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.sidebar-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #b0b0b0;
+}
+
+.section-icon {
+  font-size: 16px;
+}
+
+.info-card, .network-widget, .status-card, .device-status {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.network-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.network-item:last-child {
+  margin-bottom: 0;
+}
+
+.network-label {
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.network-value {
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.quality-indicator {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  min-width: 40px;
+}
+
+.quality-text {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.status-text {
+  color: #4ade80;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.device-item:last-child {
+  margin-bottom: 0;
+}
+
+.device-icon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.device-name {
+  flex: 1;
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.device-status {
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.device-status.available {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.device-status.unavailable {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
 }
 
 /* Responsive */
@@ -690,20 +998,65 @@ const applySettings = () => {
   }
   
   .controls {
-    gap: 12px;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0 2px;
   }
   
   .control-button {
-    min-width: 80px;
-    padding: 12px 16px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 0;
+    font-size: 13px;
+    border-radius: 10px;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
   
   .icon {
-    font-size: 20px;
+    font-size: 16px;
   }
   
   .label {
-    font-size: 11px;
+    font-size: 9px;
+    font-weight: 600;
+    text-align: center;
+    color: #e0e0e0;
+    display: block;
+  }
+  
+  .sidebar-content {
+    width: 280px;
+    max-height: calc(100vh - 20px);
+  }
+  
+  .sidebar-header {
+    padding: 16px 16px 12px;
+  }
+  
+  .sidebar-header h3 {
+    font-size: 16px;
+  }
+  
+  .sidebar-section {
+    padding: 12px 16px;
+  }
+  
+  .section-title {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  
+  .info-card, .network-widget, .status-card, .device-status {
+    padding: 10px;
+  }
+  
+  .info-row, .network-item, .device-item {
+    font-size: 12px;
   }
 }
 </style> 

@@ -1,11 +1,13 @@
 import { computed, ref } from 'vue'
 import { useVideo } from './useVideo.js'
 import { useScreenShare } from './useScreenShare.js'
-import { useDeviceDetection } from './useDeviceDetection.js'
 import { useStreamQuality } from './useStreamQuality.js'
 import { useAgoraStore } from '../store/index.js'
 import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
+import { useLogger } from './useLogger.js'
+
+const { logUI, logError, logWarn, logInfo, logDebug } = useLogger()
 
 /**
  * Toplantı Composable - Video konferans işlemlerini yönetir ve tüm alt composable'ları koordine eder
@@ -18,8 +20,8 @@ export function useMeeting() {
   const agoraStore = useAgoraStore()
   const currentChannel = ref('') // Mevcut kanal adını tutar
   
-  // Cihaz tespiti composable'ından ekran paylaşımı desteğini al
-  const { supportsScreenShare } = useDeviceDetection()
+  // Ekran paylaşımı desteğini useScreenShare'den al
+  const { supportsScreenShare } = useScreenShare(agoraStore)
   
   // Yayın kalitesi izleme composable'ından tüm özellikleri al
   const {
@@ -42,11 +44,12 @@ export function useMeeting() {
     leaveChannel: leaveVideoChannel,
     toggleCamera,
     toggleMicrophone,
-    emitter: videoEmitter,
+    centralEmitter,
     isJoining: isVideoJoining,
     isLeaving: isVideoLeaving,
     generateVideoUID,
-    cleanup: cleanupVideo
+    cleanup: cleanupVideo,
+    checkDeviceStatus
   } = useVideo(agoraStore)
   
   // Ekran paylaşımı composable'ından tüm işlemleri al
@@ -57,25 +60,33 @@ export function useMeeting() {
     stopScreenShare,
     toggleScreenShare,
     generateScreenUID,
-    emitter: screenEmitter,
     isJoining: isScreenJoining,
     isLeaving: isScreenLeaving,
     cleanup: cleanupScreen
   } = useScreenShare(agoraStore)
 
   // Computed properties - Store'dan gelen değerleri reactive olarak hesapla
-  const isConnected = computed(() => agoraStore.isVideoConnected) // Video bağlantısı durumu
-  const isInitialized = computed(() => agoraStore.isVideoInitialized) // Video client başlatma durumu
-  const localUser = computed(() => agoraStore.videoLocalUser) // Yerel kullanıcı bilgileri
-  const remoteUsers = computed(() => agoraStore.videoRemoteUsers) // Uzak kullanıcılar listesi
+  const isConnected = computed(() => agoraStore.clients.video.isConnected) // Video bağlantısı durumu
+  const isInitialized = computed(() => agoraStore.clients.video.isInitialized) // Video client başlatma durumu
+  const localUser = computed(() => agoraStore.users.local.video) // Yerel kullanıcı bilgileri
+  const remoteUsers = computed(() => agoraStore.users.remote.filter(u => !u.isScreenShare)) // Uzak kullanıcılar listesi
   const allUsers = computed(() => agoraStore.allUsers) // Tüm kullanıcılar (yerel + uzak + ekran paylaşımı)
   const connectedUsersCount = computed(() => agoraStore.connectedUsersCount) // Bağlı kullanıcı sayısı
   const isLocalVideoOff = computed(() => agoraStore.isLocalVideoOff) // Yerel video kapalı mı?
   const isLocalAudioMuted = computed(() => agoraStore.isLocalAudioMuted) // Yerel ses kapalı mı?
   const isScreenSharing = computed(() => agoraStore.isScreenSharing) // Ekran paylaşımı aktif mi?
-  const screenShareUser = computed(() => agoraStore.screenLocalUser) // Ekran paylaşımı kullanıcısı
-  const localTracks = computed(() => agoraStore.videoLocalTracks) // Yerel track'ler
-  const remoteTracks = computed(() => agoraStore.videoRemoteTracks) // Uzak track'ler
+  const screenShareUser = computed(() => agoraStore.users.local.screen) // Ekran paylaşımı kullanıcısı
+  const localTracks = computed(() => agoraStore.tracks.local.video) // Yerel track'ler
+  const remoteTracks = computed(() => agoraStore.tracks.remote) // Uzak track'ler
+  
+  // Cihaz durumları
+  const canUseCamera = computed(() => {
+    return agoraStore.devices?.hasCamera && agoraStore.devices?.cameraPermission === 'granted'
+  })
+  
+  const canUseMicrophone = computed(() => {
+    return agoraStore.devices?.hasMicrophone && agoraStore.devices?.microphonePermission === 'granted'
+  })
 
   /**
    * Kanala katılma işlemi - Token yönetimi ile birlikte
@@ -83,10 +94,17 @@ export function useMeeting() {
    */
   const joinChannel = async (channelName) => {
     try {
+      // Önce store'a kanal adını kaydet
+      agoraStore.setVideoChannelName(channelName)
+      currentChannel.value = channelName
+      
       // Sadece video için UID oluştur
       const videoUID = generateVideoUID()
       // Sadece video için token al
       const videoTokenData = await createToken(channelName, videoUID)
+      // Store'a app ID'yi kaydet
+      agoraStore.setAppId(videoTokenData.app_id)
+      
       // Video client ile kanala katıl
       await joinVideoChannel({
         appId: videoTokenData.app_id,
@@ -95,17 +113,15 @@ export function useMeeting() {
         uid: videoUID,
         userName: `${DEFAULTS.USER_NAME} ${videoUID}`
       })
-      agoraStore.videoChannelName = channelName // Store'a kanal adını kaydet
-      currentChannel.value = channelName
       
       // Yayın kalitesi izlemeyi başlat
-      if (agoraStore.videoClient) {
-        startMonitoring(agoraStore.videoClient)
+      if (agoraStore.clients.video.client) {
+        startMonitoring(agoraStore.clients.video.client)
       }
       
-      console.log('Video kanalına başarıyla katılındı:', channelName)
+      logUI('Video kanalına başarıyla katılındı', { channelName })
     } catch (error) {
-      console.error('Video kanalına katılma başarısız:', error)
+      logError(error, { context: 'joinChannel', channelName })
       throw error
     }
   }
@@ -119,12 +135,15 @@ export function useMeeting() {
       await leaveScreenChannel()
       currentChannel.value = ''
       
+      // Ekran paylaşımı state'ini sıfırla
+      agoraStore.setScreenSharing(false)
+      
       // Yayın kalitesi izlemeyi durdur
       stopMonitoring()
       
-      console.log('Her iki kanaldan da başarıyla ayrılındı')
+      logUI('Her iki kanaldan da başarıyla ayrıldı')
     } catch (error) {
-      console.error('Kanallardan ayrılma başarısız:', error)
+      logError(error, { context: 'leaveChannel' })
       throw error
     }
   }
@@ -134,13 +153,14 @@ export function useMeeting() {
    * Mikrofon track'inin durumunu ve store'daki değerleri kontrol eder
    */
   const debugMicrophoneStatus = () => {
-    console.log('=== MİKROFON DURUMU DEBUG ===')
-    console.log('Store isLocalAudioMuted:', agoraStore.isLocalAudioMuted)
-    console.log('Store localTracks.audio:', agoraStore.videoLocalTracks.audio)
+    logUI('=== MİKROFON DURUMU HATA AYIKLAMA ===', {
+      isLocalAudioMuted: agoraStore.isLocalAudioMuted,
+      hasAudioTrack: !!agoraStore.tracks.local.video.audio
+    })
     
-    if (agoraStore.videoLocalTracks.audio) {
-      const audioTrack = agoraStore.videoLocalTracks.audio
-      console.log('Ses track detayları:', {
+    if (agoraStore.tracks.local.video.audio) {
+      const audioTrack = agoraStore.tracks.local.video.audio
+      logUI('Ses track detayları', {
         enabled: audioTrack.enabled,
         readyState: audioTrack.readyState,
         muted: audioTrack.muted,
@@ -149,7 +169,7 @@ export function useMeeting() {
         kind: audioTrack.kind
       })
     } else {
-      console.log('Store\'da ses track\'i bulunamadı')
+      logUI('Store\'da ses track\'i bulunamadı')
     }
   }
   
@@ -162,6 +182,13 @@ export function useMeeting() {
   }
 
   return {
+    // Logger - Logging işlemleri
+    logUI,
+    logError,
+    logWarn,
+    logInfo,
+    logDebug,
+    
     // State - Durum değişkenleri
     isConnected,
     isInitialized,
@@ -171,6 +198,8 @@ export function useMeeting() {
     connectedUsersCount,
     isLocalVideoOff,
     isLocalAudioMuted,
+    canUseCamera,
+    canUseMicrophone,
     isScreenSharing,
     screenShareUser,
     localTracks,
@@ -191,8 +220,7 @@ export function useMeeting() {
     qualityPercentage,
     
     // Event emitters - Olay yayıncıları
-    emitter: videoEmitter,
-    screenEmitter,
+    centralEmitter,
     
     // Video Metodları - Video işlemleri
     joinChannel,
@@ -209,6 +237,7 @@ export function useMeeting() {
     cleanup,
     
     // Debug Metodları - Hata ayıklama işlemleri
-    debugMicrophoneStatus
+    debugMicrophoneStatus,
+    checkDeviceStatus
   }
 } 

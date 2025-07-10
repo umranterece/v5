@@ -3,6 +3,10 @@
  * @module agora
  */
 
+import { useLogger } from './composables/useLogger.js'
+
+const { logAgora } = useLogger()
+
 // Sadece ana composable ve ana API'ler dışa açılır
 export * from './composables'
 export * from './components'
@@ -18,7 +22,7 @@ export * from './types'
 export function initializeAgoraModule(pinia) {
   // Pinia is automatically detected in Vue 3
   // This function can be used for additional initialization if needed
-  console.log('Agora module initialized with Pinia')
+  logAgora('Agora module initialized with Pinia')
   // Store'ları initialize et
   // initializeAgoraStores() // Removed as per edit hint
 } 

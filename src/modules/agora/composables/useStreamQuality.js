@@ -1,4 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useLogger } from './useLogger.js'
+
+const { logQuality, logError } = useLogger()
 
 /**
  * Yayın Kalitesi Composable - Video yayınının kalitesini takip eder ve izler
@@ -12,7 +15,7 @@ export function useStreamQuality() {
   const frameRate = ref(0) // Kare hızı (FPS)
   const packetLoss = ref(0) // Paket kaybı (%)
   const rtt = ref(0) // Gidiş-dönüş süresi (ms)
-  const qualityLevel = ref('unknown') // Kalite seviyesi (poor, fair, good, excellent)
+  const qualityLevel = ref('bilinmiyor') // Kalite seviyesi (düşük, orta, iyi, mükemmel)
   const isMonitoring = ref(false) // İzleme durumu
   
   let qualityTimer = null // Kalite güncelleme zamanlayıcısı
@@ -20,16 +23,34 @@ export function useStreamQuality() {
   /**
    * Kalite seviyesini hesaplar
    * Ağ kalitesi, bit hızı ve kare hızına göre kalite seviyesini belirler
+   * Ekran paylaşımı için daha düşük kalite eşikleri kullanır
    */
   const calculateQualityLevel = computed(() => {
-    if (networkQuality.value >= 5 && bitrate.value > 1000 && frameRate.value > 20) {
-      return 'excellent' // Mükemmel kalite
-    } else if (networkQuality.value >= 3 && bitrate.value > 500 && frameRate.value > 15) {
-      return 'good' // İyi kalite
-    } else if (networkQuality.value >= 1 && bitrate.value > 200 && frameRate.value > 10) {
-      return 'fair' // Orta kalite
+    // Ekran paylaşımı için optimize edilmiş kalite eşikleri
+    const isScreenShare = false // TODO: Ekran paylaşımı durumunu algıla
+    
+    if (isScreenShare) {
+      // Ekran paylaşımı için daha düşük eşikler
+      if (networkQuality.value >= 4 && bitrate.value > 600 && frameRate.value > 12) {
+        return 'mükemmel' // Ekran paylaşımı için mükemmel
+      } else if (networkQuality.value >= 2 && bitrate.value > 300 && frameRate.value > 8) {
+        return 'iyi' // Ekran paylaşımı için iyi
+      } else if (networkQuality.value >= 1 && bitrate.value > 150 && frameRate.value > 5) {
+        return 'orta' // Ekran paylaşımı için orta
+      } else {
+        return 'düşük' // Ekran paylaşımı için düşük
+      }
     } else {
-      return 'poor' // Düşük kalite
+      // Normal video için standart eşikler
+      if (networkQuality.value >= 5 && bitrate.value > 1000 && frameRate.value > 20) {
+        return 'mükemmel' // Mükemmel kalite
+      } else if (networkQuality.value >= 3 && bitrate.value > 500 && frameRate.value > 15) {
+        return 'iyi' // İyi kalite
+      } else if (networkQuality.value >= 1 && bitrate.value > 200 && frameRate.value > 10) {
+        return 'orta' // Orta kalite
+      } else {
+        return 'düşük' // Düşük kalite
+      }
     }
   })
 
@@ -39,10 +60,10 @@ export function useStreamQuality() {
    */
   const qualityColor = computed(() => {
     switch (qualityLevel.value) {
-      case 'excellent': return '#10b981' // Yeşil - Mükemmel
-      case 'good': return '#3b82f6' // Mavi - İyi
-      case 'fair': return '#f59e0b' // Turuncu - Orta
-      case 'poor': return '#ef4444' // Kırmızı - Düşük
+      case 'mükemmel': return '#10b981' // Yeşil - Mükemmel
+      case 'iyi': return '#3b82f6' // Mavi - İyi
+      case 'orta': return '#f59e0b' // Turuncu - Orta
+      case 'düşük': return '#ef4444' // Kırmızı - Düşük
       default: return '#6b7280' // Gri - Bilinmiyor
     }
   })
@@ -86,7 +107,7 @@ export function useStreamQuality() {
     frameRate.value = 15
     packetLoss.value = 2
     rtt.value = 50
-    qualityLevel.value = 'good'
+    qualityLevel.value = 'iyi'
     
     qualityTimer = setInterval(() => {
       // Simüle edilmiş kalite değerleri (gerçek API çalışana kadar)
@@ -101,10 +122,10 @@ export function useStreamQuality() {
       // Gerçek API'yi de dene - Agora'dan gerçek istatistikleri al
       if (client && client.getTransportStats) {
         client.getTransportStats().then(stats => {
-          console.log('Gerçek transport istatistikleri:', stats)
+          logQuality('Real transport statistics', stats)
           updateQuality(stats)
         }).catch(err => {
-          console.warn('Transport istatistikleri alınamadı:', err)
+          logError(err, { context: 'getTransportStats' })
         })
       }
     }, 2000) // Her 2 saniyede bir güncelle
@@ -120,6 +141,76 @@ export function useStreamQuality() {
       qualityTimer = null
     }
     isMonitoring.value = false
+  }
+
+  /**
+   * Ekran paylaşımı için kalite optimizasyonu yapar
+   * Düşük kalite durumunda ekran paylaşımı ayarlarını otomatik olarak düşürür
+   * @param {Object} screenTrack - Ekran paylaşımı track'i
+   */
+  const optimizeScreenShareQuality = (screenTrack) => {
+    if (!screenTrack || !screenTrack.setEncoderConfiguration) {
+      logQuality('Ekran track\'i optimize edilemedi - setEncoderConfiguration mevcut değil')
+      return
+    }
+
+    // Mevcut kalite seviyesine göre optimizasyon yap
+    const currentQuality = qualityLevel.value
+    
+    try {
+      switch (currentQuality) {
+        case 'düşük':
+          // Çok düşük kalite ayarları
+          screenTrack.setEncoderConfiguration({
+            bitrateMin: 200,
+            bitrateMax: 400,
+            frameRate: 5
+          })
+          logQuality('Ekran paylaşımı çok düşük kalite moduna geçirildi')
+          break
+          
+        case 'orta':
+          // Düşük kalite ayarları
+          screenTrack.setEncoderConfiguration({
+            bitrateMin: 400,
+            bitrateMax: 800,
+            frameRate: 8
+          })
+          logQuality('Ekran paylaşımı düşük kalite moduna geçirildi')
+          break
+          
+        case 'iyi':
+          // Orta kalite ayarları
+          screenTrack.setEncoderConfiguration({
+            bitrateMin: 600,
+            bitrateMax: 1200,
+            frameRate: 12
+          })
+          logQuality('Ekran paylaşımı orta kalite moduna geçirildi')
+          break
+          
+        case 'mükemmel':
+          // Yüksek kalite ayarları
+          screenTrack.setEncoderConfiguration({
+            bitrateMin: 800,
+            bitrateMax: 1500,
+            frameRate: 15
+          })
+          logQuality('Ekran paylaşımı yüksek kalite moduna geçirildi')
+          break
+          
+        default:
+          // Varsayılan ayarlar
+          screenTrack.setEncoderConfiguration({
+            bitrateMin: 600,
+            bitrateMax: 1200,
+            frameRate: 12
+          })
+          logQuality('Ekran paylaşımı varsayılan kalite moduna geçirildi')
+      }
+    } catch (error) {
+      logError('Ekran paylaşımı kalite optimizasyonu başarısız:', error)
+    }
   }
 
   // Component unmount olduğunda timer'ı temizle
@@ -144,6 +235,7 @@ export function useStreamQuality() {
     // Methods - Metodlar
     updateQuality,
     startMonitoring,
-    stopMonitoring
+    stopMonitoring,
+    optimizeScreenShareQuality
   }
 } 

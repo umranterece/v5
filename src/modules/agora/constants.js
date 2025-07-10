@@ -2,9 +2,16 @@
  * Agora SDK Constants
  */
 
+// Environment Detection - Manuel olarak ayarlayın
+export const IS_DEV = false  // Development için true, Production için false yapın
+export const IS_PROD = false // Production için true, Development için false yapın
+export const IS_SSR = false
+
 // API Endpoints
 export const API_ENDPOINTS = {
-  CREATE_TOKEN: 'https://umranterece.com/test/agora/createToken.php'
+  CREATE_TOKEN: IS_DEV 
+    ? 'https://umranterece.com/test/agora/createToken.php'  // Development
+    : 'https://umranterece.com/test/agora/createToken.php'  // Production
 }
 
 // Agora Client Configuration
@@ -14,17 +21,17 @@ export const AGORA_CONFIG = {
   enableDualStream: false, // Tek stream kullan - daha iyi performans
   enableAudioRecording: false, // Audio recording kapalı
   enableVideoRecording: false, // Video recording kapalı
-  enableHighPerformance: true, // Yüksek performans modu
+  enableHighPerformance: IS_PROD, // Production'da yüksek performans
   enableCloudProxy: false // Cloud proxy kapalı - daha hızlı
 }
 
 // Kamera (video) için yüksek kalite ayarları
 export const VIDEO_CONFIG = {
-  encoderConfig: '1080p_1', // 1920x1080 çözünürlük
+  encoderConfig: IS_DEV ? '720p_1' : '1080p_1', // Development'ta daha düşük kalite
   facingMode: 'user',       // Ön kamera (mobilde)
-  bitrateMin: 2000,         // Minimum bitrate (kbps)
-  bitrateMax: 4000,         // Maksimum bitrate (kbps)
-  frameRate: 30             // 30 FPS
+  bitrateMin: IS_DEV ? 1000 : 2000,         // Development'ta daha düşük bitrate
+  bitrateMax: IS_DEV ? 2000 : 4000,         // Development'ta daha düşük bitrate
+  frameRate: IS_DEV ? 24 : 30               // Development'ta daha düşük FPS
 }
 
 // Audio Configuration
@@ -36,22 +43,98 @@ export const AUDIO_CONFIG = {
   autoGainControl: false // Auto gain control kapalı - manuel kontrol için
 }
 
-// Error Codes
+// Hata Kodları
 export const ERROR_CODES = {
-  INVALID_APP_ID: 'INVALID_APP_ID',
-  CLIENT_NOT_INITIALIZED: 'CLIENT_NOT_INITIALIZED',
-  JOIN_FAILED: 'JOIN_FAILED',
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  DEVICE_NOT_FOUND: 'DEVICE_NOT_FOUND'
+  INVALID_APP_ID: 'GEÇERSİZ_APP_ID',
+  CLIENT_NOT_INITIALIZED: 'CLIENT_BAŞLATILMADI',
+  JOIN_FAILED: 'KATILMA_BAŞARISIZ',
+  NETWORK_ERROR: 'AĞ_HATASI',
+  DEVICE_NOT_FOUND: 'CIHAZ_BULUNAMADI'
 }
 
-// Storage Keys
+// Kullanıcı Dostu Hata Mesajları
+export const USER_FRIENDLY_ERRORS = {
+  // Network Errors
+  NETWORK_ERROR: 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.',
+  CONNECTION_TIMEOUT: 'Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin.',
+  SERVER_ERROR: 'Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.',
+  
+  // Device Errors
+  CAMERA_PERMISSION_DENIED: 'Kamera izni reddedildi. Lütfen tarayıcı ayarlarından kamera iznini verin.',
+  MICROPHONE_PERMISSION_DENIED: 'Mikrofon izni reddedildi. Lütfen tarayıcı ayarlarından mikrofon iznini verin.',
+  DEVICE_NOT_FOUND: 'Kamera veya mikrofon bulunamadı. Lütfen cihazlarınızı kontrol edin.',
+  DEVICE_IN_USE: 'Kamera veya mikrofon başka bir uygulama tarafından kullanılıyor.',
+  
+  // Screen Share Errors
+  SCREEN_SHARE_NOT_SUPPORTED: 'Bu tarayıcıda ekran paylaşımı desteklenmiyor.',
+  SCREEN_SHARE_CANCELLED: 'Ekran paylaşımı iptal edildi.',
+  SCREEN_SHARE_FAILED: 'Ekran paylaşımı başlatılamadı. Lütfen tekrar deneyin.',
+  
+  // Channel Errors
+  CHANNEL_JOIN_FAILED: 'Kanala katılınamadı. Lütfen kanal adını kontrol edin.',
+  CHANNEL_FULL: 'Kanal dolu. Lütfen daha sonra tekrar deneyin.',
+  INVALID_CHANNEL_NAME: 'Geçersiz kanal adı. Lütfen farklı bir ad deneyin.',
+  
+  // General Errors
+  UNKNOWN_ERROR: 'Bilinmeyen bir hata oluştu. Lütfen sayfayı yenileyin.',
+  OPERATION_FAILED: 'İşlem başarısız oldu. Lütfen tekrar deneyin.',
+  TIMEOUT_ERROR: 'İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.'
+}
+
+// Error Handling Utility
+export const getErrorMessage = (error) => {
+  if (!error) return USER_FRIENDLY_ERRORS.UNKNOWN_ERROR
+  
+  const errorMessage = error.message || error.toString()
+  const errorName = error.name || ''
+  
+  // Network errors
+  if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+    return USER_FRIENDLY_ERRORS.NETWORK_ERROR
+  }
+  
+  // Permission errors
+  if (errorName === 'NotAllowedError' || errorMessage.includes('permission')) {
+    if (errorMessage.includes('camera')) {
+      return USER_FRIENDLY_ERRORS.CAMERA_PERMISSION_DENIED
+    }
+    if (errorMessage.includes('microphone')) {
+      return USER_FRIENDLY_ERRORS.MICROPHONE_PERMISSION_DENIED
+    }
+    return USER_FRIENDLY_ERRORS.CAMERA_PERMISSION_DENIED
+  }
+  
+  // Device errors
+  if (errorName === 'NotFoundError' || errorMessage.includes('device')) {
+    return USER_FRIENDLY_ERRORS.DEVICE_NOT_FOUND
+  }
+  
+  // Screen share errors
+  if (errorName === 'NotSupportedError' || errorMessage.includes('screen')) {
+    return USER_FRIENDLY_ERRORS.SCREEN_SHARE_NOT_SUPPORTED
+  }
+  
+  // Channel errors
+  if (errorMessage.includes('channel') || errorMessage.includes('join')) {
+    return USER_FRIENDLY_ERRORS.CHANNEL_JOIN_FAILED
+  }
+  
+  // Timeout errors
+  if (errorMessage.includes('timeout')) {
+    return USER_FRIENDLY_ERRORS.TIMEOUT_ERROR
+  }
+  
+  // Default
+  return USER_FRIENDLY_ERRORS.UNKNOWN_ERROR
+}
+
+// Depolama Anahtarları
 export const STORAGE_KEYS = {
   USER_PREFERENCES: 'agora_user_preferences',
   CHANNEL_NAME: 'agora_channel_name'
 }
 
-// User ID Ranges
+// Kullanıcı ID Aralıkları
 export const USER_ID_RANGES = {
   VIDEO: {
     MIN: 1000,
@@ -63,14 +146,14 @@ export const USER_ID_RANGES = {
   }
 }
 
-// User Type Detection Functions - Kullanıcı tipini UID'ye göre belirler
+// Kullanıcı Tipi Tespit Fonksiyonları - Kullanıcı tipini UID'ye göre belirler
 export const getUserType = (uid) => {
   if (uid >= USER_ID_RANGES.VIDEO.MIN && uid < USER_ID_RANGES.VIDEO.MAX) {
     return 'VIDEO'
   } else if (uid >= USER_ID_RANGES.SCREEN_SHARE.MIN && uid < USER_ID_RANGES.SCREEN_SHARE.MAX) {
     return 'SCREEN_SHARE'
   } else {
-    return 'UNKNOWN'
+    return 'BİLİNMEYEN'
   }
 }
 
@@ -108,28 +191,61 @@ export const getRemoteUserDisplayName = (uid, baseName = 'User') => {
   }
 }
 
-// Channel Names
+// Kanal Adları
 export const CHANNEL_NAMES = {
   VIDEO: (baseName) => `${baseName}`,
   SCREEN_SHARE: (baseName) => `${baseName}` // Aynı channel'a katıl
 }
 
-// Default Values
+// Varsayılan Değerler
 export const DEFAULTS = {
-  CHANNEL_NAME: 'test-channel',
+  CHANNEL_NAME: IS_DEV ? 'dev-test-channel' : 'test-channel',
   USER_NAME: 'User',
   UID_MIN: 10000,
   UID_MAX: 100000,
   TOKEN_EXPIRE_TIME: 86400, // 24 hours
   ROLE_PUBLISHER: 1,
   ROLE_SUBSCRIBER: 0
+}
+
+// Development ayarları
+export const DEV_CONFIG = {
+  ENABLE_DEBUG_LOGS: IS_DEV,
+  ENABLE_PERFORMANCE_TRACKING: IS_DEV,
+  ENABLE_DETAILED_ERRORS: IS_DEV,
+  LOG_LEVEL: IS_DEV ? 'debug' : 'error',
+  RETRY_DELAY: IS_DEV ? 100 : 500, // Development'ta daha hızlı retry
+  PENDING_CHECK_INTERVAL: IS_DEV ? 200 : 500, // Development'ta daha sık kontrol
+  SCREEN_SHARE_RETRY_DELAY: IS_DEV ? 100 : 300, // Ekran paylaşımı için daha hızlı retry
+  MAX_RETRY_COUNT: IS_DEV ? 5 : 3 // Development'ta daha fazla deneme
 } 
 
-// Ekran paylaşımı için yüksek kalite ayarları
+// Ekran paylaşımı için optimize edilmiş ayarlar
 export const SCREEN_SHARE_CONFIG = {
-  encoderConfig: '1080p_1',     // 1920x1080 çözünürlük
-  optimizationMode: 'detail',   // Detay için optimize
-  bitrateMin: 2000,             // Minimum bitrate (kbps)
-  bitrateMax: 4000,             // Maksimum bitrate (kbps)
-  frameRate: 30                 // 30 FPS
+  // Hızlı başlatma için optimize edilmiş ayarlar
+  FAST_START: {
+    encoderConfig: '720p_1',      // 1280x720 çözünürlük - daha hızlı
+    optimizationMode: 'motion',   // Hareket için optimize - daha iyi performans
+    bitrateMin: 800,              // Minimum bitrate (kbps) - daha düşük
+    bitrateMax: 1500,             // Maksimum bitrate (kbps) - daha düşük
+    frameRate: 15                 // 15 FPS - daha düşük, daha akıcı
+  },
+  
+  // Düşük kalite fallback ayarları
+  LOW_QUALITY: {
+    encoderConfig: '480p_1',      // 640x480 çözünürlük - çok düşük
+    optimizationMode: 'motion',   // Hareket için optimize
+    bitrateMin: 400,              // Minimum bitrate (kbps) - çok düşük
+    bitrateMax: 800,              // Maksimum bitrate (kbps) - çok düşük
+    frameRate: 10                 // 10 FPS - çok düşük
+  },
+  
+  // Yüksek kalite ayarları (sadece güçlü bağlantılar için)
+  HIGH_QUALITY: {
+    encoderConfig: '1080p_1',     // 1920x1080 çözünürlük
+    optimizationMode: 'detail',   // Detay için optimize
+    bitrateMin: 2000,             // Minimum bitrate (kbps)
+    bitrateMax: 4000,             // Maksimum bitrate (kbps)
+    frameRate: 30                 // 30 FPS
+  }
 } 

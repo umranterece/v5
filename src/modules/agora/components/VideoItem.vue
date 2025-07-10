@@ -8,14 +8,14 @@
   >
     <div class="video-wrapper">
       <div 
-        v-if="hasVideo"
-        :ref="handleVideoRef" 
+        v-show="shouldShowVideo"
+        ref="videoElement"
         class="video-element"
       ></div>
       
       <!-- Placeholder when no video -->
       <div 
-        v-else
+        v-if="shouldShowPlaceholder"
         class="placeholder-content"
       >
         <div class="avatar">
@@ -29,8 +29,8 @@
         </div>
       </div>
       
-      <!-- User Info -->
-      <div v-if="hasVideo" class="user-info">
+      <!-- User Info - Always show when video is on -->
+      <div v-if="shouldShowVideo" class="user-info">
         <div class="user-name">{{ displayName }}</div>
         <div class="user-status">
           <span v-if="user.isMuted" class="status-icon muted">🔇</span>
@@ -43,22 +43,26 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, computed } from 'vue'
+import { onMounted, watch, ref, computed, onBeforeUnmount, nextTick } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
+import { useLogger } from '../composables/index.js'
+
+const { logUI } = useLogger()
 
 // Props
 const props = defineProps({
   user: { type: Object, required: true },
   hasVideo: { type: Boolean, default: false },
-  videoRef: { type: [Object, Function], default: null }, // Allow both Object and Function
+  videoRef: { type: [Object, Function], default: null },
+  track: { type: Object, default: null }, // Yeni track prop'u
   isLocal: { type: Boolean, default: false },
   isScreenShare: { type: Boolean, default: false }
 })
 
-// Local ref to track if we've already called the videoRef callback
 const hasCalledVideoRef = ref(false)
+const videoElement = ref(null)
+let lastPlayedTrack = null
 
-// Computed
 const displayName = computed(() => {
   if (props.isLocal) {
     return getUserDisplayName(props.user.uid, props.user.name?.split(' ')[0] || 'User')
@@ -67,17 +71,24 @@ const displayName = computed(() => {
   }
 })
 
+const shouldShowVideo = computed(() => {
+  return !!props.hasVideo && !props.user?.isVideoOff && !!props.user
+})
+
+const shouldShowPlaceholder = computed(() => {
+  return !!props.user && !shouldShowVideo.value
+})
+
 const userType = computed(() => {
   if (isVideoUser(props.user.uid)) {
     return 'VIDEO'
   } else if (isScreenShareUser(props.user.uid)) {
     return 'SCREEN_SHARE'
   } else {
-    return 'UNKNOWN'
+    return 'BİLİNMEYEN'
   }
 })
 
-// Methods
 const getUserInitials = (name) => {
   return name
     .split(' ')
@@ -87,59 +98,120 @@ const getUserInitials = (name) => {
     .slice(0, 2)
 }
 
-// Debug logging
-onMounted(() => {
-  console.log('=== VIDEO ITEM MOUNTED ===')
-  console.log('User:', props.user)
-  console.log('Has video:', props.hasVideo)
-  console.log('Is local:', props.isLocal)
-  console.log('Video ref function:', props.videoRef)
+onMounted(async () => {
+  logUI('Video öğesi yüklendi', { 
+    user: props.user, 
+    hasVideo: props.hasVideo, 
+    isLocal: props.isLocal,
+    shouldShowVideo: shouldShowVideo.value,
+    shouldShowPlaceholder: shouldShowPlaceholder.value,
+    track: !!props.track
+  })
+  
+  // Video element'inin oluşturulmasını bekle
+  await nextTick()
+  
+  // Video ref callback'ini çağır
+  if (videoElement.value) {
+    handleVideoRef(videoElement.value)
+  }
 })
 
-watch(() => props.hasVideo, (newHasVideo) => {
-  console.log('=== VIDEO ITEM HAS VIDEO CHANGED ===')
-  console.log('New has video:', newHasVideo)
-  console.log('User:', props.user)
-  console.log('Is local:', props.isLocal)
+watch(() => props.hasVideo, async (newHasVideo) => {
+  logUI('Video öğesi video durumu değişti', { 
+    newHasVideo, 
+    user: props.user, 
+    isLocal: props.isLocal,
+    shouldShowVideo: shouldShowVideo.value,
+    shouldShowPlaceholder: shouldShowPlaceholder.value,
+    track: !!props.track
+  })
+  
+  // Video durumu değiştiğinde ref callback'ini çağır
+  if (newHasVideo && shouldShowVideo.value) {
+    await nextTick()
+    if (videoElement.value && !hasCalledVideoRef.value) {
+      handleVideoRef(videoElement.value)
+    }
+  }
+})
+
+watch(() => props.user?.isVideoOff, (newVideoOff) => {
+  logUI('Kullanıcı video durumu değişti', {
+    newVideoOff,
+    user: props.user,
+    isLocal: props.isLocal,
+    shouldShowVideo: shouldShowVideo.value,
+    shouldShowPlaceholder: shouldShowPlaceholder.value,
+    track: !!props.track
+  })
+})
+
+// Track değiştiğinde veya videoElement oluştuğunda play et
+watch(
+  [() => props.track, videoElement],
+  async ([newTrack, el], [oldTrack]) => {
+    // Eski track'ı güvenli şekilde durdur
+    if (oldTrack && lastPlayedTrack) {
+      try { lastPlayedTrack.stop(); } catch (e) {}
+      lastPlayedTrack = null
+    }
+    // Yeni track varsa ve element DOM'da ise
+    if (newTrack && el) {
+      try {
+        await nextTick();
+        await newTrack.play(el);
+        lastPlayedTrack = newTrack;
+      } catch (e) {
+        logUI('track.play() hatası', e)
+      }
+    }
+    // Video element değiştiğinde ref callback'ini çağır
+    if (el && !hasCalledVideoRef.value) {
+      handleVideoRef(el)
+    }
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  if (lastPlayedTrack) {
+    try { lastPlayedTrack.stop(); } catch (e) {}
+    lastPlayedTrack = null
+  }
 })
 
 // Video ref callback - optimized to prevent recursive calls
 const handleVideoRef = (el) => {
-  console.log('=== VIDEO ITEM REF CALLBACK ===')
-  console.log('Element:', el)
-  console.log('User:', props.user)
-  console.log('Is local:', props.isLocal)
-  console.log('Is screen share:', props.isScreenShare)
-  console.log('Video ref type:', typeof props.videoRef)
-  console.log('Has called videoRef before:', hasCalledVideoRef.value)
-  
-  // Prevent recursive calls
+  logUI('Video öğesi ref callback', { 
+    element: !!el, 
+    user: props.user, 
+    isLocal: props.isLocal, 
+    isScreenShare: props.isScreenShare,
+    videoRefType: typeof props.videoRef,
+    hasCalledBefore: hasCalledVideoRef.value,
+    track: !!props.track
+  })
   if (hasCalledVideoRef.value && el === null) {
-    console.log('Skipping videoRef call - already called and element is null')
+    logUI('videoRef çağrısı atlanıyor - zaten çağrıldı ve element null')
     return
   }
-  
   if (props.videoRef) {
     if (typeof props.videoRef === 'function') {
-      console.log('Calling videoRef function...')
+      logUI('videoRef fonksiyonu çağrılıyor')
       props.videoRef(el)
       hasCalledVideoRef.value = true
     } else if (props.videoRef && typeof props.videoRef === 'object' && 'value' in props.videoRef) {
-      console.log('Setting videoRef.value...')
+      logUI('videoRef.value ayarlanıyor')
       props.videoRef.value = el
       hasCalledVideoRef.value = true
     }
   }
-  
-  // Reset flag when element is null (component unmounting)
   if (el === null) {
     hasCalledVideoRef.value = false
   }
-  
-  // Eğer ekran paylaşımı ise ve element varsa, hemen bildir
   if (props.isScreenShare && el) {
-    console.log('Screen share video element ready, emitting event...')
-    // Burada bir event emit edebiliriz
+    logUI('Ekran paylaşımı video elementi hazır, event gönderiliyor')
   }
 }
 </script>
@@ -150,21 +222,37 @@ const handleVideoRef = (el) => {
   border-radius: 12px;
   overflow: hidden;
   background: #1a1a1a;
+  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
   min-height: 200px;
+  max-height: 400px;
 }
 
 .video-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-element {
   width: 100%;
   height: 100%;
-  min-height: 200px;
   object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Yerel video için normal mod (sağ el sağda) - ayna modu yok */
+.local-video .video-element {
+  transform: none;
+}
+
+/* Uzak video için normal mod (sağ el sağda) - ayna modu yok */
+.video-item:not(.local-video) .video-element {
+  transform: none;
 }
 
 .placeholder-content {
@@ -173,9 +261,11 @@ const handleVideoRef = (el) => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  min-height: 200px;
   padding: 1rem;
   text-align: center;
+  width: 100%;
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  border-radius: 12px;
 }
 
 .avatar {
@@ -190,6 +280,7 @@ const handleVideoRef = (el) => {
   font-weight: bold;
   color: white;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .user-name {
@@ -197,28 +288,37 @@ const handleVideoRef = (el) => {
   font-weight: 600;
   color: #ffffff;
   margin-bottom: 0.5rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .user-status {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  justify-content: center;
 }
 
 .status-icon {
   font-size: 1.2rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .status-icon.muted {
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .status-icon.video-off {
   color: #f59e0b;
+  background: rgba(245, 158, 11, 0.2);
 }
 
 .status-icon.screen-share {
   color: #3b82f6;
+  background: rgba(59, 130, 246, 0.2);
 }
 
 .user-info {
@@ -255,27 +355,39 @@ const handleVideoRef = (el) => {
   border: 2px solid #10b981;
 }
 
+/* Büyük ekranlar için daha büyük video alanları */
+@media (min-width: 1920px) {
+  .video-item {
+    min-height: 250px;
+    max-height: 500px;
+  }
+  
+  .avatar {
+    width: 100px;
+    height: 100px;
+    font-size: 2.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .video-item {
+    aspect-ratio: 1;
     min-height: 150px;
-  }
-  
-  .video-wrapper {
-    min-height: 150px;
-  }
-  
-  .video-element {
-    min-height: 150px;
-  }
-  
-  .placeholder-content {
-    min-height: 150px;
+    max-height: 300px;
   }
   
   .avatar {
     width: 60px;
     height: 60px;
     font-size: 1.5rem;
+  }
+  
+  .user-name {
+    font-size: 0.9rem;
+  }
+  
+  .status-icon {
+    font-size: 1rem;
   }
 }
 </style> 

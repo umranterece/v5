@@ -4,7 +4,7 @@
     <div class="quality-container">
       <div class="quality-header">
         <span class="quality-icon">📊</span>
-        <span class="quality-label">Stream Quality</span>
+        <span class="quality-label">Yayın Kalitesi</span>
         <span class="quality-level" :style="{ color: qualityColor }">
           {{ qualityLevel.toUpperCase() }}
         </span>
@@ -25,13 +25,13 @@
       <!-- Detaylı bilgiler -->
       <div class="quality-details">
         <div class="quality-item">
-          <span class="detail-label">Network:</span>
+          <span class="detail-label">Ağ:</span>
           <span class="detail-value" :style="{ color: qualityColor }">
             {{ networkQuality }}/6
           </span>
         </div>
         <div class="quality-item">
-          <span class="detail-label">Bitrate:</span>
+          <span class="detail-label">Bit Hızı:</span>
           <span class="detail-value">{{ bitrate }} kbps</span>
         </div>
         <div class="quality-item">
@@ -39,7 +39,7 @@
           <span class="detail-value">{{ frameRate }}</span>
         </div>
         <div class="quality-item">
-          <span class="detail-label">Packet Loss:</span>
+          <span class="detail-label">Paket Kaybı:</span>
           <span class="detail-value" :class="{ 'warning': packetLoss > 5 }">
             {{ packetLoss }}%
           </span>

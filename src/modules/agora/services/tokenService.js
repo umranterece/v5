@@ -1,4 +1,7 @@
 import { API_ENDPOINTS, DEFAULTS } from '../constants.js'
+import { useLogger } from '../composables/useLogger.js'
+
+const { logAgora, logError } = useLogger()
 
 /**
  * Token Servisi - Agora token oluşturma ve yönetim işlemleri
@@ -39,10 +42,10 @@ export const createToken = async (channelName, uid, role = DEFAULTS.ROLE_PUBLISH
       throw new Error(result.message || 'Token oluşturulamadı')
     }
 
-    console.log('Token başarıyla oluşturuldu:', result)
+    logAgora('Token başarıyla oluşturuldu', result)
     return result.data // Tüm veri objesini döndür (token, app_id, channel_name)
   } catch (error) {
-    console.error('Token oluşturma hatası:', error)
+    logError(error, { context: 'createToken', channelName, uid })
     throw new Error('Sunucudan token oluşturulamadı')
   }
 } 
