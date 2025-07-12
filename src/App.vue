@@ -106,6 +106,14 @@
                 </div>
               </div>
             </div>
+            <!-- Kayıt Kontrolleri Bölümü -->
+            <div class="sidebar-section">
+              <div class="section-title">
+                <span class="section-icon">⏺️</span>
+                <span>Kayıt</span>
+              </div>
+              <RecordingControls />
+            </div>
           </div>
         </div>
       </div>
@@ -157,10 +165,6 @@
             :logUI="logUI"
             :logError="logError"
           />
-        </div>
-        <!-- Recording Controls - Sadece bağlantı varken -->
-        <div v-if="isConnected" class="recording-area">
-          <RecordingControls />
         </div>
         
         <!-- Controls Area - Sadece bağlantı varken -->

@@ -3,6 +3,7 @@ import AgoraRTC from 'agora-rtc-sdk-ng'
 import { centralEmitter } from '../centralEmitter.js'
 import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_EVENTS, AGORA_CONFIG } from '../constants.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { useStreamQuality } from './useStreamQuality.js'
 
 /**
  * Track Yönetimi Composable - Ses, video ve ekran paylaşımı track'lerini oluşturur ve yönetir
@@ -15,8 +16,9 @@ export function useTrackManagement() {
   const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
   const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
   const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
-  // Merkezi event emitter - Tüm client'lardan gelen event'leri toplar
-  // const centralEmitter = mitt() // <-- kaldırıldı, artık merkezi emitter import ediliyor
+  
+  // Stream quality monitoring
+  const { startMonitoring: startQualityMonitoring, stopMonitoring: stopQualityMonitoring } = useStreamQuality()
   
   // Event işleme durumu - Her event'in sadece bir kez işlenmesini sağlar
   const processedEvents = ref(new Set())
@@ -90,6 +92,12 @@ export function useTrackManagement() {
     // Client'ı kaydet
     registeredClients.value.set(clientType, { client, eventHandler })
     
+    // Network quality monitoring'i başlat (sadece video client için)
+    if (clientType === 'video') {
+      startQualityMonitoring(client)
+      logVideo(`Network quality monitoring başlatıldı: ${clientType}`)
+    }
+    
     // Sadece tracking için event'leri dinle (duplicate listener kurma)
     if (client.on) {
       // user-joined event'ini dinle
@@ -146,6 +154,9 @@ export function useTrackManagement() {
    * Merkezi event sistemini temizler
    */
   const cleanupCentralEvents = () => {
+    // Network quality monitoring'i durdur
+    stopQualityMonitoring()
+    
     processedEvents.value.clear()
     eventTimeouts.value.forEach(timeout => clearTimeout(timeout))
     eventTimeouts.value.clear()
@@ -424,8 +435,7 @@ export function useTrackManagement() {
   }
 
   return {
-    // Merkezi event sistemi
-    centralEmitter,
+    // Client yönetimi
     registerClient,
     unregisterClient,
     cleanupCentralEvents,

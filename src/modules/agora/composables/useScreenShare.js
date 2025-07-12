@@ -3,6 +3,7 @@ import { USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName, DEV_CONFI
 import { createToken } from '../services/tokenService.js'
 import { useTrackManagement } from './useTrackManagement.js'
 import { useStreamQuality } from './useStreamQuality.js'
+import { centralEmitter } from '../centralEmitter.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
@@ -44,7 +45,6 @@ export function useScreenShare(agoraStore) {
     createScreenTrack, 
     cleanupTrack,
     createScreenClient,
-    centralEmitter,
     registerClient,
     unregisterClient,
     cleanupCentralEvents

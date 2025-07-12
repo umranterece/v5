@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import { USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName, isScreenShareUser, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
 import { useTrackManagement } from './useTrackManagement.js'
+import { centralEmitter } from '../centralEmitter.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
@@ -54,7 +55,6 @@ export function useVideo(agoraStore) {
     createVideoTrack, 
     cleanupTrack,
     createVideoClient,
-    centralEmitter,
     registerClient,
     unregisterClient,
     cleanupCentralEvents

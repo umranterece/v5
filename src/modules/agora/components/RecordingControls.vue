@@ -148,7 +148,7 @@ export default {
         logger.logUI('Recording başlatma butonu tıklandı', 'RECORDING')
         await startRecording()
       } catch (error) {
-        logger.logError('Recording başlatma hatası:', error, 'RECORDING')
+        logger.error('RECORDING', 'Recording başlatma hatası:', { error })
       }
     }
 
@@ -157,7 +157,7 @@ export default {
         logger.logUI('Recording durdurma butonu tıklandı', 'RECORDING')
         await stopRecording()
       } catch (error) {
-        logger.logError('Recording durdurma hatası:', error, 'RECORDING')
+        logger.error('RECORDING', 'Recording durdurma hatası:', { error })
       }
     }
 
@@ -166,7 +166,7 @@ export default {
         logger.logUI('Recording sıfırlama butonu tıklandı', 'RECORDING')
         resetRecording()
       } catch (error) {
-        logger.logError('Recording sıfırlama hatası:', error, 'RECORDING')
+        logger.error('RECORDING', 'Recording sıfırlama hatası:', { error })
       }
     }
 
@@ -175,7 +175,7 @@ export default {
         logger.logUI(`Dosya indirme başlatıldı: ${fileId}`, 'RECORDING')
         await downloadRecordingFile(fileId)
       } catch (error) {
-        logger.logError('Dosya indirme hatası:', error, 'RECORDING')
+        logger.error('RECORDING', 'Dosya indirme hatası:', { error })
       }
     }
 

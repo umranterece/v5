@@ -11,6 +11,8 @@ export function useStreamQuality() {
   // Logger fonksiyonları - Direkt service'den al
   const logQuality = (message, data) => logger.info(LOG_CATEGORIES.NETWORK, message, data)
   const logError = (error, context) => logger.error(LOG_CATEGORIES.NETWORK, error.message || error, { error, ...context })
+  
+  // State değişkenleri
   const networkQuality = ref(0) // Ağ kalitesi (0-6 arası, 0=en kötü, 6=en iyi)
   const bitrate = ref(0) // Bit hızı (Kbps)
   const frameRate = ref(0) // Kare hızı (FPS)
@@ -18,40 +20,25 @@ export function useStreamQuality() {
   const rtt = ref(0) // Gidiş-dönüş süresi (ms)
   const qualityLevel = ref('bilinmiyor') // Kalite seviyesi (düşük, orta, iyi, mükemmel)
   const isMonitoring = ref(false) // İzleme durumu
+  const lastUpdateTime = ref(0) // Son güncelleme zamanı
   
   let qualityTimer = null // Kalite güncelleme zamanlayıcısı
+  let currentClient = null // Mevcut Agora client
 
   /**
    * Kalite seviyesini hesaplar
    * Ağ kalitesi, bit hızı ve kare hızına göre kalite seviyesini belirler
-   * Ekran paylaşımı için daha düşük kalite eşikleri kullanır
    */
   const calculateQualityLevel = computed(() => {
-    // Ekran paylaşımı için optimize edilmiş kalite eşikleri
-    const isScreenShare = false // TODO: Ekran paylaşımı durumunu algıla
-    
-    if (isScreenShare) {
-      // Ekran paylaşımı için daha düşük eşikler
-      if (networkQuality.value >= 4 && bitrate.value > 600 && frameRate.value > 12) {
-        return 'mükemmel' // Ekran paylaşımı için mükemmel
-      } else if (networkQuality.value >= 2 && bitrate.value > 300 && frameRate.value > 8) {
-        return 'iyi' // Ekran paylaşımı için iyi
-      } else if (networkQuality.value >= 1 && bitrate.value > 150 && frameRate.value > 5) {
-        return 'orta' // Ekran paylaşımı için orta
-      } else {
-        return 'düşük' // Ekran paylaşımı için düşük
-      }
+    // Normal video için standart eşikler
+    if (networkQuality.value >= 5 && bitrate.value > 1000 && frameRate.value > 20) {
+      return 'mükemmel' // Mükemmel kalite
+    } else if (networkQuality.value >= 3 && bitrate.value > 500 && frameRate.value > 15) {
+      return 'iyi' // İyi kalite
+    } else if (networkQuality.value >= 1 && bitrate.value > 200 && frameRate.value > 10) {
+      return 'orta' // Orta kalite
     } else {
-      // Normal video için standart eşikler
-      if (networkQuality.value >= 5 && bitrate.value > 1000 && frameRate.value > 20) {
-        return 'mükemmel' // Mükemmel kalite
-      } else if (networkQuality.value >= 3 && bitrate.value > 500 && frameRate.value > 15) {
-        return 'iyi' // İyi kalite
-      } else if (networkQuality.value >= 1 && bitrate.value > 200 && frameRate.value > 10) {
-        return 'orta' // Orta kalite
-      } else {
-        return 'düşük' // Düşük kalite
-      }
+      return 'düşük' // Düşük kalite
     }
   })
 
@@ -79,17 +66,101 @@ export function useStreamQuality() {
   })
 
   /**
+   * Gerçek Agora istatistiklerini alır
+   * @param {Object} client - Agora client
+   */
+  const fetchRealStats = async (client) => {
+    if (!client) return null
+
+    try {
+      const stats = {
+        networkQuality: 0,
+        bitrate: 0,
+        frameRate: 0,
+        packetLoss: 0,
+        rtt: 0
+      }
+
+      // Transport istatistikleri (ağ kalitesi, RTT, paket kaybı)
+      if (client.getTransportStats) {
+        const transportStats = await client.getTransportStats()
+        logQuality('Transport statistics received', transportStats)
+        
+        if (transportStats) {
+          stats.rtt = transportStats.Rtt || 0
+          stats.packetLoss = transportStats.PacketLossRate || 0
+          // Network quality genellikle transport stats'da gelir
+          stats.networkQuality = transportStats.NetworkQuality || 0
+        }
+      }
+
+      // Local audio istatistikleri
+      if (client.getLocalAudioStats) {
+        const audioStats = await client.getLocalAudioStats()
+        logQuality('Local audio statistics received', audioStats)
+        
+        if (audioStats && Object.keys(audioStats).length > 0) {
+          const firstAudioTrack = Object.values(audioStats)[0]
+          if (firstAudioTrack) {
+            stats.bitrate = (stats.bitrate + (firstAudioTrack.SendBitrate || 0)) / 2
+          }
+        }
+      }
+
+      // Local video istatistikleri
+      if (client.getLocalVideoStats) {
+        const videoStats = await client.getLocalVideoStats()
+        logQuality('Local video statistics received', videoStats)
+        
+        if (videoStats && Object.keys(videoStats).length > 0) {
+          const firstVideoTrack = Object.values(videoStats)[0]
+          if (firstVideoTrack) {
+            stats.bitrate = (stats.bitrate + (firstVideoTrack.SendBitrate || 0)) / 2
+            stats.frameRate = firstVideoTrack.SendFrameRate || 0
+          }
+        }
+      }
+
+      // Network quality event'lerini dinle
+      if (client.on && !client._networkQualityListener) {
+        client._networkQualityListener = true
+        client.on('network-quality', (stats) => {
+          logQuality('Network quality event received', stats)
+          if (stats) {
+            networkQuality.value = stats.downlinkNetworkQuality || stats.uplinkNetworkQuality || 0
+          }
+        })
+      }
+
+      return stats
+    } catch (error) {
+      logError('Real stats fetch error', { error, context: 'fetchRealStats' })
+      return null
+    }
+  }
+
+  /**
    * Kalite durumunu günceller
    * @param {Object} stats - Agora'dan gelen kalite istatistikleri
    */
   const updateQuality = (stats) => {
     if (stats) {
-      networkQuality.value = stats.networkQuality || 0
-      bitrate.value = stats.bitrate || 0
-      frameRate.value = stats.frameRate || 0
-      packetLoss.value = stats.packetLoss || 0
-      rtt.value = stats.rtt || 0
+      networkQuality.value = stats.networkQuality || networkQuality.value
+      bitrate.value = stats.bitrate || bitrate.value
+      frameRate.value = stats.frameRate || frameRate.value
+      packetLoss.value = stats.packetLoss || packetLoss.value
+      rtt.value = stats.rtt || rtt.value
       qualityLevel.value = calculateQualityLevel.value
+      lastUpdateTime.value = Date.now()
+      
+      logQuality('Quality updated', {
+        networkQuality: networkQuality.value,
+        bitrate: bitrate.value,
+        frameRate: frameRate.value,
+        packetLoss: packetLoss.value,
+        rtt: rtt.value,
+        qualityLevel: qualityLevel.value
+      })
     }
   }
 
@@ -100,6 +171,7 @@ export function useStreamQuality() {
   const startMonitoring = (client) => {
     if (!client || isMonitoring.value) return
     
+    currentClient = client
     isMonitoring.value = true
     
     // Başlangıç değerleri - Varsayılan kalite değerleri
@@ -110,26 +182,23 @@ export function useStreamQuality() {
     rtt.value = 50
     qualityLevel.value = 'iyi'
     
-    qualityTimer = setInterval(() => {
-      // Simüle edilmiş kalite değerleri (gerçek API çalışana kadar)
-      const randomChange = Math.random() * 0.4 - 0.2 // -0.2 ile +0.2 arası rastgele değişim
-      
-      networkQuality.value = Math.max(0, Math.min(6, networkQuality.value + randomChange))
-      bitrate.value = Math.max(200, Math.min(2000, bitrate.value + randomChange * 100))
-      frameRate.value = Math.max(10, Math.min(30, frameRate.value + randomChange * 2))
-      packetLoss.value = Math.max(0, Math.min(10, packetLoss.value + randomChange * 0.5))
-      rtt.value = Math.max(20, Math.min(200, rtt.value + randomChange * 10))
-      
-      // Gerçek API'yi de dene - Agora'dan gerçek istatistikleri al (throttled)
-      if (client && client.getTransportStats && Math.random() < 0.3) { // 30% chance
-        client.getTransportStats().then(stats => {
-          logQuality('Real transport statistics', stats)
-          updateQuality(stats)
-        }).catch(err => {
-          logError(err, { context: 'getTransportStats' })
-        })
+    logQuality('Quality monitoring started', { clientId: client.uid })
+    
+    // İlk istatistikleri hemen al
+    fetchRealStats(client).then(stats => {
+      if (stats) {
+        updateQuality(stats)
       }
-    }, 3000) // 3 saniyede bir güncelle (reduced frequency)
+    })
+    
+    qualityTimer = setInterval(async () => {
+      if (currentClient) {
+        const stats = await fetchRealStats(currentClient)
+        if (stats) {
+          updateQuality(stats)
+        }
+      }
+    }, 2000) // 2 saniyede bir güncelle (daha sık)
   }
 
   /**
@@ -141,7 +210,16 @@ export function useStreamQuality() {
       clearInterval(qualityTimer)
       qualityTimer = null
     }
+    
+    if (currentClient && currentClient._networkQualityListener) {
+      currentClient.off('network-quality')
+      currentClient._networkQualityListener = false
+    }
+    
     isMonitoring.value = false
+    currentClient = null
+    
+    logQuality('Quality monitoring stopped')
   }
 
   /**
@@ -228,6 +306,7 @@ export function useStreamQuality() {
     rtt,
     qualityLevel,
     isMonitoring,
+    lastUpdateTime,
     
     // Computed - Hesaplanmış değerler
     qualityColor,
@@ -237,6 +316,7 @@ export function useStreamQuality() {
     updateQuality,
     startMonitoring,
     stopMonitoring,
-    optimizeScreenShareQuality
+    optimizeScreenShareQuality,
+    fetchRealStats
   }
 } 
