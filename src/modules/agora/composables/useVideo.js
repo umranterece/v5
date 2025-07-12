@@ -1,11 +1,7 @@
 import { ref, onUnmounted } from 'vue'
-import AgoraRTC from 'agora-rtc-sdk-ng'
-import mitt from 'mitt'
-import { AGORA_CONFIG, USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName, isScreenShareUser, DEV_CONFIG } from '../constants.js'
+import { USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName, isScreenShareUser, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
 import { useTrackManagement } from './useTrackManagement.js'
-import { useLogger } from './useLogger.js'
-
-const { logVideo, logVideoError, trackPerformance, trackUserAction } = useLogger()
+import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
  * Video/Ses Composable - Video client işlemlerini yönetir
@@ -14,6 +10,13 @@ const { logVideo, logVideoError, trackPerformance, trackUserAction } = useLogger
  * @module composables/useVideo
  */
 export function useVideo(agoraStore) {
+  // Logger fonksiyonları - Direkt service'den al
+  const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
+  const logVideoError = (error, context) => logger.error(LOG_CATEGORIES.VIDEO, error.message || error, { error, ...context })
+  const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
+  const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
+  const trackPerformance = (name, fn) => logger.trackPerformance(name, fn)
+  const trackUserAction = (action, details) => logger.trackUserAction(action, details)
   const client = ref(null) // Agora client referansı
   
   const isJoining = ref(false) // Kanala katılma durumu
@@ -50,6 +53,7 @@ export function useVideo(agoraStore) {
     createAudioTrack, 
     createVideoTrack, 
     cleanupTrack,
+    createVideoClient,
     centralEmitter,
     registerClient,
     unregisterClient,
@@ -72,7 +76,11 @@ export function useVideo(agoraStore) {
     try {
       logVideo('Video client başlatılıyor', { appId })
       
-      const agoraClient = AgoraRTC.createClient(AGORA_CONFIG)
+      const { success, client: agoraClient, error } = createVideoClient()
+      if (!success) {
+        throw error
+      }
+      
       client.value = agoraClient
       agoraStore.setClient('video', agoraClient)
       
@@ -309,7 +317,7 @@ export function useVideo(agoraStore) {
           trackReadyState: audioResult.track.readyState,
           trackKind: audioResult.track.kind
         })
-        centralEmitter.emit('local-audio-ready', { track: audioResult.track, clientType: 'video' })
+        centralEmitter.emit(AGORA_EVENTS.LOCAL_AUDIO_READY, { track: audioResult.track, clientType: 'video' })
       } else {
         agoraStore.setLocalTrack('video', 'audio', null)
         agoraStore.setLocalAudioMuted(true)
@@ -340,7 +348,7 @@ export function useVideo(agoraStore) {
           trackReadyState: videoResult.track.readyState,
           trackKind: videoResult.track.kind
         })
-        centralEmitter.emit('local-video-ready', { track: videoResult.track, clientType: 'video' })
+        centralEmitter.emit(AGORA_EVENTS.LOCAL_VIDEO_READY, { track: videoResult.track, clientType: 'video' })
       } else {
         agoraStore.setLocalTrack('video', 'video', null)
         agoraStore.setLocalVideoOff(true)
@@ -467,7 +475,7 @@ export function useVideo(agoraStore) {
             permission: 'granted',
             track: videoResult.track
           })
-          centralEmitter.emit('local-video-ready', { track: videoResult.track, clientType: 'video' })
+          centralEmitter.emit(AGORA_EVENTS.LOCAL_VIDEO_READY, { track: videoResult.track, clientType: 'video' })
         } else {
           // Kamera durumunu güncelle
           agoraStore.setDeviceStatus('camera', {
@@ -506,7 +514,7 @@ export function useVideo(agoraStore) {
         if (agoraStore.tracks.local.video.audio && isTrackValid(agoraStore.tracks.local.video.audio)) {
           await client.value.publish(agoraStore.tracks.local.video.audio)
           agoraStore.setLocalAudioMuted(false)
-          centralEmitter.emit('local-audio-ready', { track: agoraStore.tracks.local.video.audio, clientType: 'video' })
+          centralEmitter.emit(AGORA_EVENTS.LOCAL_AUDIO_READY, { track: agoraStore.tracks.local.video.audio, clientType: 'video' })
         } else {
           // Track yoksa yeni track oluştur
           const audioResult = await createAudioTrack()
@@ -520,7 +528,7 @@ export function useVideo(agoraStore) {
               permission: 'granted',
               track: audioResult.track
             })
-            centralEmitter.emit('local-audio-ready', { track: audioResult.track, clientType: 'video' })
+            centralEmitter.emit(AGORA_EVENTS.LOCAL_AUDIO_READY, { track: audioResult.track, clientType: 'video' })
           } else {
             // Mikrofon durumunu güncelle
             agoraStore.setDeviceStatus('microphone', {
@@ -722,10 +730,10 @@ export function useVideo(agoraStore) {
         
         if (mediaType === 'audio') {
           logVideo('remote-audio-ready event emit ediliyor', { uid, trackId: track.id })
-          centralEmitter.emit('remote-audio-ready', { uid, track, clientType: 'video' })
+          centralEmitter.emit(AGORA_EVENTS.REMOTE_AUDIO_READY, { uid, track, clientType: 'video' })
         } else if (mediaType === 'video') {
           logVideo('remote-video-ready event emit ediliyor', { uid, trackId: track.id })
-          centralEmitter.emit('remote-video-ready', { uid, track, clientType: 'video' })
+          centralEmitter.emit(AGORA_EVENTS.REMOTE_VIDEO_READY, { uid, track, clientType: 'video' })
         }
       } else {
         logVideo('Abonelik sonrası track mevcut değil', { uid, mediaType, trackValid: isTrackValid(track) })
@@ -777,7 +785,7 @@ export function useVideo(agoraStore) {
       
       agoraStore.addRemoteUser(remoteUser)
       logVideo('Uzak kullanıcı store\'a eklendi', { user: remoteUser })
-      centralEmitter.emit('user-joined', { ...remoteUser, clientType: 'video' })
+      centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { ...remoteUser, clientType: 'video' })
       
       // Bekleyen abonelikleri işle
       await processPendingSubscriptions(user.uid)
@@ -807,7 +815,7 @@ export function useVideo(agoraStore) {
       pendingSubscriptions.value.delete(user.uid)
       
       logVideo('Uzak kullanıcı store\'dan kaldırıldı', { uid: user.uid })
-      centralEmitter.emit('user-left', { uid: user.uid, clientType: 'video' })
+      centralEmitter.emit(AGORA_EVENTS.USER_LEFT, { uid: user.uid, clientType: 'video' })
     })
 
     // Kullanıcı yayınlandı
@@ -953,10 +961,10 @@ export function useVideo(agoraStore) {
           agoraStore.addRemoteUser(updatedUser)
         }
         
-        centralEmitter.emit('remote-video-unpublished', { uid: user.uid, clientType: 'video' })
+        centralEmitter.emit(AGORA_EVENTS.REMOTE_VIDEO_UNPUBLISHED, { uid: user.uid, clientType: 'video' })
       }
       
-      centralEmitter.emit('user-unpublished', { user, mediaType, clientType: 'video' })
+      centralEmitter.emit(AGORA_EVENTS.USER_UNPUBLISHED, { user, mediaType, clientType: 'video' })
               logVideo('Yayından kaldırma sonrası kullanıcı store\'da güncellendi', { uid: user.uid, mediaType })
     })
 
@@ -965,7 +973,7 @@ export function useVideo(agoraStore) {
       logVideo('Bağlantı durumu değişti', { state: curState, clientType: 'video' })
       const connected = curState === 'CONNECTED'
       agoraStore.setClientConnected('video', connected)
-      centralEmitter.emit('connection-state-change', { connected, clientType: 'video' })
+      centralEmitter.emit(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected, clientType: 'video' })
     })
     
     logVideo('Video client için event listener kurulumu tamamlandı')

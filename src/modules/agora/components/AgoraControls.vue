@@ -93,9 +93,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useLogger } from '../composables/index.js'
-
-const { trackUserAction, logError, logUI } = useLogger()
 
 // Props
 const props = defineProps({
@@ -122,7 +119,11 @@ const props = defineProps({
   networkBitrate: { type: Number, default: 0 },
   networkFrameRate: { type: Number, default: 0 },
   networkRtt: { type: Number, default: 0 },
-  networkPacketLoss: { type: Number, default: 0 }
+  networkPacketLoss: { type: Number, default: 0 },
+  // Logger Props
+  logUI: { type: Function, default: () => {} },
+  logError: { type: Function, default: () => {} },
+  trackUserAction: { type: Function, default: () => {} }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -130,33 +131,33 @@ const channelInput = ref(props.channelName || 'test')
 const joinChannel = async () => {
   if (!channelInput.value.trim() || props.isJoining) return
   try {
-    trackUserAction('joinChannel', { channelName: channelInput.value.trim() })
+    props.trackUserAction('joinChannel', { channelName: channelInput.value.trim() })
     await props.onJoin(channelInput.value.trim())
   } catch (error) {
-    logError(error, { context: 'joinChannel', channelName: channelInput.value.trim() })
+    props.logError(error, { context: 'joinChannel', channelName: channelInput.value.trim() })
   }
 }
 
 const leaveChannel = async () => {
   if (props.isLeaving) return
   try {
-    trackUserAction('leaveChannel', { channelName: props.channelName })
+    props.trackUserAction('leaveChannel', { channelName: props.channelName })
     await props.onLeave()
     channelInput.value = ''
   } catch (error) {
-    logError(error, { context: 'leaveChannel', channelName: props.channelName })
+    props.logError(error, { context: 'leaveChannel', channelName: props.channelName })
   }
 }
 
 const toggleCamera = () => {
   const newVideoOffState = !props.isLocalVideoOff
-  logUI('Kamera değiştir', {
+  props.logUI('Kamera değiştir', {
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on',
     canUseCamera: props.canUseCamera
   })
   
-  trackUserAction('toggleCamera', { 
+  props.trackUserAction('toggleCamera', { 
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on'
   })
@@ -166,13 +167,13 @@ const toggleCamera = () => {
 const toggleMicrophone = () => {
   if (props.canUseMicrophone) {
     const newMutedState = !props.isLocalAudioMuted
-    logUI('Mikrofon değiştir', {
+    props.logUI('Mikrofon değiştir', {
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted',
       canUseMicrophone: props.canUseMicrophone
     })
     
-    trackUserAction('toggleMicrophone', { 
+    props.trackUserAction('toggleMicrophone', { 
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted'
     })

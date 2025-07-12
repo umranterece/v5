@@ -1,8 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useLogger } from '../composables/useLogger.js'
-
-const { logStore, logError } = useLogger()
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
 
 /**
@@ -12,6 +9,9 @@ import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShar
  * @module store/agora
  */
 export const useAgoraStore = defineStore('agora', () => {
+  // Logger fonksiyonları - Varsayılan boş fonksiyonlar
+  const logStore = () => {}
+  const logError = () => {}
   // Unified Client State - Birleştirilmiş client durumu
   const clients = ref({
     video: {
@@ -67,21 +67,20 @@ export const useAgoraStore = defineStore('agora', () => {
     microphoneTrack: null
   })
 
-  // Computed Properties - Hesaplanmış özellikler
+  // Computed Properties - Hesaplanmış özellikler (Optimized)
   const allUsers = computed(() => {
-    const all = [...users.value.remote]
+    const localUsers = []
     
-    // Yerel video kullanıcısını ekle
-    if (users.value.local.video) {
-      all.unshift(users.value.local.video)
-    }
-    
-    // Yerel ekran kullanıcısını ekle
+    // Yerel kullanıcıları ekle
     if (users.value.local.screen) {
-      all.unshift(users.value.local.screen)
+      localUsers.push(users.value.local.screen)
+    }
+    if (users.value.local.video) {
+      localUsers.push(users.value.local.video)
     }
     
-    return all
+    // Uzak kullanıcıları ekle (array copy yerine spread)
+    return [...localUsers, ...users.value.remote]
   })
 
   const connectedUsersCount = computed(() => allUsers.value.length)
@@ -154,21 +153,36 @@ export const useAgoraStore = defineStore('agora', () => {
     users.value.local[type] = user
   }
 
+  // User lookup cache for performance
+  const userLookupCache = new Map()
+  
   const addRemoteUser = (user) => {
     const existingIndex = users.value.remote.findIndex(u => u.uid === user.uid)
     if (existingIndex >= 0) {
-      // Mevcut kullanıcıyı güncelle
-      users.value.remote[existingIndex] = { ...users.value.remote[existingIndex], ...user }
+      // Mevcut kullanıcıyı güncelle - Optimized object spread
+      const existingUser = users.value.remote[existingIndex]
+      Object.assign(existingUser, user)
+      // Update cache
+      userLookupCache.set(user.uid, existingIndex)
     } else {
       // Yeni kullanıcı ekle
       users.value.remote.push(user)
+      // Update cache
+      userLookupCache.set(user.uid, users.value.remote.length - 1)
     }
   }
 
   const removeRemoteUser = (uid) => {
-    const index = users.value.remote.findIndex(u => u.uid === uid)
+    // Use cache for faster lookup
+    const index = userLookupCache.get(uid) ?? users.value.remote.findIndex(u => u.uid === uid)
     if (index >= 0) {
       users.value.remote.splice(index, 1)
+      // Update cache for remaining users
+      userLookupCache.delete(uid)
+      // Rebuild cache for users after the removed index
+      for (let i = index; i < users.value.remote.length; i++) {
+        userLookupCache.set(users.value.remote[i].uid, i)
+      }
     }
     tracks.value.remote.delete(uid)
   }
@@ -195,10 +209,10 @@ export const useAgoraStore = defineStore('agora', () => {
   }
 
   const setRemoteTrack = (uid, type, track) => {
-    if (!tracks.value.remote.has(uid)) {
-      tracks.value.remote.set(uid, {})
-    }
-    tracks.value.remote.get(uid)[type] = track
+    // Optimized: Single Map operation
+    const userTracks = tracks.value.remote.get(uid) || {}
+    userTracks[type] = track
+    tracks.value.remote.set(uid, userTracks)
   }
 
   // Yeni eklenen fonksiyon: remote track'i kaldır

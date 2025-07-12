@@ -13,6 +13,7 @@ export { logger, logManager, LOG_LEVELS, LOG_CATEGORIES } from './logger.js'
 
 // Gelecekteki servisler (yer tutucu dışa aktarımlar)
 // Bu servisler ileride eklenebilir ve buradan dışa aktarılacak
-// export { createRecording } from './recordingService.js' // Kayıt servisi
+// Recording servisi - Cloud recording işlemleri
+export { recordingService } from './recordingService.js'
 // export { createWhiteboard } from './whiteboardService.js' // Beyaz tahta servisi
 // export { createChat } from './chatService.js' // Sohbet servisi 

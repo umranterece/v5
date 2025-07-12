@@ -26,6 +26,12 @@ export const LOG_CATEGORIES = {
 const logs = ref([])
 const maxLogs = IS_DEV ? 1000 : 500 // Development'ta daha fazla log, production'da daha az
 
+// Performance optimizations
+const logDataCache = new Map() // JSON.stringify cache
+const searchIndex = new Map() // Search term index
+const statsCache = { value: null, timestamp: 0 } // Stats memoization
+const CACHE_TTL = 1000 // 1 second cache TTL
+
 // Logging queue to prevent rapid successive entries
 let logQueue = []
 let isProcessingQueue = false
@@ -67,6 +73,16 @@ const createLog = (level, category, message, data = {}) => {
     sessionId: generateSessionId()
   }
   
+  // Cache JSON string for search optimization
+  const dataKey = JSON.stringify(data)
+  if (!logDataCache.has(dataKey)) {
+    logDataCache.set(dataKey, dataKey.toLowerCase())
+  }
+  
+  // Update search index
+  const searchableText = `${message} ${dataKey}`.toLowerCase()
+  searchIndex.set(log.id, searchableText)
+  
   return log
 }
 
@@ -82,9 +98,18 @@ const generateSessionId = () => {
 const addLogImmediate = (log) => {
   logs.value.push(log)
   
+  // Invalidate stats cache
+  statsCache.value = null
+  
   // Maksimum log sayısını aşarsa eski logları sil (performance optimizasyonu)
   if (logs.value.length > maxLogs) {
+    const removedLogs = logs.value.slice(0, logs.value.length - maxLogs)
     logs.value = logs.value.slice(-maxLogs)
+    
+    // Clean up cache for removed logs
+    removedLogs.forEach(removedLog => {
+      searchIndex.delete(removedLog.id)
+    })
   }
   
   // Local storage'a kaydet (debounced)
@@ -249,7 +274,7 @@ export const logManager = {
     // })
   },
   
-  // Logları filtrele
+  // Logları filtrele - Optimized with search index
   filterLogs: (filters = {}) => {
     let filteredLogs = logs.value
     
@@ -263,10 +288,10 @@ export const logManager = {
     
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase()
-      filteredLogs = filteredLogs.filter(log => 
-        log.message.toLowerCase().includes(searchTerm) ||
-        JSON.stringify(log.data).toLowerCase().includes(searchTerm)
-      )
+      filteredLogs = filteredLogs.filter(log => {
+        const searchableText = searchIndex.get(log.id)
+        return searchableText && searchableText.includes(searchTerm)
+      })
     }
     
     return filteredLogs

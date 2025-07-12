@@ -1,7 +1,4 @@
 import { API_ENDPOINTS, DEFAULTS } from '../constants.js'
-import { useLogger } from '../composables/useLogger.js'
-
-const { logAgora, logError } = useLogger()
 
 /**
  * Token Servisi - Agora token oluşturma ve yönetim işlemleri
@@ -20,6 +17,9 @@ const { logAgora, logError } = useLogger()
  * @returns {Promise<Object>} Token verileri (token, app_id, channel_name)
  */
 export const createToken = async (channelName, uid, role = DEFAULTS.ROLE_PUBLISHER, expireTime = DEFAULTS.TOKEN_EXPIRE_TIME) => {
+  // Logger fonksiyonları - Varsayılan boş fonksiyonlar
+  const logAgora = () => {}
+  const logError = () => {}
   try {
     // Sunucuya token oluşturma isteği gönder
     const response = await fetch(API_ENDPOINTS.CREATE_TOKEN, {

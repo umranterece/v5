@@ -82,22 +82,27 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useLogger } from '../composables/index.js'
 import { LOG_LEVELS, LOG_CATEGORIES } from '../services/logger.js'
 
 const props = defineProps({
-  isOpen: { type: Boolean, default: false }
+  isOpen: { type: Boolean, default: false },
+  logs: { type: Array, default: () => [] },
+  logStats: { type: Object, default: () => ({}) },
+  getFilteredLogs: { type: Function, default: () => [] },
+  clearLogs: { type: Function, default: () => {} },
+  exportLogs: { type: Function, default: () => {} }
 })
 
 const emit = defineEmits(['close'])
 
+// Use props instead of useLogger
 const {
   logs,
   logStats,
   getFilteredLogs,
   clearLogs: clearAllLogs,
   exportLogs: exportAllLogs
-} = useLogger()
+} = props
 
 // Memoize LOG_LEVELS and LOG_CATEGORIES to prevent reactive updates
 const logLevels = Object.values(LOG_LEVELS)

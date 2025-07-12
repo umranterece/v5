@@ -1,13 +1,9 @@
 import { ref, onUnmounted, computed } from 'vue'
-import AgoraRTC from 'agora-rtc-sdk-ng'
-import mitt from 'mitt'
-import { AGORA_CONFIG, USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName, DEV_CONFIG } from '../constants.js'
+import { USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
 import { useTrackManagement } from './useTrackManagement.js'
-import { useLogger } from './useLogger.js'
 import { useStreamQuality } from './useStreamQuality.js'
-
-const { logScreen, logError, logWarn } = useLogger()
+import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
  * Ekran Paylaşımı Composable - Ekran paylaşımı işlemlerini yönetir
@@ -16,6 +12,12 @@ const { logScreen, logError, logWarn } = useLogger()
  * @module composables/useScreenShare
  */
 export function useScreenShare(agoraStore) {
+  // Logger fonksiyonları - Direkt service'den al
+  const logScreen = (message, data) => logger.info(LOG_CATEGORIES.SCREEN, message, data)
+  const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
+  const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
+  const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
+  const logQuality = (message, data) => logger.info(LOG_CATEGORIES.NETWORK, message, data)
   const isJoining = ref(false) // Kanala katılma durumu
   const isLeaving = ref(false) // Kanaldan ayrılma durumu
   
@@ -41,6 +43,7 @@ export function useScreenShare(agoraStore) {
     isTrackValid, 
     createScreenTrack, 
     cleanupTrack,
+    createScreenClient,
     centralEmitter,
     registerClient,
     unregisterClient,
@@ -65,7 +68,11 @@ export function useScreenShare(agoraStore) {
    */
   const initializeScreenClient = async (appId) => {
     try {
-      const client = AgoraRTC.createClient(AGORA_CONFIG)
+      const { success, client, error } = createScreenClient()
+      if (!success) {
+        throw error
+      }
+      
       agoraStore.setClient('screen', client)
       
       // Merkezi event sistemine kaydet
@@ -278,7 +285,7 @@ export function useScreenShare(agoraStore) {
       
       // PERFORMANS OPTİMİZASYONU: Event'leri tek seferde emit et
       logScreen('Ekran paylaşımı başarıyla başlatıldı')
-      centralEmitter.emit('screen-share-started', { track: screenTrack, clientType: 'screen' })
+      centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STARTED, { track: screenTrack, clientType: 'screen' })
       
       logScreen('Ekran paylaşımı kullanıcısı tüm kullanıcılara eklendi:', agoraStore.users.local.screen)
       logScreen('Toplam kullanıcı sayısı:', agoraStore.allUsers.length)
@@ -360,12 +367,12 @@ export function useScreenShare(agoraStore) {
         
         logScreen('Ekran paylaşımı başarıyla durduruldu')
         logScreen('Ekran paylaşımı kullanıcısı tüm kullanıcılardan kaldırıldı')
-        centralEmitter.emit('screen-share-stopped', { clientType: 'screen' })
+        centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STOPPED, { clientType: 'screen' })
       } else {
         logScreen('Ekran track\'i bulunamadı, sadece store temizleniyor')
         agoraStore.setLocalTrack('screen', 'video', null)
         agoraStore.setScreenSharing(false)
-        centralEmitter.emit('screen-share-stopped', { clientType: 'screen' })
+        centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STOPPED, { clientType: 'screen' })
       }
       
     } catch (error) {
@@ -432,7 +439,7 @@ export function useScreenShare(agoraStore) {
         // Event'i hemen emit et - setTimeout ile async olarak
         logScreen('remote-screen-ready olayı hemen emit ediliyor, UID:', uid)
         createSafeTimeout(() => {
-          centralEmitter.emit('remote-screen-ready', { uid, track, clientType: 'screen' })
+          centralEmitter.emit(AGORA_EVENTS.REMOTE_SCREEN_READY, { uid, track, clientType: 'screen' })
         }, 0)
       }
       
@@ -475,7 +482,7 @@ export function useScreenShare(agoraStore) {
         isScreenShare: true
       }
       agoraStore.addRemoteUser(remoteUser)
-      centralEmitter.emit('user-joined', { ...remoteUser, clientType: 'screen' })
+      centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { ...remoteUser, clientType: 'screen' })
     });
 
     // Ekran kullanıcısı ayrıldı
@@ -489,7 +496,7 @@ export function useScreenShare(agoraStore) {
       }
       
       agoraStore.removeRemoteUser(user.uid)
-      centralEmitter.emit('user-left', { uid: user.uid, clientType: 'screen' })
+      centralEmitter.emit(AGORA_EVENTS.USER_LEFT, { uid: user.uid, clientType: 'screen' })
     })
 
     // Ekran kullanıcısı yayınlandı
@@ -527,7 +534,7 @@ export function useScreenShare(agoraStore) {
       
       if (mediaType === 'video') {
         agoraStore.removeRemoteUser(user.uid)
-        centralEmitter.emit('user-unpublished', { user, mediaType, clientType: 'screen' })
+        centralEmitter.emit(AGORA_EVENTS.USER_UNPUBLISHED, { user, mediaType, clientType: 'screen' })
       }
     })
 
@@ -535,7 +542,7 @@ export function useScreenShare(agoraStore) {
     client.on('connection-state-change', (curState) => {
       const connected = curState === 'CONNECTED'
       agoraStore.setClientConnected('screen', connected)
-      centralEmitter.emit('connection-state-change', { connected, clientType: 'screen' })
+      centralEmitter.emit(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected, clientType: 'screen' })
     })
   }
 

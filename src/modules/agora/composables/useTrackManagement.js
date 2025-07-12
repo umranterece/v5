@@ -1,10 +1,8 @@
 import { ref } from 'vue'
 import AgoraRTC from 'agora-rtc-sdk-ng'
-import mitt from 'mitt'
-import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG } from '../constants.js'
-import { useLogger } from './useLogger.js'
-
-const { logVideo, logError, logWarn } = useLogger()
+import { centralEmitter } from '../centralEmitter.js'
+import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_EVENTS, AGORA_CONFIG } from '../constants.js'
+import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
  * Track Yönetimi Composable - Ses, video ve ekran paylaşımı track'lerini oluşturur ve yönetir
@@ -13,8 +11,12 @@ const { logVideo, logError, logWarn } = useLogger()
  * @module composables/useTrackManagement
  */
 export function useTrackManagement() {
+  // Logger fonksiyonları - Direkt service'den al
+  const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
+  const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
+  const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
   // Merkezi event emitter - Tüm client'lardan gelen event'leri toplar
-  const centralEmitter = mitt()
+  // const centralEmitter = mitt() // <-- kaldırıldı, artık merkezi emitter import ediliyor
   
   // Event işleme durumu - Her event'in sadece bir kez işlenmesini sağlar
   const processedEvents = ref(new Set())
@@ -32,11 +34,11 @@ export function useTrackManagement() {
    * @returns {string} Benzersiz event key'i
    */
   const createEventKey = (eventType, data) => {
-    if (eventType === 'user-joined' || eventType === 'user-left') {
+    if (eventType === AGORA_EVENTS.USER_JOINED || eventType === AGORA_EVENTS.USER_LEFT) {
       return `${eventType}-${data.uid}`
     } else if (eventType === 'user-published' || eventType === 'user-unpublished') {
       return `${eventType}-${data.user.uid}-${data.mediaType}`
-    } else if (eventType === 'connection-state-change') {
+    } else if (eventType === AGORA_EVENTS.CONNECTION_STATE_CHANGE) {
       return `${eventType}-${data.connected}`
     }
     return `${eventType}-${JSON.stringify(data)}`
@@ -93,13 +95,13 @@ export function useTrackManagement() {
       // user-joined event'ini dinle
       client.on('user-joined', (user) => {
         logVideo(`Merkezi takip: kullanıcı katıldı (${clientType})`, { uid: user.uid })
-        registerEvent('user-joined', user, clientType)
+        registerEvent(AGORA_EVENTS.USER_JOINED, user, clientType)
       })
       
       // user-left event'ini dinle
       client.on('user-left', (user) => {
         logVideo(`Merkezi takip: kullanıcı ayrıldı (${clientType})`, { uid: user.uid })
-        registerEvent('user-left', user, clientType)
+        registerEvent(AGORA_EVENTS.USER_LEFT, user, clientType)
       })
       
       // user-published event'ini dinle
@@ -117,7 +119,7 @@ export function useTrackManagement() {
       // connection-state-change event'ini dinle
       client.on('connection-state-change', (state) => {
         logVideo(`Merkezi takip: bağlantı durumu değişti (${clientType})`, { state })
-        registerEvent('connection-state-change', { connected: state === 'CONNECTED' }, clientType)
+        registerEvent(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected: state === 'CONNECTED' }, clientType)
       })
     }
     
@@ -389,12 +391,48 @@ export function useTrackManagement() {
     }
   }
 
+  /**
+   * Video client'ı oluşturur
+   * Video konferans için Agora client'ı oluşturur
+   * @returns {Object} Oluşturulan client
+   */
+  const createVideoClient = () => {
+    try {
+      const client = AgoraRTC.createClient(AGORA_CONFIG)
+      logVideo('Video client başarıyla oluşturuldu')
+      return { success: true, client }
+    } catch (error) {
+      logError(error, { context: 'createVideoClient' })
+      return { success: false, error }
+    }
+  }
+
+  /**
+   * Ekran paylaşımı client'ı oluşturur
+   * Ekran paylaşımı için Agora client'ı oluşturur
+   * @returns {Object} Oluşturulan client
+   */
+  const createScreenClient = () => {
+    try {
+      const client = AgoraRTC.createClient(AGORA_CONFIG)
+      logVideo('Ekran paylaşımı client\'ı başarıyla oluşturuldu')
+      return { success: true, client }
+    } catch (error) {
+      logError(error, { context: 'createScreenClient' })
+      return { success: false, error }
+    }
+  }
+
   return {
     // Merkezi event sistemi
     centralEmitter,
     registerClient,
     unregisterClient,
     cleanupCentralEvents,
+    
+    // Client oluşturma
+    createVideoClient,
+    createScreenClient,
     
     // Track yönetimi
     isTrackValid,

@@ -7,7 +7,23 @@ import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
 import { useLogger } from './useLogger.js'
 
-const { logUI, logError, logWarn, logInfo, logDebug } = useLogger()
+const { 
+  logUI, 
+  logError, 
+  logWarn, 
+  logInfo, 
+  logDebug, 
+  logVideo, 
+  logScreen, 
+  logQuality, 
+  trackPerformance, 
+  trackUserAction,
+  logs,
+  logStats,
+  getFilteredLogs,
+  clearLogs,
+  exportLogs
+} = useLogger()
 
 /**
  * Toplantı Composable - Video konferans işlemlerini yönetir ve tüm alt composable'ları koordine eder
@@ -188,6 +204,18 @@ export function useMeeting() {
     logWarn,
     logInfo,
     logDebug,
+    logVideo,
+    logScreen,
+    logQuality,
+    trackPerformance,
+    trackUserAction,
+    
+    // Log yönetimi - Log management
+    logs,
+    logStats,
+    getFilteredLogs,
+    clearLogs,
+    exportLogs,
     
     // State - Durum değişkenleri
     isConnected,

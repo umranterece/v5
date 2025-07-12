@@ -1,7 +1,5 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useLogger } from './useLogger.js'
-
-const { logQuality, logError } = useLogger()
+import { logger, LOG_CATEGORIES } from '../services/logger.js'
 
 /**
  * Yayın Kalitesi Composable - Video yayınının kalitesini takip eder ve izler
@@ -10,6 +8,9 @@ const { logQuality, logError } = useLogger()
  * @module composables/useStreamQuality
  */
 export function useStreamQuality() {
+  // Logger fonksiyonları - Direkt service'den al
+  const logQuality = (message, data) => logger.info(LOG_CATEGORIES.NETWORK, message, data)
+  const logError = (error, context) => logger.error(LOG_CATEGORIES.NETWORK, error.message || error, { error, ...context })
   const networkQuality = ref(0) // Ağ kalitesi (0-6 arası, 0=en kötü, 6=en iyi)
   const bitrate = ref(0) // Bit hızı (Kbps)
   const frameRate = ref(0) // Kare hızı (FPS)
@@ -119,8 +120,8 @@ export function useStreamQuality() {
       packetLoss.value = Math.max(0, Math.min(10, packetLoss.value + randomChange * 0.5))
       rtt.value = Math.max(20, Math.min(200, rtt.value + randomChange * 10))
       
-      // Gerçek API'yi de dene - Agora'dan gerçek istatistikleri al
-      if (client && client.getTransportStats) {
+      // Gerçek API'yi de dene - Agora'dan gerçek istatistikleri al (throttled)
+      if (client && client.getTransportStats && Math.random() < 0.3) { // 30% chance
         client.getTransportStats().then(stats => {
           logQuality('Real transport statistics', stats)
           updateQuality(stats)
@@ -128,7 +129,7 @@ export function useStreamQuality() {
           logError(err, { context: 'getTransportStats' })
         })
       }
-    }, 2000) // Her 2 saniyede bir güncelle
+    }, 3000) // 3 saniyede bir güncelle (reduced frequency)
   }
 
   /**

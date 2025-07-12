@@ -11,6 +11,7 @@
       :video-ref="el => setLocalVideoRef(el)"
       :track="localTracks.video && localTracks.video.video"
       :is-local="true"
+      :logUI="logUI"
     />
 
     <!-- Local Ekran Paylaşımı Video -->
@@ -22,6 +23,7 @@
       :track="localTracks.screen && localTracks.screen.video"
       :is-local="true"
       :is-screen-share="true"
+      :logUI="logUI"
     />
 
     <!-- Remote Users Video -->
@@ -33,6 +35,7 @@
       :video-ref="el => setVideoRef(el, user.uid)"
       :track="user.track"
       :is-local="false"
+      :logUI="logUI"
     />
 
     <!-- Remote Ekran Paylaşımı Kullanıcıları -->
@@ -45,6 +48,7 @@
       :track="user.track"
       :is-local="user.isLocal"
       :is-screen-share="true"
+      :logUI="logUI"
     />
   </div>
 </template>
@@ -52,16 +56,14 @@
 <script setup>
 import { computed } from 'vue'
 import VideoItem from './VideoItem.vue'
-import { useLogger } from '../composables/index.js'
-
-const { logUI } = useLogger()
 
 // Props
 const props = defineProps({
   allUsers: { type: Array, default: () => [] },
   localTracks: { type: Object, default: () => ({}) },
   localVideoRef: { type: Object, default: null },
-  localScreenRef: { type: Object, default: null }
+  localScreenRef: { type: Object, default: null },
+  logUI: { type: Function, default: () => {} }
 })
 
 // Emits
@@ -79,7 +81,7 @@ const localScreenHasVideo = computed(() => {
   const notVideoOff = !localScreenUser.value?.isVideoOff
   const userExists = !!localScreenUser.value
   
-  logUI('Yerel ekran paylaşımı video durumu hesaplanıyor', {
+  props.logUI('Yerel ekran paylaşımı video durumu hesaplanıyor', {
     hasScreenTrack,
     notVideoOff,
     userExists,
@@ -95,7 +97,7 @@ const getUserHasVideo = (user) => {
   const hasVideoTrack = !!user.hasVideo
   const notVideoOff = !user.isVideoOff
   const userExists = !!user
-  logUI('Kullanıcı video durumu hesaplanıyor', {
+  props.logUI('Kullanıcı video durumu hesaplanıyor', {
     uid: user.uid,
     hasVideoTrack,
     notVideoOff,
@@ -106,18 +108,18 @@ const getUserHasVideo = (user) => {
 }
 
 const setLocalVideoRef = (el) => {
-  logUI('Yerel video referansı ayarlanıyor', { element: !!el, hasRefProp: !!props.localVideoRef })
+  props.logUI('Yerel video referansı ayarlanıyor', { element: !!el, hasRefProp: !!props.localVideoRef })
   if (props.localVideoRef && typeof props.localVideoRef === 'object' && 'value' in props.localVideoRef) {
     props.localVideoRef.value = el
-    logUI('Yerel video referansı başarıyla ayarlandı')
+    props.logUI('Yerel video referansı başarıyla ayarlandı')
   } else {
-    logUI('Yerel video referans prop\'u geçerli bir ref objesi değil')
+    props.logUI('Yerel video referans prop\'u geçerli bir ref objesi değil')
   }
   emit('set-local-video-ref', el)
 }
 
 const setLocalScreenRef = (el) => {
-  logUI('Yerel ekran paylaşımı referansı ayarlanıyor', { 
+  props.logUI('Yerel ekran paylaşımı referansı ayarlanıyor', { 
     element: !!el, 
     hasRefProp: !!props.localScreenRef,
     elementType: el?.constructor?.name,
@@ -127,12 +129,12 @@ const setLocalScreenRef = (el) => {
   
   if (props.localScreenRef && typeof props.localScreenRef === 'object' && 'value' in props.localScreenRef) {
     props.localScreenRef.value = el
-    logUI('Yerel ekran paylaşımı referansı başarıyla ayarlandı', {
+    props.logUI('Yerel ekran paylaşımı referansı başarıyla ayarlandı', {
       newRef: !!el,
       refType: el?.constructor?.name
     })
   } else {
-    logUI('Yerel ekran paylaşımı referans prop\'u geçerli bir ref objesi değil', {
+    props.logUI('Yerel ekran paylaşımı referans prop\'u geçerli bir ref objesi değil', {
       hasRefProp: !!props.localScreenRef,
       refType: typeof props.localScreenRef
     })

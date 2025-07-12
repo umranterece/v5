@@ -154,8 +154,15 @@
             :allUsers="allUsers || []"
             :localTracks="localTracks || {}"
             :remoteTracks="remoteTracks || new Map()"
+            :logUI="logUI"
+            :logError="logError"
           />
         </div>
+        <!-- Recording Controls - Sadece bağlantı varken -->
+        <div v-if="isConnected" class="recording-area">
+          <RecordingControls />
+        </div>
+        
         <!-- Controls Area - Sadece bağlantı varken -->
         <div v-if="isConnected" class="controls-area">
           <AgoraControls
@@ -175,14 +182,15 @@
             :isScreenSharing="isScreenSharing"
             :onToggleScreenShare="toggleScreenShare"
             :supportsScreenShare="supportsScreenShare"
-            :settingsOpen="settingsOpen"
             :networkQualityLevel="qualityLevel"
             :networkQualityColor="qualityColor"
             :networkBitrate="bitrate"
             :networkFrameRate="frameRate"
             :networkRtt="rtt"
             :networkPacketLoss="packetLoss"
-            @open-settings="handleOpenSettings"
+            :logUI="logUI"
+            :logError="logError"
+            :trackUserAction="trackUserAction"
             @open-logs="handleOpenLogs"
           />
         </div>
@@ -193,6 +201,11 @@
       <!-- Log Modal -->
       <LogModal 
         :isOpen="logsOpen" 
+        :logs="logs"
+        :logStats="logStats"
+        :getFilteredLogs="getFilteredLogs"
+        :clearLogs="clearLogs"
+        :exportLogs="exportLogs"
         @close="logsOpen = false" 
       />
     </div>
@@ -201,18 +214,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useMeeting, AgoraVideo, AgoraControls, StreamQualityBar, LogModal, initializeAgoraModule, getErrorMessage } from './modules/agora'
-import { useLogger } from './modules/agora/composables/useLogger.js'
+import { useMeeting, AgoraVideo, AgoraControls, LogModal, RecordingControls, getErrorMessage } from './modules/agora'
+import { AGORA_EVENTS } from './modules/agora/constants.js'
 
-const { logUI, logError } = useMeeting()
-const { clearLogs } = useLogger()
-
-// initializeAgoraModule sadece başlatma için çağrılır, destructure edilmez!
-// initializeAgoraModule(pinia) // Eğer burada gerekiyorsa
-
-// Artık AgoraControls ve StreamQualityBar doğrudan kullanılabilir
-
-// Main Meeting composable - video konferans işlemlerini yönetir
 const {
   joinChannel,
   leaveChannel,
@@ -237,15 +241,27 @@ const {
   remoteTracks,
   supportsScreenShare,
   // Stream Quality
-  networkQuality,
   bitrate,
   frameRate,
   packetLoss,
   rtt,
   qualityLevel,
   qualityColor,
-  qualityPercentage,
-  debugMicrophoneStatus,
+  logUI,
+  logError,
+  logWarn,
+  logInfo,
+  logDebug,
+  logVideo,
+  logScreen,
+  logQuality,
+  trackPerformance,
+  trackUserAction,
+  logs,
+  logStats,
+  getFilteredLogs,
+  clearLogs,
+  exportLogs,
   checkDeviceStatus
 } = useMeeting()
 
@@ -300,44 +316,36 @@ const setupEventListeners = () => {
   if (centralEmitter && centralEmitter.on) {
     logUI('Central event system initialized')
     
-    centralEmitter.on('user-joined', (data) => {
+    centralEmitter.on(AGORA_EVENTS.USER_JOINED, (data) => {
       logUI('User joined', data)
     })
 
-    centralEmitter.on('user-left', (data) => {
+    centralEmitter.on(AGORA_EVENTS.USER_LEFT, (data) => {
       logUI('User left', { uid: data.uid })
     })
 
-    centralEmitter.on('local-video-ready', (data) => {
+    centralEmitter.on(AGORA_EVENTS.LOCAL_VIDEO_READY, (data) => {
       logUI('Local video ready', data)
     })
 
-    centralEmitter.on('local-audio-ready', (data) => {
+    centralEmitter.on(AGORA_EVENTS.LOCAL_AUDIO_READY, (data) => {
       logUI('Local audio ready', data)
     })
 
-    centralEmitter.on('remote-audio-ready', (data) => {
+    centralEmitter.on(AGORA_EVENTS.REMOTE_AUDIO_READY, (data) => {
       logUI('Remote audio ready', data)
     })
 
-    centralEmitter.on('connection-state-change', (data) => {
+    centralEmitter.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, (data) => {
       logUI('Connection state changed', data)
     })
   }
 }
 
 const agoraVideoRef = ref(null)
-const settingsOpen = ref(false)
 const logsOpen = ref(false)
 const sidebarOpen = ref(false)
 const toggleSidebar = () => { sidebarOpen.value = !sidebarOpen.value }
-
-function handleOpenSettings() {
-  if (agoraVideoRef.value && agoraVideoRef.value.openSettings) {
-    agoraVideoRef.value.openSettings()
-    settingsOpen.value = !settingsOpen.value
-  }
-}
 
 function handleOpenLogs() {
   logsOpen.value = true
@@ -345,6 +353,9 @@ function handleOpenLogs() {
 
 // Lifecycle
 onMounted(async () => {
+
+  logUI('Test logu', { test: true })
+
   setupEventListeners()
   // Cihaz durumlarını kontrol et
   try {
@@ -839,6 +850,14 @@ body {
   }
 }
 
+/* Recording Area */
+.recording-area {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .app-container {
@@ -852,6 +871,11 @@ body {
   .app-main {
     gap: 10px;
   }
+  
+  .recording-area {
+    padding: 0 10px;
+  }
+  
   .sidebar-float-wrapper {
     top: 8px;
     right: 8px;

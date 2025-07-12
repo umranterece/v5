@@ -17,4 +17,5 @@ export { default as LogModal } from './LogModal.vue'
 // export { default as AgoraScreenShare } from './AgoraScreenShare.vue'
 // export { default as AgoraWhiteboard } from './AgoraWhiteboard.vue'
 // export { default as AgoraChat } from './AgoraChat.vue'
-// export { default as AgoraRecording } from './AgoraRecording.vue' 
+// Recording components
+export { default as RecordingControls } from './RecordingControls.vue' 

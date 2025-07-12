@@ -2,16 +2,19 @@
  * Agora SDK Constants
  */
 
-// Environment Detection - Manuel olarak ayarlayın
-export const IS_DEV = false  // Development için true, Production için false yapın
-export const IS_PROD = false // Production için true, Development için false yapın
+// Environment Detection - Auto-detect
+export const IS_DEV = process.env.NODE_ENV === 'development'
+export const IS_PROD = process.env.NODE_ENV === 'production'
 export const IS_SSR = false
 
 // API Endpoints
 export const API_ENDPOINTS = {
   CREATE_TOKEN: IS_DEV 
     ? 'https://umranterece.com/test/agora/createToken.php'  // Development
-    : 'https://umranterece.com/test/agora/createToken.php'  // Production
+    : 'https://umranterece.com/test/agora/createToken.php',  // Production
+  RECORDING: IS_DEV
+    ? 'https://umranterece.com/test/agora/recording.php'  // Development
+    : 'https://umranterece.com/test/agora/recording.php'   // Production
 }
 
 // Agora Client Configuration
@@ -249,3 +252,79 @@ export const SCREEN_SHARE_CONFIG = {
     frameRate: 30                 // 30 FPS
   }
 } 
+
+// Event Types - Merkezi event sistemi için event tanımları
+export const AGORA_EVENTS = {
+  // Connection Events
+  CLIENT_INITIALIZED: 'client-initialized',
+  CLIENT_INIT_ERROR: 'client-init-error',
+  
+  // Channel Events
+  CHANNEL_JOINED: 'channel-joined',
+  CHANNEL_LEFT: 'channel-left',
+  JOIN_ERROR: 'join-error',
+  LEAVE_ERROR: 'leave-error',
+  
+  // Local Track Events
+  LOCAL_AUDIO_READY: 'local-audio-ready',
+  LOCAL_VIDEO_READY: 'local-video-ready',
+  LOCAL_AUDIO_ERROR: 'local-audio-error',
+  LOCAL_VIDEO_ERROR: 'local-video-error',
+  
+  // Remote Track Events
+  REMOTE_AUDIO_READY: 'remote-audio-ready',
+  REMOTE_VIDEO_READY: 'remote-video-ready',
+  REMOTE_SCREEN_READY: 'remote-screen-ready',
+  REMOTE_VIDEO_UNPUBLISHED: 'remote-video-unpublished',
+  REMOTE_TRACK_REMOVED: 'remote-track-removed',
+  
+  // User Events
+  USER_JOINED: 'user-joined',
+  USER_LEFT: 'user-left',
+  USER_UNPUBLISHED: 'user-unpublished',
+  
+  // Connection State Events
+  CONNECTION_STATE_CHANGE: 'connection-state-change',
+  NETWORK_QUALITY: 'network-quality',
+  
+  // Track Events
+  TRACKS_PUBLISHED: 'tracks-published',
+  SUBSCRIBE_ERROR: 'subscribe-error',
+  CREATE_TRACKS_ERROR: 'create-tracks-error',
+  
+  // Device Events
+  DEVICE_STATUS_CHANGE: 'device-status-change',
+  DEVICE_PERMISSION_CHANGE: 'device-permission-change',
+  
+  // Control Events
+  CAMERA_TOGGLED: 'camera-toggled',
+  MICROPHONE_TOGGLED: 'microphone-toggled',
+  
+  // Screen Share Events
+  SCREEN_SHARE_STARTED: 'screen-share-started',
+  SCREEN_SHARE_STOPPED: 'screen-share-stopped',
+  
+  // Recording Events
+  RECORDING_STARTED: 'recording-started',
+  RECORDING_STOPPED: 'recording-stopped',
+  RECORDING_ERROR: 'recording-error',
+  RECORDING_STATUS_CHANGED: 'recording-status-changed',
+  RECORDING_FILE_READY: 'recording-file-ready',
+  
+  // Setup Events
+  SETUP_REMOTE_VIDEO: 'setup-remote-video',
+  
+  // General Events
+  ERROR: 'error',
+  WARNING: 'warning',
+  INFO: 'info'
+}
+
+// Recording Events - Ayrı export için
+export const RECORDING_EVENTS = {
+  RECORDING_STARTED: 'recording-started',
+  RECORDING_STOPPED: 'recording-stopped',
+  RECORDING_ERROR: 'recording-error',
+  RECORDING_STATUS_CHANGED: 'recording-status-changed',
+  RECORDING_FILE_READY: 'recording-file-ready'
+}

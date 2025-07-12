@@ -45,9 +45,6 @@
 <script setup>
 import { onMounted, watch, ref, computed, onBeforeUnmount, nextTick } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
-import { useLogger } from '../composables/index.js'
-
-const { logUI } = useLogger()
 
 // Props
 const props = defineProps({
@@ -56,7 +53,8 @@ const props = defineProps({
   videoRef: { type: [Object, Function], default: null },
   track: { type: Object, default: null }, // Yeni track prop'u
   isLocal: { type: Boolean, default: false },
-  isScreenShare: { type: Boolean, default: false }
+  isScreenShare: { type: Boolean, default: false },
+  logUI: { type: Function, default: () => {} }
 })
 
 const hasCalledVideoRef = ref(false)
@@ -99,14 +97,17 @@ const getUserInitials = (name) => {
 }
 
 onMounted(async () => {
-  logUI('Video öğesi yüklendi', { 
-    user: props.user, 
-    hasVideo: props.hasVideo, 
-    isLocal: props.isLocal,
-    shouldShowVideo: shouldShowVideo.value,
-    shouldShowPlaceholder: shouldShowPlaceholder.value,
-    track: !!props.track
-  })
+  // Production'da excessive logging'i azalt
+  if (process.env.NODE_ENV === 'development') {
+    props.logUI('Video öğesi yüklendi', { 
+      user: props.user, 
+      hasVideo: props.hasVideo, 
+      isLocal: props.isLocal,
+      shouldShowVideo: shouldShowVideo.value,
+      shouldShowPlaceholder: shouldShowPlaceholder.value,
+      track: !!props.track
+    })
+  }
   
   // Video element'inin oluşturulmasını bekle
   await nextTick()
@@ -118,14 +119,17 @@ onMounted(async () => {
 })
 
 watch(() => props.hasVideo, async (newHasVideo) => {
-  logUI('Video öğesi video durumu değişti', { 
-    newHasVideo, 
-    user: props.user, 
-    isLocal: props.isLocal,
-    shouldShowVideo: shouldShowVideo.value,
-    shouldShowPlaceholder: shouldShowPlaceholder.value,
-    track: !!props.track
-  })
+  // Production'da excessive logging'i azalt
+  if (process.env.NODE_ENV === 'development') {
+    props.logUI('Video öğesi video durumu değişti', { 
+      newHasVideo, 
+      user: props.user, 
+      isLocal: props.isLocal,
+      shouldShowVideo: shouldShowVideo.value,
+      shouldShowPlaceholder: shouldShowPlaceholder.value,
+      track: !!props.track
+    })
+  }
   
   // Video durumu değiştiğinde ref callback'ini çağır
   if (newHasVideo && shouldShowVideo.value) {
@@ -137,7 +141,7 @@ watch(() => props.hasVideo, async (newHasVideo) => {
 })
 
 watch(() => props.user?.isVideoOff, (newVideoOff) => {
-  logUI('Kullanıcı video durumu değişti', {
+  props.logUI('Kullanıcı video durumu değişti', {
     newVideoOff,
     user: props.user,
     isLocal: props.isLocal,
@@ -163,7 +167,7 @@ watch(
         await newTrack.play(el);
         lastPlayedTrack = newTrack;
       } catch (e) {
-        logUI('track.play() hatası', e)
+        props.logUI('track.play() hatası', e)
       }
     }
     // Video element değiştiğinde ref callback'ini çağır
@@ -183,7 +187,7 @@ onBeforeUnmount(() => {
 
 // Video ref callback - optimized to prevent recursive calls
 const handleVideoRef = (el) => {
-  logUI('Video öğesi ref callback', { 
+  props.logUI('Video öğesi ref callback', { 
     element: !!el, 
     user: props.user, 
     isLocal: props.isLocal, 
@@ -193,16 +197,16 @@ const handleVideoRef = (el) => {
     track: !!props.track
   })
   if (hasCalledVideoRef.value && el === null) {
-    logUI('videoRef çağrısı atlanıyor - zaten çağrıldı ve element null')
+    props.logUI('videoRef çağrısı atlanıyor - zaten çağrıldı ve element null')
     return
   }
   if (props.videoRef) {
     if (typeof props.videoRef === 'function') {
-      logUI('videoRef fonksiyonu çağrılıyor')
+      props.logUI('videoRef fonksiyonu çağrılıyor')
       props.videoRef(el)
       hasCalledVideoRef.value = true
     } else if (props.videoRef && typeof props.videoRef === 'object' && 'value' in props.videoRef) {
-      logUI('videoRef.value ayarlanıyor')
+      props.logUI('videoRef.value ayarlanıyor')
       props.videoRef.value = el
       hasCalledVideoRef.value = true
     }
@@ -211,7 +215,7 @@ const handleVideoRef = (el) => {
     hasCalledVideoRef.value = false
   }
   if (props.isScreenShare && el) {
-    logUI('Ekran paylaşımı video elementi hazır, event gönderiliyor')
+    props.logUI('Ekran paylaşımı video elementi hazır, event gönderiliyor')
   }
 }
 </script>
