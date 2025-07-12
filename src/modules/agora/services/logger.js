@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { IS_DEV } from '../constants.js'
+import { generateSessionId as generateSessionIdFromUtils } from '../utils/index.js'
 
 // Log seviyeleri
 export const LOG_LEVELS = {
@@ -86,12 +87,9 @@ const createLog = (level, category, message, data = {}) => {
   return log
 }
 
-// Session ID oluşturma
+// Session ID oluşturma - utils'den import edildi
 const generateSessionId = () => {
-  if (!window.agoraSessionId) {
-    window.agoraSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-  }
-  return window.agoraSessionId
+  return generateSessionIdFromUtils()
 }
 
 // Immediate log addition (for critical logs)

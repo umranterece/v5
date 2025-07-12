@@ -1,7 +1,11 @@
 import { ref } from 'vue'
 import AgoraRTC from 'agora-rtc-sdk-ng'
-import { centralEmitter } from '../centralEmitter.js'
-import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_EVENTS, AGORA_CONFIG } from '../constants.js'
+import { 
+  registerClient,
+  unregisterClient,
+  cleanupCentralEvents
+} from '../utils/index.js'
+import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_CONFIG } from '../constants.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
 import { useStreamQuality } from './useStreamQuality.js'
 
@@ -19,150 +23,6 @@ export function useTrackManagement() {
   
   // Stream quality monitoring
   const { startMonitoring: startQualityMonitoring, stopMonitoring: stopQualityMonitoring } = useStreamQuality()
-  
-  // Event işleme durumu - Her event'in sadece bir kez işlenmesini sağlar
-  const processedEvents = ref(new Set())
-  
-  // Client kayıtları - Hangi client'ların kayıtlı olduğunu takip eder
-  const registeredClients = ref(new Map())
-  
-  // Event deduplication için timeout'lar
-  const eventTimeouts = ref(new Map())
-
-  /**
-   * Event'i benzersiz hale getiren key oluşturur
-   * @param {string} eventType - Event türü
-   * @param {Object} data - Event verisi
-   * @returns {string} Benzersiz event key'i
-   */
-  const createEventKey = (eventType, data) => {
-    if (eventType === AGORA_EVENTS.USER_JOINED || eventType === AGORA_EVENTS.USER_LEFT) {
-      return `${eventType}-${data.uid}`
-    } else if (eventType === 'user-published' || eventType === 'user-unpublished') {
-      return `${eventType}-${data.user.uid}-${data.mediaType}`
-    } else if (eventType === AGORA_EVENTS.CONNECTION_STATE_CHANGE) {
-      return `${eventType}-${data.connected}`
-    }
-    return `${eventType}-${JSON.stringify(data)}`
-  }
-
-  /**
-   * Event'i merkezi sisteme kaydeder
-   * @param {string} eventType - Event türü
-   * @param {Object} data - Event verisi
-   * @param {string} clientType - Client türü (video/screen)
-   */
-  const registerEvent = (eventType, data, clientType) => {
-    const eventKey = createEventKey(eventType, data)
-    
-    // Event zaten işlendiyse tekrar işleme
-    if (processedEvents.value.has(eventKey)) {
-      logVideo(`Event zaten işlendi, atlanıyor: ${eventKey} (${clientType})`)
-      return false
-    }
-    
-    // Event'i işlenmiş olarak işaretle
-    processedEvents.value.add(eventKey)
-    
-    // 5 saniye sonra event'i temizle (memory leak önleme)
-    if (eventTimeouts.value.has(eventKey)) {
-      clearTimeout(eventTimeouts.value.get(eventKey))
-    }
-    eventTimeouts.value.set(eventKey, setTimeout(() => {
-      processedEvents.value.delete(eventKey)
-      eventTimeouts.value.delete(eventKey)
-    }, 5000))
-    
-    logVideo(`Merkezi event sistemi: ${eventType} (${clientType}) - ${eventKey}`)
-    
-    // Event'i merkezi emitter'a gönder
-    centralEmitter.emit(eventType, { ...data, clientType })
-    return true
-  }
-
-  /**
-   * Client'ı merkezi sisteme kaydeder (sadece tracking için)
-   * @param {Object} client - Agora client
-   * @param {string} clientType - Client türü (video/screen)
-   * @param {Function} eventHandler - Event handler fonksiyonu (artık kullanılmıyor)
-   */
-  const registerClient = (client, clientType, eventHandler) => {
-    if (!client) return
-    
-    // Client'ı kaydet
-    registeredClients.value.set(clientType, { client, eventHandler })
-    
-    // Network quality monitoring'i başlat (sadece video client için)
-    if (clientType === 'video') {
-      startQualityMonitoring(client)
-      logVideo(`Network quality monitoring başlatıldı: ${clientType}`)
-    }
-    
-    // Sadece tracking için event'leri dinle (duplicate listener kurma)
-    if (client.on) {
-      // user-joined event'ini dinle
-      client.on('user-joined', (user) => {
-        logVideo(`Merkezi takip: kullanıcı katıldı (${clientType})`, { uid: user.uid })
-        registerEvent(AGORA_EVENTS.USER_JOINED, user, clientType)
-      })
-      
-      // user-left event'ini dinle
-      client.on('user-left', (user) => {
-        logVideo(`Merkezi takip: kullanıcı ayrıldı (${clientType})`, { uid: user.uid })
-        registerEvent(AGORA_EVENTS.USER_LEFT, user, clientType)
-      })
-      
-      // user-published event'ini dinle
-      client.on('user-published', (user, mediaType) => {
-        logVideo(`Merkezi takip: kullanıcı yayınlandı (${clientType})`, { uid: user.uid, mediaType })
-        registerEvent('user-published', { user, mediaType }, clientType)
-      })
-      
-      // user-unpublished event'ini dinle
-      client.on('user-unpublished', (user, mediaType) => {
-        logVideo(`Merkezi takip: kullanıcı yayından kaldırıldı (${clientType})`, { uid: user.uid, mediaType })
-        registerEvent('user-unpublished', { user, mediaType }, clientType)
-      })
-      
-      // connection-state-change event'ini dinle
-      client.on('connection-state-change', (state) => {
-        logVideo(`Merkezi takip: bağlantı durumu değişti (${clientType})`, { state })
-        registerEvent(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected: state === 'CONNECTED' }, clientType)
-      })
-    }
-    
-    logVideo(`Client merkezi takip için kaydedildi: ${clientType}`)
-  }
-
-  /**
-   * Client'ı merkezi sistemden kaldırır
-   * @param {string} clientType - Client türü (video/screen)
-   */
-  const unregisterClient = (clientType) => {
-    const clientData = registeredClients.value.get(clientType)
-    if (clientData) {
-      // Client'ın event'lerini temizle
-      if (clientData.client) {
-        clientData.client.removeAllListeners()
-      }
-      registeredClients.value.delete(clientType)
-      logVideo(`Client kaldırıldı: ${clientType}`)
-    }
-  }
-
-  /**
-   * Merkezi event sistemini temizler
-   */
-  const cleanupCentralEvents = () => {
-    // Network quality monitoring'i durdur
-    stopQualityMonitoring()
-    
-    processedEvents.value.clear()
-    eventTimeouts.value.forEach(timeout => clearTimeout(timeout))
-    eventTimeouts.value.clear()
-    registeredClients.value.clear()
-    centralEmitter.all.clear()
-  }
 
   /**
    * Track'in geçerli ve etkin olup olmadığını kontrol eder
@@ -410,7 +270,15 @@ export function useTrackManagement() {
   const createVideoClient = () => {
     try {
       const client = AgoraRTC.createClient(AGORA_CONFIG)
-      logVideo('Video client başarıyla oluşturuldu')
+      
+      // Network quality monitoring'i başlat
+      startQualityMonitoring(client)
+      logVideo('Network quality monitoring başlatıldı: video')
+      
+      // Client'ı merkezi sisteme kaydet
+      registerClient(client, 'video')
+      
+      logVideo('Video client başarıyla oluşturuldu ve kaydedildi')
       return { success: true, client }
     } catch (error) {
       logError(error, { context: 'createVideoClient' })
@@ -426,11 +294,15 @@ export function useTrackManagement() {
   const createScreenClient = () => {
     try {
       const client = AgoraRTC.createClient(AGORA_CONFIG)
-      logVideo('Ekran paylaşımı client\'ı başarıyla oluşturuldu')
+      
+      // Client'ı merkezi sisteme kaydet
+      registerClient(client, 'screen')
+      
+      logVideo('Ekran paylaşımı client\'ı başarıyla oluşturuldu ve kaydedildi')
       return { success: true, client }
     } catch (error) {
       logError(error, { context: 'createScreenClient' })
-      return { success: false, error }
+      return { success: false, error }  
     }
   }
 

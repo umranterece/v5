@@ -6,7 +6,7 @@
 import { ref, computed, watch, onUnmounted, readonly } from 'vue'
 import { recordingService } from '../services/recordingService.js'
 import { logger } from '../services/logger.js'
-import { centralEmitter } from '../centralEmitter.js'
+import { centralEmitter } from '../utils/centralEmitter.js'
 import { RECORDING_EVENTS } from '../constants.js'
 
 export function useRecording() {

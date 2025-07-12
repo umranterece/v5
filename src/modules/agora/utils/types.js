@@ -1,5 +1,7 @@
 /**
  * Agora Module Type Definitions
+ * Bu dosya, tüm modül genelinde kullanılan type tanımlarını içerir.
+ * @module utils/types
  */
 
 // User Types
@@ -107,6 +109,4 @@ export const DEFAULT_VALUES = {
  * @property {string} channelName - Channel name
  * @property {number|string} uid - User ID
  * @property {string} [userName] - User name
- */
-
- 
+ */ 

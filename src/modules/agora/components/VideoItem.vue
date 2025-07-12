@@ -45,6 +45,7 @@
 <script setup>
 import { onMounted, watch, ref, computed, onBeforeUnmount, nextTick } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
+import { getUserInitials as getUserInitialsFromUtils } from '../utils/index.js'
 
 // Props
 const props = defineProps({
@@ -88,12 +89,7 @@ const userType = computed(() => {
 })
 
 const getUserInitials = (name) => {
-  return name
-    .split(' ')
-    .map(word => word.charAt(0))
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  return getUserInitialsFromUtils(name)
 }
 
 onMounted(async () => {

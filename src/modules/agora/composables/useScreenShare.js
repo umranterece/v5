@@ -3,8 +3,9 @@ import { USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName, DEV_CONFI
 import { createToken } from '../services/tokenService.js'
 import { useTrackManagement } from './useTrackManagement.js'
 import { useStreamQuality } from './useStreamQuality.js'
-import { centralEmitter } from '../centralEmitter.js'
+import { centralEmitter } from '../utils/centralEmitter.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
 
 /**
  * Ekran Paylaşımı Composable - Ekran paylaşımı işlemlerini yönetir
@@ -29,14 +30,9 @@ export function useScreenShare(agoraStore) {
   const activeTimeouts = ref(new Set())
   const activeIntervals = ref(new Set())
   
-  // Güvenli timeout oluşturma helper'ı
+  // Güvenli timeout oluşturma helper'ı - utils'den import edildi
   const createSafeTimeout = (callback, delay) => {
-    const timeoutId = setTimeout(() => {
-      callback()
-      activeTimeouts.value.delete(timeoutId)
-    }, delay)
-    activeTimeouts.value.add(timeoutId)
-    return timeoutId
+    return createSafeTimeoutFromUtils(callback, delay, activeTimeouts.value)
   }
 
   // Track yönetimi composable'ı
@@ -457,7 +453,7 @@ export function useScreenShare(agoraStore) {
     if (!client) return
 
     // Ekran kullanıcısı katıldı
-    client.on('user-joined', (user) => {
+    client.on(AGORA_EVENTS.USER_JOINED, (user) => {
       logScreen('Ekran kullanıcısı katıldı:', user.uid)
       if (agoraStore.isLocalUID(user.uid)) {
         logScreen('Yerel kullanıcı ekran client\'ında yoksayılıyor:', user.uid)
@@ -486,7 +482,7 @@ export function useScreenShare(agoraStore) {
     });
 
     // Ekran kullanıcısı ayrıldı
-    client.on('user-left', (user) => {
+    client.on(AGORA_EVENTS.USER_LEFT, (user) => {
       logScreen('Ekran kullanıcısı ayrıldı:', user.uid)
       
       // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), çıkar
@@ -500,7 +496,7 @@ export function useScreenShare(agoraStore) {
     })
 
     // Ekran kullanıcısı yayınlandı
-    client.on('user-published', async (user, mediaType) => {
+    client.on(AGORA_EVENTS.USER_PUBLISHED, async (user, mediaType) => {
       logScreen('Ekran kullanıcısı yayınlandı:', user.uid, mediaType)
       
       // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), işleme
@@ -523,7 +519,7 @@ export function useScreenShare(agoraStore) {
     })
 
     // Ekran kullanıcısı yayından kaldırıldı
-    client.on('user-unpublished', (user, mediaType) => {
+    client.on(AGORA_EVENTS.USER_UNPUBLISHED, (user, mediaType) => {
       logScreen('Ekran kullanıcısı yayından kaldırıldı:', user.uid, mediaType)
       
       // Eğer bu UID yerel kullanıcının UID'si ise (video veya ekran), işleme
@@ -539,7 +535,7 @@ export function useScreenShare(agoraStore) {
     })
 
     // Bağlantı durumu
-    client.on('connection-state-change', (curState) => {
+    client.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, (curState) => {
       const connected = curState === 'CONNECTED'
       agoraStore.setClientConnected('screen', connected)
       centralEmitter.emit(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected, clientType: 'screen' })

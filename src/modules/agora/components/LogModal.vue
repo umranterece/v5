@@ -83,6 +83,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { LOG_LEVELS, LOG_CATEGORIES } from '../services/logger.js'
+import { formatTime as formatTimeFromUtils } from '../utils/index.js'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -137,8 +138,7 @@ const exportLogs = () => {
 }
 
 const formatTime = (timestamp) => {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString()
+  return formatTimeFromUtils(timestamp)
 }
 </script>
 

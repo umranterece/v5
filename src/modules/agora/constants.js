@@ -281,6 +281,7 @@ export const AGORA_EVENTS = {
   // User Events
   USER_JOINED: 'user-joined',
   USER_LEFT: 'user-left',
+  USER_PUBLISHED: 'user-published',
   USER_UNPUBLISHED: 'user-unpublished',
   
   // Connection State Events

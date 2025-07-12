@@ -110,6 +110,7 @@
 import { computed } from 'vue'
 import { useRecording } from '../composables/useRecording.js'
 import { logger } from '../services/logger.js'
+import { formatDuration as formatDurationFromUtils, formatFileSize as formatFileSizeFromUtils } from '../utils/index.js'
 
 export default {
   name: 'RecordingControls',
@@ -184,19 +185,11 @@ export default {
     }
 
     const formatFileSize = (bytes) => {
-      if (!bytes) return '0 B'
-      
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(1024))
-      return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`
+      return formatFileSizeFromUtils(bytes)
     }
 
     const formatDuration = (seconds) => {
-      if (!seconds) return '00:00'
-      
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = seconds % 60
-      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+      return formatDurationFromUtils(seconds)
     }
 
     return {

@@ -1,8 +1,9 @@
 import { ref, onUnmounted } from 'vue'
 import { USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName, isScreenShareUser, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
 import { useTrackManagement } from './useTrackManagement.js'
-import { centralEmitter } from '../centralEmitter.js'
+import { centralEmitter } from '../utils/centralEmitter.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
 
 /**
  * Video/Ses Composable - Video client işlemlerini yönetir
@@ -38,14 +39,9 @@ export function useVideo(agoraStore) {
   const activeTimeouts = ref(new Set())
   const activeIntervals = ref(new Set())
   
-  // Güvenli timeout oluşturma helper'ı
+  // Güvenli timeout oluşturma helper'ı - utils'den import edildi
   const createSafeTimeout = (callback, delay) => {
-    const timeoutId = setTimeout(() => {
-      callback()
-      activeTimeouts.value.delete(timeoutId)
-    }, delay)
-    activeTimeouts.value.add(timeoutId)
-    return timeoutId
+    return createSafeTimeoutFromUtils(callback, delay, activeTimeouts.value)
   }
 
   // Track yönetimi composable'ı
@@ -754,7 +750,7 @@ export function useVideo(agoraStore) {
     logVideo('Video client için event listener\'lar kuruluyor', { clientType: 'video' })
 
     // Kullanıcı katıldı
-    client.on('user-joined', async (user) => {
+    client.on(AGORA_EVENTS.USER_JOINED, async (user) => {
       logVideo('Kullanıcı katıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
@@ -801,7 +797,7 @@ export function useVideo(agoraStore) {
     });
 
     // Kullanıcı ayrıldı
-    client.on('user-left', async (user) => {
+    client.on(AGORA_EVENTS.USER_LEFT, async (user) => {
       logVideo('Kullanıcı ayrıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
@@ -819,7 +815,7 @@ export function useVideo(agoraStore) {
     })
 
     // Kullanıcı yayınlandı
-    client.on('user-published', async (user, mediaType) => {
+    client.on(AGORA_EVENTS.USER_PUBLISHED, async (user, mediaType) => {
       logVideo('Kullanıcı yayınlandı event\'i alındı', { 
         uid: user.uid, 
         mediaType, 
@@ -936,7 +932,7 @@ export function useVideo(agoraStore) {
     })
 
     // Kullanıcı yayından kaldırıldı
-    client.on('user-unpublished', async (user, mediaType) => {
+    client.on(AGORA_EVENTS.USER_UNPUBLISHED, async (user, mediaType) => {
       logVideo('Kullanıcı yayından kaldırıldı event\'i alındı', { uid: user.uid, mediaType, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
@@ -969,7 +965,7 @@ export function useVideo(agoraStore) {
     })
 
     // Bağlantı durumu
-    client.on('connection-state-change', async (curState) => {
+    client.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, async (curState) => {
       logVideo('Bağlantı durumu değişti', { state: curState, clientType: 'video' })
       const connected = curState === 'CONNECTED'
       agoraStore.setClientConnected('video', connected)

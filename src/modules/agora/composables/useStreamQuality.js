@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { AGORA_EVENTS } from '../constants.js'
 
 /**
  * Yayın Kalitesi Composable - Video yayınının kalitesini takip eder ve izler
@@ -124,7 +125,7 @@ export function useStreamQuality() {
       // Network quality event'lerini dinle
       if (client.on && !client._networkQualityListener) {
         client._networkQualityListener = true
-        client.on('network-quality', (stats) => {
+        client.on(AGORA_EVENTS.NETWORK_QUALITY, (stats) => {
           logQuality('Network quality event received', stats)
           if (stats) {
             networkQuality.value = stats.downlinkNetworkQuality || stats.uplinkNetworkQuality || 0
@@ -212,7 +213,7 @@ export function useStreamQuality() {
     }
     
     if (currentClient && currentClient._networkQualityListener) {
-      currentClient.off('network-quality')
+      currentClient.off(AGORA_EVENTS.NETWORK_QUALITY)
       currentClient._networkQualityListener = false
     }
     
