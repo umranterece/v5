@@ -108,9 +108,9 @@
 
 <script>
 import { computed } from 'vue'
-import { useRecording } from '../composables/useRecording.js'
-import { logger } from '../services/logger.js'
-import { formatDuration as formatDurationFromUtils, formatFileSize as formatFileSizeFromUtils } from '../utils/index.js'
+import { useRecording } from '../../composables/useRecording.js'
+import { logger } from '../../services/logger.js'
+import { formatDuration as formatDurationFromUtils, formatFileSize as formatFileSizeFromUtils } from '../../utils/index.js'
 
 export default {
   name: 'RecordingControls',

@@ -3,19 +3,20 @@
  * @module components
  */
 
-// Video components
-export { default as AgoraVideo } from './AgoraVideo.vue'
-export { default as AgoraControls } from './AgoraControls.vue'
-export { default as VideoGrid } from './VideoGrid.vue'
-export { default as VideoItem } from './VideoItem.vue'
-export { default as StreamQualityBar } from './StreamQualityBar.vue'
+// Core components (Ana konferans bileşenleri)
+export * from './core/index.js'
 
-// Hata ayıklama bileşenleri
-export { default as LogModal } from './LogModal.vue'
+// Video components (Video yönetimi)
+export * from './video/index.js'
 
-// Gelecek bileşenler (yer tutucu dışa aktarımlar)
-// export { default as AgoraScreenShare } from './AgoraScreenShare.vue'
-// export { default as AgoraWhiteboard } from './AgoraWhiteboard.vue'
-// export { default as AgoraChat } from './AgoraChat.vue'
-// Recording components
-export { default as RecordingControls } from './RecordingControls.vue' 
+// Controls components (Kontrol arayüzü)
+export * from './controls/index.js'
+
+// Forms components (Form bileşenleri)
+export * from './forms/index.js'
+
+// Modals components (Modal bileşenleri)
+export * from './modals/index.js'
+
+// UI components (Yeniden kullanılabilir UI)
+export * from './ui/index.js' 

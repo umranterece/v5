@@ -105,29 +105,67 @@ export function useMeeting() {
   })
 
   /**
-   * Kanala katılma işlemi - Token yönetimi ile birlikte
-   * @param {string} channelName - Katılınacak kanal adı
+   * Kapsamlı temizlik işlemi - Tüm kaynakları temizler
    */
-  const joinChannel = async (channelName) => {
+  const clean = async () => {
     try {
+      logUI('Kapsamlı temizlik başlatılıyor...')
+      
+      // Önce mevcut bağlantıları kapat
+      if (isConnected.value) {
+        await leaveChannel()
+      }
+      
+      // Tüm kaynakları temizle
+      cleanup()
+      
+      // Store'u sıfırla
+      agoraStore.reset()
+      
+      // Yayın kalitesi izlemeyi durdur
+      stopMonitoring()
+      
+      // Current channel'ı sıfırla
+      currentChannel.value = ''
+      
+      logUI('Kapsamlı temizlik tamamlandı')
+    } catch (error) {
+      logError(error, { context: 'clean' })
+      // Temizlik hatası olsa bile devam et
+    }
+  }
+
+  /**
+   * Kanala katılma işlemi - Token dışarıdan alınır
+   * @param {Object} joinParams - Katılma parametreleri
+   * @param {string} joinParams.channelName - Katılınacak kanal adı
+   * @param {string} joinParams.token - Token
+   * @param {number} joinParams.uid - Kullanıcı ID'si
+   * @param {string} [joinParams.appId] - App ID (opsiyonel)
+   */
+  const joinChannel = async (joinParams) => {
+    try {
+      const { channelName, token, uid, appId } = joinParams
+      
+      // Her girişten önce kapsamlı temizlik yap
+      await clean()
+      
       // Önce store'a kanal adını kaydet
       agoraStore.setVideoChannelName(channelName)
       currentChannel.value = channelName
       
-      // Sadece video için UID oluştur
-      const videoUID = generateVideoUID()
-      // Sadece video için token al
-      const videoTokenData = await createToken(channelName, videoUID)
-      // Store'a app ID'yi kaydet
-      agoraStore.setAppId(videoTokenData.app_id)
+      // App ID'yi store'a kaydet (varsa)
+      if (appId) {
+        agoraStore.setAppId(appId)
+      }
       
       // Video client ile kanala katıl
       await joinVideoChannel({
-        appId: videoTokenData.app_id,
-        token: videoTokenData.token,
+        appId: appId || agoraStore.appId,
+        token: token,
         channelName,
-        uid: videoUID,
-        userName: `${DEFAULTS.USER_NAME} ${videoUID}`
+        uid: uid,
+        userName: `${DEFAULTS.USER_NAME} ${uid}`
       })
       
       // Yayın kalitesi izlemeyi başlat
@@ -135,9 +173,9 @@ export function useMeeting() {
         startMonitoring(agoraStore.clients.video.client)
       }
       
-      logUI('Video kanalına başarıyla katılındı', { channelName })
+      logUI('Video kanalına başarıyla katılındı', { channelName, uid })
     } catch (error) {
-      logError(error, { context: 'joinChannel', channelName })
+      logError(error, { context: 'joinChannel', channelName: joinParams.channelName })
       throw error
     }
   }
@@ -263,6 +301,7 @@ export function useMeeting() {
     
     // Temizlik - Cleanup işlemleri
     cleanup,
+    clean,
     
     // Debug Metodları - Hata ayıklama işlemleri
     debugMicrophoneStatus,

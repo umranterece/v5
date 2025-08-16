@@ -2,9 +2,9 @@
  * Agora SDK Constants
  */
 
-// Environment Detection - Auto-detect
-export const IS_DEV = process.env.NODE_ENV === 'development'
-export const IS_PROD = process.env.NODE_ENV === 'production'
+// Environment Detection - Production mode
+export const IS_DEV = false
+export const IS_PROD = true
 export const IS_SSR = false
 
 // API Endpoints

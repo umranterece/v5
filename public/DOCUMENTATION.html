@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>rs-agora-module - Kapsamlı Dokümantasyon</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #18191c; color: #e0e0e0; padding: 2rem; }
+    h1, h2, h3 { color: #7f9cf5; }
+    code, pre { background: #23272f; color: #aee; border-radius: 6px; padding: 0.2em 0.4em; }
+    pre { display: block; padding: 1em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    th, td { border: 1px solid #333; padding: 0.5em; }
+    th { background: #23272f; }
+    tr:nth-child(even) { background: #222; }
+    .note { background: #23272f; color: #fbbf24; padding: 0.5em 1em; border-radius: 6px; margin: 1em 0; }
+    .step { margin: 1.5em 0; padding: 1em; background: #23272f; border-left: 4px solid #7f9cf5; border-radius: 8px; }
+    .step-title { color: #fbbf24; font-weight: bold; font-size: 1.1em; }
+    ul, ol { margin-left: 2em; }
+    li { margin-bottom: 0.5em; }
+    a { color: #7f9cf5; }
+  </style>
+</head>
+<body>
+  <h1>rs-agora-module - Kapsamlı Adım Adım Dokümantasyon</h1>
+
+  <div class="step">
+    <div class="step-title">1. Proje Oluşturma</div>
+    <ol>
+      <li>Yeni bir Vue 3 projesi başlatmak için terminalde şunu çalıştırın:<br>
+        <pre><code>npm create vue@latest my-agora-project</code></pre>
+      </li>
+      <li>Kurulum sırasında aşağıdaki seçimleri öneririz:
+        <ul>
+          <li>TypeScript: <b>No</b></li>
+          <li>JSX Support: <b>No</b></li>
+          <li>Vue Router: <b>Yes</b></li>
+          <li>Pinia: <b>Yes</b></li>
+          <li>Vitest: <b>No</b></li>
+          <li>End-to-End Testing: <b>No</b></li>
+          <li>Linting: <b>Oxlint veya ESLint</b></li>
+          <li>Prettier: <b>Yes</b></li>
+          <li>Vue DevTools: <b>Yes</b></li>
+        </ul>
+      </li>
+      <li>Proje klasörüne girin:<br>
+        <pre><code>cd my-agora-project</code></pre>
+      </li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <div class="step-title">2. Bağımlılıkların Kurulumu</div>
+    <ol>
+      <li>Agora Vue paketini ve gerekli peer dependency'leri yükleyin:<br>
+        <pre><code>npm install rs-agora-module
+npm install agora-rtc-sdk-ng@^4.0.0 pinia@^3.0.0 mitt@^3.0.0</code></pre>
+      </li>
+    </ol>
+    <div class="note">
+      <b>Not:</b> <code>agora-rtc-sdk-ng</code>, <code>pinia</code> ve <code>mitt</code> peer dependency olarak gereklidir.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-title">3. Stil Dosyasını Dahil Etme</div>
+    <ol>
+      <li>Arayüzün düzgün görünmesi için <b>main.js</b> veya <b>main.ts</b> dosyanıza şu satırı ekleyin:<br>
+        <pre><code>import 'rs-agora-module/dist/rs-agora-module.css'</code></pre>
+      </li>
+    </ol>
+    <div class="note">
+      <b>Not:</b> CSS importu zorunludur! Aksi halde arayüz bozuk veya stilsiz görünebilir.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-title">4. Ana Kurulum (main.js)</div>
+    <pre><code>import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+import 'rs-agora-module/dist/rs-agora-module.css'
+
+const app = createApp(App)
+app.use(createPinia())
+app.mount('#app')
+</code></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-title">5. App.vue Örneği</div>
+    <pre><code>&lt;template&gt;
+  &lt;div class="app"&gt;
+    &lt;AgoraConference
+      :channelName="'test-channel'"
+      :autoJoin="true"
+      :userUid="userUid"
+      :tokenEndpoint="tokenEndpoint"
+      @joined="onJoined"
+      @left="onLeft"
+      @error="onError"
+    /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref } from 'vue'
+import { AgoraConference } from 'rs-agora-module'
+
+const userUid = ref(Math.floor(Math.random() * 100000))
+const tokenEndpoint = ref('https://your-api.com/createToken.php')
+
+const onJoined = (data) =&gt; { console.log('Kanala katıldı:', data) }
+const onLeft = (data) =&gt; { console.log('Kanaldan ayrıldı:', data) }
+const onError = (error) =&gt; { console.error('Hata:', error) }
+&lt;/script&gt;
+</code></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-title">6. Props ve Eventler</div>
+    <table>
+      <tr>
+        <th>Prop</th>
+        <th>Tip</th>
+        <th>Açıklama</th>
+      </tr>
+      <tr>
+        <td>channelName</td>
+        <td>String</td>
+        <td>Agora kanal adı</td>
+      </tr>
+      <tr>
+        <td>autoJoin</td>
+        <td>Boolean</td>
+        <td>Otomatik katılım (varsayılan: false)</td>
+      </tr>
+      <tr>
+        <td>userUid</td>
+        <td>String/Number</td>
+        <td>Kullanıcı ID (null ise random atanır)</td>
+      </tr>
+      <tr>
+        <td>tokenEndpoint</td>
+        <td>String</td>
+        <td>Token API endpoint adresi</td>
+      </tr>
+    </table>
+    <h4>Eventler</h4>
+    <table>
+      <tr>
+        <th>Event</th>
+        <th>Açıklama</th>
+      </tr>
+      <tr>
+        <td>joined</td>
+        <td>Kanala başarıyla katılınca</td>
+      </tr>
+      <tr>
+        <td>left</td>
+        <td>Kanaldan ayrılınca</td>
+      </tr>
+      <tr>
+        <td>error</td>
+        <td>Hata oluşunca</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="step">
+    <div class="step-title">7. Sıkça Sorulan Sorular & Sorun Giderme</div>
+    <ul>
+      <li><b>CSS neden ayrıca import ediliyor?</b><br>Vue kütüphanelerinde stil dosyaları otomatik yüklenmez, ana projede elle import edilmelidir.</li>
+      <li><b>Kamera/mikrofon çalışmıyor, neden?</b><br>Tarayıcıdan izin verilmeli ve HTTPS üzerinde çalışmalısınız.</li>
+      <li><b>Componentler DOM'da var ama arayüz bozuk?</b><br>CSS importunu kontrol edin. Doğru dosya yolunu kullandığınızdan emin olun.</li>
+      <li><b>Token endpoint nedir?</b><br>Kendi backend'inizde oluşturduğunuz bir API adresidir. Örnek: <code>https://your-api.com/createToken.php</code></li>
+      <li><b>Başka bir kullanıcı ile test etmek istiyorum?</b><br>Farklı bir tarayıcı veya cihazdan aynı kanala girerek test edebilirsiniz.</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-title">8. Gelişmiş Kullanım ve Özelleştirme</div>
+    <ul>
+      <li>Kendi temanız için CSS değişkenlerini override edebilirsiniz.</li>
+      <li>Component event’lerini kullanarak kendi UI’nizi geliştirebilirsiniz.</li>
+      <li>Birden fazla konferans odası veya gelişmiş kullanıcı yönetimi için Vue Router ve Pinia ile entegre çalışabilirsiniz.</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-title">9. Kaynaklar ve Destek</div>
+    <ul>
+              <li><a href="https://www.npmjs.com/package/rs-agora-module" target="_blank">NPM Paketi</a></li>
+      <li><a href="https://github.com/umranterece/agora-vue-module" target="_blank">GitHub Kaynağı</a></li>
+      <li>Destek ve katkı için GitHub Issues bölümünü kullanabilirsiniz.</li>
+    </ul>
+  </div>
+
+</body>
+</html> 

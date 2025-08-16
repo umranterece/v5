@@ -2,42 +2,18 @@
   <div class="agora-controls">
     <!-- Settings and Log Buttons (top center) -->
     <div v-if="isConnected" class="top-buttons">
+      <!-- Settings Button -->
+      <button 
+        @click="props.onOpenSettings"
+        class="settings-button-top"
+        title="Video Ayarları"
+      >
+        <span class="icon">⚙️</span>
+        <span class="label"></span>
+      </button>
     </div>
 
-    <!-- Join Form -->
-    <div v-if="!isConnected" class="join-form">
-      <div class="join-content">
-        <div class="join-header">
-          <div class="logo">
-            <div class="logo-icon">🎥</div>
-            <h2>Video Konferans</h2>
-          </div>
-          <p class="join-subtitle">Bir toplantıya başlamak veya katılmak için kanal adı girin</p>
-        </div>
-        
-        <div class="form-group">
-          <div class="input-wrapper">
-            <input
-              v-model="channelInput"
-              type="text"
-              value="test"
-              placeholder="Kanal adı girin"
-              class="channel-input"
-              @keyup.enter="joinChannel"
-            />
-            <div class="input-border"></div>
-          </div>
-          <button 
-            @click="joinChannel" 
-            :disabled="isJoining || !channelInput.trim()"
-            class="join-button"
-          >
-            <span class="button-text">{{ isJoining ? 'Katılıyor...' : 'Kanala Katıl' }}</span>
-            <div class="button-glow"></div>
-          </button>
-        </div>
-      </div>
-    </div>
+
 
 
 
@@ -88,11 +64,12 @@
       </button>
     </div>
 
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 
 // Props
 const props = defineProps({
@@ -123,7 +100,9 @@ const props = defineProps({
   // Logger Props
   logUI: { type: Function, default: () => {} },
   logError: { type: Function, default: () => {} },
-  trackUserAction: { type: Function, default: () => {} }
+  trackUserAction: { type: Function, default: () => {} },
+  // Settings Props
+  onOpenSettings: { type: Function, default: () => {} }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -143,7 +122,6 @@ const leaveChannel = async () => {
   try {
     props.trackUserAction('leaveChannel', { channelName: props.channelName })
     await props.onLeave()
-    channelInput.value = ''
   } catch (error) {
     props.logError(error, { context: 'leaveChannel', channelName: props.channelName })
   }
@@ -213,58 +191,15 @@ const getMicrophoneTitle = computed(() => {
   return props.isLocalAudioMuted ? 'Mikrofonu aç' : 'Mikrofonu kapat'
 })
 
-// Modal açıldığında body scroll'unu engelle
-const openSettings = () => {
-  // This function is no longer needed as the modal is removed.
-  // Keeping it here for now, but it will be removed in a subsequent edit.
-}
 
-// Modal kapandığında body scroll'unu geri aç
-const closeSettings = () => {
-  // This function is no longer needed as the modal is removed.
-  // Keeping it here for now, but it will be removed in a subsequent edit.
-}
-const videoDevices = ref([])
-const audioDevices = ref([])
-const selectedCameraId = ref('')
-const selectedMicId = ref('')
-const selectedVideoQuality = ref('1080p_1')
-const selectedScreenQuality = ref('1080p_1')
 
-const videoQualityPresets = [
-  { value: '360p_1', label: '360p (Düşük)' },
-  { value: '480p_1', label: '480p (Orta)' },
-  { value: '720p_1', label: '720p (Yüksek)' },
-  { value: '1080p_1', label: '1080p (Çok Yüksek)' }
-]
-const screenQualityPresets = [
-  { value: '360p_1', label: '360p (Düşük)' },
-  { value: '480p_1', label: '480p (Orta)' },
-  { value: '720p_1', label: '720p (Yüksek)' },
-  { value: '1080p_1', label: '1080p (Çok Yüksek)' }
-]
 
-// Cihaz listesini al
-const getDevices = async () => {
-  const devices = await navigator.mediaDevices.enumerateDevices()
-  videoDevices.value = devices.filter(d => d.kind === 'videoinput')
-  audioDevices.value = devices.filter(d => d.kind === 'audioinput')
-  if (!selectedCameraId.value && videoDevices.value.length) selectedCameraId.value = videoDevices.value[0].deviceId
-  if (!selectedMicId.value && audioDevices.value.length) selectedMicId.value = audioDevices.value[0].deviceId
-}
-onMounted(getDevices)
+
+
+
 
 // Ayarları uygula ve parent'a bildir
-const emit = defineEmits(['settings-changed', 'open-settings', 'open-logs'])
-const applySettings = () => {
-  emit('settings-changed', {
-    cameraId: selectedCameraId.value,
-    micId: selectedMicId.value,
-    videoQuality: selectedVideoQuality.value,
-    screenQuality: selectedScreenQuality.value
-  })
-  // showSettings.value = false // This line is no longer needed
-}
+const emit = defineEmits(['open-settings', 'open-logs'])
 </script>
 
 <style scoped>
@@ -276,156 +211,10 @@ const applySettings = () => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   position: relative; /* Added for settings button positioning */
+
 }
 
-.join-form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-}
 
-.join-content {
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-}
-
-.join-header {
-  margin-bottom: 32px;
-}
-
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.logo-icon {
-  font-size: 48px;
-  animation: pulse 2s infinite;
-}
-
-.logo h2 {
-  font-size: 28px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-}
-
-.join-subtitle {
-  color: #a0a0a0;
-  font-size: 16px;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
-
-.input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.channel-input {
-  width: 100%;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  font-size: 16px;
-  color: white;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.channel-input::placeholder {
-  color: #a0a0a0;
-}
-
-.channel-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-}
-
-.input-border {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.channel-input:focus + .input-border {
-  opacity: 0.3;
-}
-
-.join-button {
-  position: relative;
-  width: 100%;
-  padding: 16px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.join-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
-.join-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.join-button:disabled {
-  background: #444;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.button-text {
-  position: relative;
-  z-index: 2;
-}
-
-.button-glow {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.join-button:hover:not(:disabled) .button-glow {
-  left: 100%;
-}
 
 .controls {
   display: flex;

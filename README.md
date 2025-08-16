@@ -1,240 +1,333 @@
-# 🎥 Agora Video Konferans Uygulaması
+# Vue 3 Agora Video Conference Module
 
-Vue 3 ve Agora SDK kullanarak geliştirilmiş modern, modüler ve ölçeklenebilir video konferans uygulaması.
+Vue 3 için geliştirilmiş, Agora SDK kullanan modern video konferans modülü. Ekran paylaşımı, kayıt, log sistemi ve gelişmiş UI özellikleri içerir.
 
 ## 🚀 Özellikler
 
-### 📹 Video Konferans
-- **Gerçek zamanlı video/audio streaming**
-- **Çoklu katılımcı desteği** (sınırsız)
-- **Otomatik video kalitesi ayarlama**
-- **Ekran paylaşımı** (tam ekran, pencere, sekme)
-- **Video grid düzeni** (otomatik boyutlandırma)
-- **Katılımcı listesi** ve durum göstergeleri
+- ✅ **Vue 3 Composition API** desteği
+- ✅ **Agora RTC SDK** entegrasyonu
+- ✅ **Ekran paylaşımı** desteği
+- ✅ **Video/Ses kayıt** özelliği
+- ✅ **Gerçek zamanlı log** sistemi
+- ✅ **Ağ kalitesi** takibi
+- ✅ **Responsive** tasarım
+- ✅ **Modüler** yapı
+- ✅ **TypeScript** desteği
+- ✅ **Production** hazır
 
-### 🎙️ Ses Yönetimi
-- **Mikrofon açma/kapama**
-- **Hoparlör açma/kapama**
-- **Ses seviyesi göstergeleri**
-- **Otomatik ses algılama**
+## 📦 Kurulum
 
-### 📺 Ekran Paylaşımı
-- **Tam ekran paylaşımı**
-- **Pencere paylaşımı**
-- **Sekme paylaşımı**
-- **Paylaşım durumu göstergeleri**
-
-### 🎬 Cloud Recording
-- **Otomatik kayıt başlatma/durdurma**
-- **Çoklu format desteği** (HLS, MP4)
-- **Kayıt dosyası yönetimi**
-- **Kayıt durumu takibi**
-- **Dosya indirme**
-
-### 📊 Ağ Kalitesi İzleme
-- **Gerçek zamanlı ağ metrikleri**
-- **Upload/Download hızı**
-- **Ping değeri**
-- **Paket kaybı oranı**
-- **Kalite skoru**
-- **2 saniyede bir güncelleme**
-
-### 🔧 Geliştirici Araçları
-- **Detaylı log sistemi**
-- **Event tracking**
-- **Hata yakalama**
-- **Debug modu**
-- **Performans metrikleri**
-
-### 🎨 Kullanıcı Arayüzü
-- **Modern ve responsive tasarım**
-- **Türkçe arayüz**
-- **Dark/Light tema desteği**
-- **Mobil uyumlu**
-- **Erişilebilirlik standartları**
-
-## 🏗️ Mimari
-
-### Modüler Yapı
-```
-src/modules/agora/
-├── components/          # Vue bileşenleri
-├── composables/         # Vue 3 composables
-├── services/           # API servisleri
-├── store/              # State management
-├── constants.js        # Sabitler
-├── centralEmitter.js   # Event yönetimi
-├── types.js           # TypeScript tipleri
-└── index.js           # Barrel exports
-```
-
-### Teknolojiler
-- **Vue 3** - Progressive JavaScript framework
-- **Agora SDK** - Real-time communication
-- **Vite** - Build tool
-- **Pinia** - State management
-- **EventEmitter** - Event handling
-
-## 🚀 Kurulum
-
-### Gereksinimler
-- Node.js 18+
-- npm veya yarn
-- Agora hesabı ve API anahtarları
-
-### Adımlar
-
-1. **Projeyi klonlayın**
 ```bash
-git clone <repository-url>
-cd v5
+npm install rs-agora-module
 ```
 
-2. **Bağımlılıkları yükleyin**
-```bash
-npm install
-```
+## 🔧 Gereksinimler
 
-3. **Agora konfigürasyonu**
-```bash
-# src/modules/agora/constants.js dosyasını düzenleyin
-const AGORA_CONFIG = {
-  appId: 'YOUR_AGORA_APP_ID',
-  token: 'YOUR_AGORA_TOKEN'
-}
-```
-
-4. **Geliştirme sunucusunu başlatın**
-```bash
-npm run dev
-```
-
-5. **Tarayıcıda açın**
-```
-http://localhost:5173
-```
-
-## 📖 Kullanım
-
-### Temel Kullanım
-
-1. **Odaya katılma**
-   - Oda adını girin
-   - "Odaya Katıl" butonuna tıklayın
-
-2. **Video/Audio kontrolü**
-   - Mikrofon açma/kapama: 🎤 butonu
-   - Kamera açma/kapama: 📹 butonu
-   - Hoparlör açma/kapama: 🔊 butonu
-
-3. **Ekran paylaşımı**
-   - "Ekran Paylaş" butonuna tıklayın
-   - Paylaşmak istediğiniz ekranı seçin
-
-4. **Kayıt**
-   - "Kayıt Başlat" butonuna tıklayın
-   - Kayıt durumunu takip edin
-
-### Gelişmiş Özellikler
-
-#### Ağ Kalitesi İzleme
-- Sağ üst köşedeki ağ kalitesi widget'ını kullanın
-- Gerçek zamanlı metrikleri görüntüleyin
-- Kalite skorunu takip edin
-
-#### Log Sistemi
-- "Loglar" butonuna tıklayın
-- Detaylı logları görüntüleyin
-- Hata ayıklama için kullanın
-
-## 🔧 Konfigürasyon
-
-### Agora Ayarları
-```javascript
-// src/modules/agora/constants.js
-export const AGORA_CONFIG = {
-  appId: 'your-app-id',
-  token: 'your-token',
-  channel: 'test-channel',
-  uid: 0 // 0 = otomatik UID atama
-}
-```
-
-### Recording Ayarları
-```javascript
-// src/modules/agora/composables/useRecording.js
-const recordingConfig = {
-  maxIdleTime: 30,
-  streamTypes: 2, // Audio + Video
-  channelType: 1, // Live streaming
-  recordingFileConfig: {
-    avFileType: ['hls', 'mp4'],
-    fileCompress: false,
-    fileMaxSizeMB: 512
+```json
+{
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "pinia": "^3.0.0",
+    "agora-rtc-sdk-ng": "^4.0.0",
+    "mitt": "^3.0.0"
   }
 }
 ```
 
-## 🧪 Test
+## 🎯 Hızlı Başlangıç
 
-### Birim Testleri
-```bash
-npm run test:unit
+### 1. Ana Component Kullanımı
+
+```vue
+<template>
+  <div>
+    <AgoraConference
+      :channelName="channelName"
+      :autoJoin="true"
+      :userUid="userUid"
+      :tokenEndpoint="tokenEndpoint"
+      @joined="onJoined"
+      @left="onLeft"
+      @error="onError"
+    />
+  </div>
+</template>
+
+<script setup>
+import { AgoraConference } from 'rs-agora-module'
+import { ref } from 'vue'
+
+const channelName = ref('test-channel')
+const userUid = ref(12345)
+const tokenEndpoint = ref('https://your-api.com/createToken.php')
+
+const onJoined = (data) => {
+  console.log('Kanala katıldı:', data)
+}
+
+const onLeft = (data) => {
+  console.log('Kanaldan ayrıldı:', data)
+}
+
+const onError = (error) => {
+  console.error('Hata:', error)
+}
+</script>
 ```
 
-### E2E Testleri
-```bash
-npm run test:e2e
+### 2. Composable Kullanımı
+
+```vue
+<template>
+  <div>
+    <button @click="joinChannel">Kanala Katıl</button>
+    <button @click="leaveChannel">Kanaldan Ayrıl</button>
+    <button @click="toggleCamera">Kamerayı Aç/Kapat</button>
+    <button @click="toggleMicrophone">Mikrofonu Aç/Kapat</button>
+  </div>
+</template>
+
+<script setup>
+import { useMeeting } from 'rs-agora-module'
+import { ref } from 'vue'
+
+const channelName = ref('test-channel')
+const userUid = ref(12345)
+
+const {
+  joinChannel,
+  leaveChannel,
+  toggleCamera,
+  toggleMicrophone,
+  isConnected,
+  localUser,
+  remoteUsers
+} = useMeeting()
+
+const joinChannel = async () => {
+  try {
+    await joinChannel({
+      channelName: channelName.value,
+      token: 'your-token',
+      uid: userUid.value,
+      appId: 'your-app-id'
+    })
+  } catch (error) {
+    console.error('Katılma hatası:', error)
+  }
+}
+</script>
 ```
 
-### Manuel Test
-```bash
-# İki farklı tarayıcıda açın
-# Aynı oda adıyla katılın
-# Video/audio test edin
+## 📋 API Referansı
+
+### AgoraConference Props
+
+| Prop | Tip | Varsayılan | Açıklama |
+|------|-----|------------|----------|
+| `channelName` | String | `''` | Kanal adı |
+| `autoJoin` | Boolean | `false` | Otomatik katılma |
+| `userUid` | String/Number | `null` | Kullanıcı ID (null ise random) |
+| `tokenEndpoint` | String | `null` | Token API endpoint |
+
+### AgoraConference Events
+
+| Event | Payload | Açıklama |
+|-------|---------|----------|
+| `joined` | `{channelName, token, uid}` | Kanala katıldığında |
+| `left` | `{channelName}` | Kanaldan ayrıldığında |
+| `error` | `{error, message}` | Hata oluştuğunda |
+| `user-joined` | `{uid, userName}` | Kullanıcı katıldığında |
+| `user-left` | `{uid}` | Kullanıcı ayrıldığında |
+| `connection-state-change` | `{state}` | Bağlantı durumu değiştiğinde |
+| `token-requested` | `{channelName, uid}` | Token istendiğinde |
+| `token-received` | `{token, channelName, uid}` | Token alındığında |
+
+### AgoraConference Methods
+
+| Method | Açıklama |
+|--------|----------|
+| `joinChannel(name)` | Kanala katıl |
+| `leaveChannel()` | Kanaldan ayrıl |
+| `toggleCamera(off)` | Kamerayı aç/kapat |
+| `toggleMicrophone(muted)` | Mikrofonu aç/kapat |
+| `toggleScreenShare()` | Ekran paylaşımını aç/kapat |
+| `clean()` | Temizlik yap |
+
+## 🔧 Konfigürasyon
+
+### Constants.js Ayarları
+
+```javascript
+import { IS_DEV, API_ENDPOINTS, VIDEO_CONFIG } from 'rs-agora-module'
+
+// Development/Production modu
+console.log('Development modu:', IS_DEV)
+
+// API endpoints
+console.log('Token API:', API_ENDPOINTS.CREATE_TOKEN)
+
+// Video ayarları
+console.log('Video config:', VIDEO_CONFIG)
 ```
 
-## 📦 Build
+### Token Servisi
 
-### Production Build
-```bash
-npm run build
+```javascript
+import { createToken } from 'rs-agora-module'
+
+const token = await createToken('channel-name', 12345, 'https://your-api.com/token.php')
 ```
 
-### Preview
-```bash
-npm run preview
+## 🎨 Özelleştirme
+
+### CSS Değişkenleri
+
+```css
+:root {
+  --agora-primary-color: #667eea;
+  --agora-secondary-color: #764ba2;
+  --agora-background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+  --agora-text-color: #e0e0e0;
+  --agora-border-radius: 16px;
+}
 ```
 
-## 🐛 Hata Ayıklama
+### Component Özelleştirme
 
-### Log Sistemi
-- Console'da detaylı loglar
-- UI'da log modalı
-- Hata tracking
+```vue
+<template>
+  <AgoraConference
+    :channelName="channelName"
+    class="custom-agora"
+  />
+</template>
+
+<style>
+.custom-agora {
+  --agora-primary-color: #ff6b6b;
+  --agora-secondary-color: #4ecdc4;
+}
+</style>
+```
+
+## 🚀 Production Build
+
+```bash
+# Kütüphane build
+npm run build:lib
+
+# Dist klasörü oluşur
+dist/
+├── index.esm.js    # ES Module
+├── index.umd.js    # UMD
+└── index.esm.js.map
+```
+
+## 📝 Örnek Projeler
+
+### Basit Konferans
+
+```vue
+<template>
+  <div class="app">
+    <h1>Video Konferans</h1>
+    <AgoraConference
+      :channelName="'meeting-' + meetingId"
+      :autoJoin="true"
+      @joined="onJoined"
+    />
+  </div>
+</template>
+
+<script setup>
+import { AgoraConference } from 'rs-agora-module'
+import { ref } from 'vue'
+
+const agoraRef = ref(null)
+const channelName = ref('team-meeting')
+const userUid = ref(Date.now())
+const connectedUsersCount = ref(0)
+
+const onJoined = (data) => {
+  console.log('Kanala katıldı:', data)
+}
+
+const onUserJoined = (user) => {
+  connectedUsersCount.value++
+}
+
+onMounted(() => {
+  // Component metodlarına erişim
+  // agoraRef.value.joinChannel('new-channel')
+})
+</script>
+```
+
+### Gelişmiş Kullanım
+
+```vue
+<template>
+  <div class="conference-app">
+    <div class="header">
+      <h2>{{ channelName }}</h2>
+      <span>{{ connectedUsersCount }} katılımcı</span>
+    </div>
+    
+    <AgoraConference
+      ref="agoraRef"
+      :channelName="channelName"
+      :userUid="userUid"
+      @joined="onJoined"
+      @user-joined="onUserJoined"
+    />
+  </div>
+</template>
+
+<script setup>
+import { AgoraConference } from 'rs-agora-module'
+import { ref, onMounted } from 'vue'
+
+const agoraRef = ref(null)
+const channelName = ref('team-meeting')
+const userUid = ref(Date.now())
+const connectedUsersCount = ref(0)
+
+const onJoined = (data) => {
+  console.log('Kanala katıldı:', data)
+}
+
+const onUserJoined = (user) => {
+  connectedUsersCount.value++
+}
+
+onMounted(() => {
+  // Component metodlarına erişim
+  // agoraRef.value.joinChannel('new-channel')
+})
+</script>
+```
+
+## 🐛 Sorun Giderme
+
+### Yaygın Hatalar
+
+1. **Token Hatası**: API endpoint'inizi kontrol edin
+2. **Cihaz İzni**: Kamera/mikrofon izinlerini kontrol edin
+3. **Ağ Bağlantısı**: İnternet bağlantınızı kontrol edin
 
 ### Debug Modu
+
 ```javascript
-// constants.js
-export const DEBUG_MODE = true
+import { DEV_CONFIG } from 'rs-agora-module'
+
+// Debug logları açık
+console.log('Debug config:', DEV_CONFIG)
 ```
 
-### Yaygın Sorunlar
+## 📄 Lisans
 
-1. **Video görünmüyor**
-   - Kamera izinlerini kontrol edin
-   - HTTPS kullanın
-   - Agora token'ını kontrol edin
-
-2. **Ses gelmiyor**
-   - Mikrofon izinlerini kontrol edin
-   - Tarayıcı ses ayarlarını kontrol edin
-   - Agora konfigürasyonunu kontrol edin
-
-3. **Ekran paylaşımı çalışmıyor**
-   - HTTPS kullanın
-   - Tarayıcı izinlerini kontrol edin
-   - Ekran paylaşım API'sini kontrol edin
+MIT License - [Detaylar](LICENSE)
 
 ## 🤝 Katkıda Bulunma
 
@@ -244,32 +337,14 @@ export const DEBUG_MODE = true
 4. Push yapın (`git push origin feature/amazing-feature`)
 5. Pull Request oluşturun
 
-### Kod Standartları
-- ESLint kurallarına uyun
-- Prettier formatını kullanın
-- Türkçe yorum yazın
-- Modüler yapıyı koruyun
+## 📞 İletişim
 
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
+- **Geliştirici**: Umran Terece
+- **GitHub**: [@umranterece](https://github.com/umranterece)
+- **Email**: umranterece@gmail.com
 
 ## 🙏 Teşekkürler
 
-- [Agora.io](https://agora.io) - Real-time communication SDK
-- [Vue.js](https://vuejs.org) - Progressive JavaScript framework
-- [Vite](https://vitejs.dev) - Next generation frontend tooling
-
-## 📞 Destek
-
-- **Email**: support@example.com
-- **GitHub Issues**: [Proje Issues](https://github.com/username/project/issues)
-- **Dokümantasyon**: [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)
-
-## 🔄 Changelog
-
-Detaylı değişiklik geçmişi için [CHANGELOG.md](./CHANGELOG.md) dosyasına bakın.
-
----
-
-**Not**: Bu proje geliştirme aşamasındadır. Production kullanımı için ek güvenlik ve performans optimizasyonları gerekebilir.
+- [Agora.io](https://agora.io) - RTC SDK
+- [Vue.js](https://vuejs.org) - Framework
+- [Pinia](https://pinia.vuejs.org) - State Management

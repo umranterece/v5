@@ -60,9 +60,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { useAgoraStore } from '../store/index.js'
-import VideoGrid from './VideoGrid.vue'
-import { AGORA_EVENTS } from '../constants.js'
+import { useAgoraStore } from '../../store/index.js'
+import VideoGrid from '../video/VideoGrid.vue'
+import { AGORA_EVENTS } from '../../constants.js'
 
 // Props
 const props = defineProps({

@@ -82,8 +82,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { LOG_LEVELS, LOG_CATEGORIES } from '../services/logger.js'
-import { formatTime as formatTimeFromUtils } from '../utils/index.js'
+import { LOG_LEVELS, LOG_CATEGORIES } from '../../services/logger.js'
+import { formatTime as formatTimeFromUtils } from '../../utils/index.js'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },

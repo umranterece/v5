@@ -44,8 +44,8 @@
 
 <script setup>
 import { onMounted, watch, ref, computed, onBeforeUnmount, nextTick } from 'vue'
-import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
-import { getUserInitials as getUserInitialsFromUtils } from '../utils/index.js'
+import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../../constants.js'
+import { getUserInitials as getUserInitialsFromUtils } from '../../utils/index.js'
 
 // Props
 const props = defineProps({
