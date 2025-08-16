@@ -382,3 +382,4 @@ export const getCurrentEnvironment = () => {
 ---
 
 > **Not**: Bu mimari dokümantasyon, projenin **Context Engineering** yaklaşımına uygun olarak hazırlanmıştır. Her mimari karar, performans ve maintainability göz önünde bulundurularak alınmıştır.
+
