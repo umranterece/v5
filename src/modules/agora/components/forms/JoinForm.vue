@@ -39,7 +39,7 @@
 
 <script setup>
 import { VideoCameraIcon } from '@heroicons/vue/24/outline'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 // Props
 const props = defineProps({

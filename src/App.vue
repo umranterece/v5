@@ -28,7 +28,7 @@ const { initializeTheme } = useTheme()
 
 // Kanal ayarları
 const channelName = ref('test-252')
-const autoJoin = ref(true)  // false yaparak test ediyorum
+const autoJoin = ref(false)  // false yaparak test ediyorum
 
 // Token ayarları
 const tokenEndpoint = ref(null) // null = varsayılan API endpoint
