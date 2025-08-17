@@ -15,7 +15,9 @@
     <div v-if="isThemeMenuOpen" class="theme-menu">
       <div class="theme-menu-header">
         <h4>Tema Seç</h4>
-        <button @click="toggleThemeMenu" class="close-btn">✕</button>
+        <button @click="toggleThemeMenu" class="close-btn">
+          <XMarkIcon />
+        </button>
       </div>
       
       <div class="theme-list">
@@ -72,7 +74,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTheme } from '../../composables/useTheme.js'
 
 const {
@@ -242,6 +245,12 @@ onUnmounted(() => {
 .close-btn:hover {
   background: var(--rs-agora-surface-accent);
   color: var(--rs-agora-text-primary);
+}
+
+.close-btn svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
 }
 
 .theme-list {

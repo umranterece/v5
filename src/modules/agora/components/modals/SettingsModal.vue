@@ -201,8 +201,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--rs-agora-transparent-black-80);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,11 +212,11 @@ onMounted(() => {
 
 /* Modal Glass */
 .settings-modal-glass {
-  background: var(--rs-agora-dark-surface-26-98);
-  border: 1px solid var(--rs-agora-transparent-white-10);
+  background: rgba(30, 30, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  backdrop-filter: blur(20px);
-  box-shadow: var(--rs-agora-shadow-xl);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
@@ -230,7 +230,7 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   padding: 25px 25px 20px 25px;
-  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .settings-modal-icon {
@@ -240,9 +240,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--rs-agora-transparent-white-10);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 15px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
 }
 
 .settings-modal-glass h2 {
@@ -256,7 +256,7 @@ onMounted(() => {
 .close-btn {
   background: none;
   border: none;
-  color: var(--rs-agora-transparent-white-70);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 28px;
   cursor: pointer;
   padding: 5px;
@@ -270,7 +270,7 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: var(--rs-agora-transparent-white-10);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--rs-agora-white);
 }
 
@@ -291,20 +291,20 @@ onMounted(() => {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: var(--rs-agora-transparent-white-90);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
 }
 
 .settings-section select {
   width: 100%;
   padding: 12px 16px;
-  background: var(--rs-agora-transparent-white-05);
-  border: 1px solid var(--rs-agora-transparent-white-10);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   color: var(--rs-agora-text-primary);
   font-size: 14px;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
 }
 
 .settings-section select:focus {
@@ -318,7 +318,7 @@ onMounted(() => {
   display: flex;
   gap: 15px;
   padding: 20px 25px 25px 25px;
-  border-top: 1px solid var(--rs-agora-transparent-white-10);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .save-button, .cancel-button {
@@ -343,13 +343,13 @@ onMounted(() => {
 }
 
 .cancel-button {
-  background: var(--rs-agora-transparent-white-10);
-  color: var(--rs-agora-transparent-white-80);
-  border: 1px solid var(--rs-agora-transparent-white-20);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .cancel-button:hover {
-  background: var(--rs-agora-transparent-white-15);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--rs-agora-white);
 }
 

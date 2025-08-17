@@ -4,7 +4,9 @@
       <div class="join-content">
         <div class="join-header">
           <div class="logo">
-            <div class="logo-icon">🎥</div>
+            <div class="logo-icon">
+              <VideoCameraIcon />
+            </div>
             <h2>Video Konferans</h2>
           </div>
           <p class="join-subtitle">Bir toplantıya başlamak veya katılmak için kanal adı girin</p>
@@ -36,7 +38,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { VideoCameraIcon } from '@heroicons/vue/24/outline'
+import { ref, computed } from 'vue'
 
 // Props
 const props = defineProps({
@@ -273,5 +276,23 @@ watch(() => props.defaultChannel, (newValue) => {
   .form-subtitle {
     font-size: 0.8rem;
   }
+}
+
+.logo-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--rs-agora-gradient-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: var(--rs-agora-shadow-lg);
+}
+
+.logo-icon svg {
+  width: 32px;
+  height: 32px;
+  color: var(--rs-agora-white);
 }
 </style>

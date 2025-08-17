@@ -8,7 +8,7 @@
         class="layout-button-top"
         title="Görünüm Seçenekleri"
       >
-        <span class="icon">🎨</span>
+        <ViewColumnsIcon class="icon" />
         <span class="label"></span>
       </button>
       
@@ -18,7 +18,7 @@
         class="settings-button-top"
         title="Video Ayarları"
       >
-        <span class="icon">⚙️</span>
+        <Cog6ToothIcon class="icon" />
         <span class="label"></span>
       </button>
       
@@ -28,7 +28,7 @@
         class="info-button-top"
         title="Toplantı Bilgileri"
       >
-        <span class="icon">ℹ️</span>
+        <InformationCircleIcon class="icon" />
         <span class="label"></span>
       </button>
     </div>
@@ -46,18 +46,18 @@
         :disabled="!canUseCamera"
         :title="getCameraTitle"
       >
-        <span class="icon">{{ getCameraIcon }}</span>
+        <VideoCameraIcon class="icon" />
         <span class="label">{{ getCameraLabel }}</span>
       </button>
 
       <!-- Microphone Toggle -->
       <button 
         @click="toggleMicrophone"
-        :class="['control-button', { active: !isLocalAudioMuted && canUseMicrophone, disabled: !canUseMicrophone }]"
+        :class="['control-button', { active: !isLocalAudioMuted && canUseCamera, disabled: !canUseMicrophone }]"
         :disabled="!canUseMicrophone"
         :title="getMicrophoneTitle"
       >
-        <span class="icon">{{ getMicrophoneIcon }}</span>
+        <MicrophoneIcon class="icon" />
         <span class="label">{{ getMicrophoneLabel }}</span>
       </button>
 
@@ -68,7 +68,7 @@
         :class="['control-button', { active: props.isScreenSharing }]"
         :title="props.isScreenSharing ? 'Ekran Paylaşımını Durdur' : 'Ekran Paylaşımını Başlat'"
       >
-        <span class="icon">{{ props.isScreenSharing ? '❌🖥️' : '🖥️' }}</span>
+        <ComputerDesktopIcon class="icon" />
         <span class="label">{{ props.isScreenSharing ? 'Paylaşımı Durdur' : 'Ekranı Paylaş' }}</span>
       </button>
 
@@ -79,7 +79,7 @@
         class="control-button leave-button"
         title="Kanaldan ayrıl"
       >
-        <span class="icon">📞</span>
+        <PhoneIcon class="icon" />
         <span class="label">{{ isLeaving ? 'Ayrılıyor...' : 'Ayrıl' }}</span>
       </button>
     </div>
@@ -90,6 +90,15 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { 
+  ViewColumnsIcon, 
+  Cog6ToothIcon, 
+  InformationCircleIcon,
+  VideoCameraIcon,
+  MicrophoneIcon,
+  ComputerDesktopIcon,
+  PhoneIcon
+} from '@heroicons/vue/24/outline'
 
 // Props
 const props = defineProps({
@@ -183,11 +192,6 @@ const toggleMicrophone = () => {
 }
 
 // Helper functions for camera
-const getCameraIcon = computed(() => {
-  if (!props.canUseCamera) return '🚫📹'
-  return props.isLocalVideoOff ? '📹' : '📹'
-})
-
 const getCameraLabel = computed(() => {
   if (!props.canUseCamera) return 'Kamera Yok'
   return props.isLocalVideoOff ? 'Kamera Kapalı' : 'Kamera Açık'
@@ -199,18 +203,13 @@ const getCameraTitle = computed(() => {
 })
 
 // Helper functions for microphone
-const getMicrophoneIcon = computed(() => {
-  if (!props.canUseMicrophone) return '🚫🎤'
-  return props.isLocalAudioMuted ? '🔇' : '🎤'
-})
-
 const getMicrophoneLabel = computed(() => {
-  if (!props.canUseMicrophone) return 'Mikrofon Yok'
+  if (!props.canUseCamera) return 'Mikrofon Yok'
   return props.isLocalAudioMuted ? 'Sessiz' : 'Sesli'
 })
 
 const getMicrophoneTitle = computed(() => {
-  if (!props.canUseMicrophone) return 'Mikrofon mevcut değil'
+  if (!props.canUseCamera) return 'Mikrofon mevcut değil'
   return props.isLocalAudioMuted ? 'Mikrofonu aç' : 'Mikrofonu kapat'
 })
 
@@ -228,13 +227,12 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 <style scoped>
 .agora-controls {
   padding: 8px;
-  background: var(--rs-agora-gradient-surface);
+  background: var(--rs-agora-gradient-controls);
   border-radius: 10px;
   box-shadow: var(--rs-agora-shadow-lg);
   border: 1px solid var(--rs-agora-border-primary);
   backdrop-filter: blur(10px);
   position: relative; /* Added for settings button positioning */
-
 }
 
 
@@ -300,7 +298,9 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .icon {
-  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  color: currentColor;
 }
 
 .label {
@@ -493,13 +493,15 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
   cursor: pointer;
   transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
-  border: 1px solid var(--rs-agora-transparent-white-10);
-  margin-right: 8px;
+}
+
+.layout-button-top .icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
 }
 
 /* Settings button (top center) */
@@ -513,12 +515,17 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
   cursor: pointer;
   transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
   border: 1px solid var(--rs-agora-transparent-white-10);
+}
+
+.settings-button-top .icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
 }
 
 /* Log button (top center) */
@@ -532,12 +539,17 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
   cursor: pointer;
   transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
   border: 1px solid var(--rs-agora-transparent-white-10);
+}
+
+.log-button-top .icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
 }
 .layout-button-top:hover {
   background: var(--rs-agora-dark-surface-60);
@@ -576,12 +588,17 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
   cursor: pointer;
   transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
   border: 1px solid var(--rs-agora-transparent-white-10);
+}
+
+.info-button-top .icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
 }
 
 .info-button-top:hover,

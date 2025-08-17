@@ -6,13 +6,13 @@
         <h2>📋 Agora Günlükleri</h2>
         <div class="log-modal-controls">
           <button @click="exportLogs" class="btn-export">
-            📥 JSON Dışa Aktar
+            <ArrowDownTrayIcon class="export-icon" /> JSON Dışa Aktar
           </button>
           <button @click="clearLogs" class="btn-clear">
             🗑️ Temizle
           </button>
           <button @click="closeModal" class="btn-close">
-            ❌ Kapat
+            <XMarkIcon class="close-icon" /> Kapat
           </button>
         </div>
       </div>
@@ -81,6 +81,7 @@
 </template>
 
 <script setup>
+import { ArrowDownTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { ref, computed } from 'vue'
 import { LOG_LEVELS, LOG_CATEGORIES } from '../../services/logger.js'
 import { formatTime as formatTimeFromUtils } from '../../utils/index.js'
@@ -504,5 +505,19 @@ const formatTime = (timestamp) => {
   .log-container {
     padding: 15px 20px;
   }
+}
+
+.export-icon {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+  margin-right: 8px;
+}
+
+.close-icon {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+  margin-right: 8px;
 }
 </style> 

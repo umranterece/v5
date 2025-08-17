@@ -25,9 +25,15 @@
         </div>
         <div class="user-name">{{ displayName }}</div>
         <div class="user-status">
-          <span v-if="user.isMuted" class="status-icon muted">🔇</span>
-          <span v-if="user.isVideoOff" class="status-icon video-off">📹</span>
-          <span v-if="isScreenShare" class="status-icon screen-share">🖥️</span>
+          <span v-if="user.isMuted" class="status-icon muted">
+            <SpeakerXMarkIcon />
+          </span>
+          <span v-if="user.isVideoOff" class="status-icon video-off">
+            <VideoCameraIcon />
+          </span>
+          <span v-if="isScreenShare" class="status-icon screen-share">
+            <ComputerDesktopIcon />
+          </span>
         </div>
       </div>
       
@@ -45,7 +51,8 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, computed, onBeforeUnmount, nextTick } from 'vue'
+import { SpeakerXMarkIcon, VideoCameraIcon, ComputerDesktopIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../../constants.js'
 import { getUserInitials as getUserInitialsFromUtils } from '../../utils/index.js'
 
@@ -279,12 +286,13 @@ const emit = defineEmits(['video-click'])
   position: relative;
   border-radius: var(--rs-agora-radius-lg);
   overflow: hidden;
-  background: var(--rs-agora-dark-gray);
+  background: var(--rs-agora-gradient-video);
   aspect-ratio: 1;
   width: 100%;
   height: 100%;
   min-height: 200px;
   max-height: 400px;
+  border: 1px solid var(--rs-agora-border-primary-light);
 }
 
 .video-wrapper {
@@ -322,8 +330,9 @@ const emit = defineEmits(['video-click'])
   padding: 1rem;
   text-align: center;
   width: 100%;
-  background: var(--rs-agora-gradient-surface);
+  background: var(--rs-agora-gradient-placeholder);
   border-radius: var(--rs-agora-radius-lg);
+  backdrop-filter: blur(8px);
 }
 
 .avatar {
@@ -377,6 +386,12 @@ const emit = defineEmits(['video-click'])
 .status-icon.screen-share {
   color: var(--rs-agora-info);
   background: var(--rs-agora-transparent-info-20);
+}
+
+.status-icon svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
 }
 
 .user-info {

@@ -742,7 +742,7 @@ defineExpose({
   flex: 1;
   width: 100%;
   height: 100%;
-  background: var(--rs-agora-transparent-black-30);
+  background: var(--rs-agora-gradient-video-area);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--rs-agora-shadow-xl);

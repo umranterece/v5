@@ -3,7 +3,7 @@
     <div class="info-modal" @click.stop>
       <!-- Header -->
       <div class="info-header">
-        <h3>📊 Toplantı Bilgileri</h3>
+        <h3> Toplantı Bilgileri</h3>
         <button @click="$emit('close')" class="close-btn">×</button>
       </div>
 
@@ -13,7 +13,7 @@
           <!-- Channel Info Widget -->
           <div class="info-widget channel-widget">
             <div class="widget-header">
-              <div class="widget-icon">📺</div>
+              <div class="widget-icon"><TvIcon /></div>
               <h4>Kanal Bilgileri</h4>
             </div>
             <div class="widget-content">
@@ -37,7 +37,7 @@
           <!-- Network Quality Widget -->
           <div class="info-widget network-widget">
             <div class="widget-header">
-              <div class="widget-icon">🌐</div>
+              <div class="widget-icon"><GlobeAltIcon /></div>
               <h4>Ağ Kalitesi</h4>
             </div>
             <div class="widget-content">
@@ -63,7 +63,7 @@
               <!-- Detaylı Metrikler -->
               <div class="metrics-grid">
                 <div class="metric-item">
-                  <div class="metric-icon">📶</div>
+                  <div class="metric-icon"><SignalIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">Ağ Kalitesi</div>
                     <div class="metric-value" :style="{ color: networkQualityColor }">
@@ -73,7 +73,7 @@
                 </div>
                 
                 <div class="metric-item">
-                  <div class="metric-icon">⚡</div>
+                  <div class="metric-icon"><BoltIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">Bit Hızı</div>
                     <div class="metric-value">{{ networkBitrate || 'N/A' }} kbps</div>
@@ -81,7 +81,7 @@
                 </div>
                 
                 <div class="metric-item">
-                  <div class="metric-icon">🎬</div>
+                  <div class="metric-icon"><FilmIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">FPS</div>
                     <div class="metric-value">{{ networkFrameRate || 'N/A' }}</div>
@@ -89,7 +89,7 @@
                 </div>
                 
                 <div class="metric-item">
-                  <div class="metric-icon">📦</div>
+                  <div class="metric-icon"><CubeIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">Paket Kaybı</div>
                     <div class="metric-value" :class="{ 'warning': networkPacketLoss > 5 }">
@@ -99,7 +99,7 @@
                 </div>
                 
                 <div class="metric-item">
-                  <div class="metric-icon">⏱️</div>
+                  <div class="metric-icon"><ClockIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">RTT</div>
                     <div class="metric-value">{{ networkRtt || 'N/A' }} ms</div>
@@ -107,7 +107,7 @@
                 </div>
                 
                 <div class="metric-item">
-                  <div class="metric-icon">🔗</div>
+                  <div class="metric-icon"><LinkIcon /></div>
                   <div class="metric-content">
                     <div class="metric-label">Bağlantı</div>
                     <div class="metric-value status-badge" :class="{ 'connected': isConnected, 'disconnected': !isConnected }">
@@ -122,7 +122,7 @@
           <!-- Device Status Widget -->
           <div class="info-widget device-widget">
             <div class="widget-header">
-              <div class="widget-icon">🎤</div>
+              <div class="widget-icon"><MicrophoneIcon /></div>
               <h4>Cihaz Durumu</h4>
             </div>
             <div class="widget-content">
@@ -182,22 +182,24 @@
               <!-- Recording Controls -->
               <div class="recording-controls">
                 <button 
+                  v-if="canStartRecording" 
                   @click="startRecording"
                   :disabled="!canStartRecording"
                   class="recording-btn start-btn"
                   :class="{ disabled: !canStartRecording }"
                 >
-                  <span class="btn-icon">🔴</span>
+                  ▶️
                   Kayıt Başlat
                 </button>
                 
                 <button 
+                  v-if="canStopRecording" 
                   @click="stopRecording"
                   :disabled="!canStopRecording"
                   class="recording-btn stop-btn"
                   :class="{ disabled: !canStopRecording }"
                 >
-                  <span class="btn-icon">⏹️</span>
+                  ⏹️
                   Kayıt Durdur
                 </button>
                 
@@ -206,7 +208,7 @@
                   class="recording-btn reset-btn"
                   v-if="hasRecordingFiles"
                 >
-                  <span class="btn-icon">🔄</span>
+                  🔄
                   Sıfırla
                 </button>
               </div>
@@ -214,7 +216,7 @@
               <!-- Recording Files -->
               <div class="recording-files" v-if="hasRecordingFiles">
                 <div class="files-header">
-                  <span class="files-icon">📁</span>
+                  <FolderIcon class="files-icon" />
                   <span class="files-title">Kayıt Dosyaları</span>
                 </div>
                 <div class="files-list">
@@ -225,7 +227,7 @@
                       <span class="file-duration">{{ file.duration || 'N/A' }}</span>
                     </div>
                     <button @click="downloadRecordingFile(file.fileId)" class="download-btn">
-                      📥 İndir
+                      <ArrowDownTrayIcon class="download-icon" /> İndir
                     </button>
                   </div>
                 </div>
@@ -234,11 +236,11 @@
               <!-- Error Display -->
               <div class="recording-error" v-if="recordingError">
                 <div class="error-message">
-                  <span class="error-icon">⚠️</span>
+                  <ExclamationTriangleIcon class="error-icon" />
                   <span class="error-text">{{ recordingError }}</span>
                 </div>
                 <button @click="clearRecordingError" class="clear-error-btn">
-                  ✕
+                  <XMarkIcon />
                 </button>
               </div>
             </div>
@@ -271,6 +273,22 @@ import { computed } from 'vue'
 import { useStreamQuality } from '../../composables/useStreamQuality.js'
 import { watch } from 'vue'
 import { useAgoraStore } from '../../store/agora.js'
+import { 
+  PresentationChartBarIcon,
+  TvIcon,
+  GlobeAltIcon,
+  SignalIcon,
+  BoltIcon,
+  FilmIcon,
+  CubeIcon,
+  ClockIcon,
+  LinkIcon,
+  MicrophoneIcon,
+  FolderIcon,
+  ArrowDownTrayIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon
+} from '@heroicons/vue/24/outline'
 
 // Props
 const props = defineProps({
@@ -418,7 +436,7 @@ watch(() => props.isConnected, (isConnected) => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: var(--rs-agora-transparent-black-70);
+  background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -429,11 +447,11 @@ watch(() => props.isConnected, (isConnected) => {
 
 /* Modal */
 .info-modal {
-  background: var(--rs-agora-dark-surface-26-98);
-  border: 1px solid var(--rs-agora-transparent-white-10);
+  background: rgba(30, 30, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  backdrop-filter: blur(20px);
-  box-shadow: var(--rs-agora-shadow-xl);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 95%;
   max-width: 800px;
   max-height: 90vh;
@@ -447,10 +465,10 @@ watch(() => props.isConnected, (isConnected) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 25px 15px 25px;
-  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
-  background: var(--rs-agora-dark-surface-26-98);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 20px 20px 0 0;
 }
 
@@ -461,8 +479,20 @@ watch(() => props.isConnected, (isConnected) => {
   color: var(--rs-agora-white);
 }
 
+.header-icon {
+  margin-right: 8px;
+  font-size: 24px;
+  vertical-align: middle;
+}
+
+.header-icon svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
 .close-btn {
-  background: var(--rs-agora-transparent-white-10);
+  background: rgba(255, 255, 255, 0.05);
   border: none;
   color: var(--rs-agora-white);
   font-size: 24px;
@@ -478,7 +508,7 @@ watch(() => props.isConnected, (isConnected) => {
 }
 
 .close-btn:hover {
-  background: var(--rs-agora-transparent-white-20);
+  background: rgba(255, 255, 255, 0.1);
   transform: scale(1.1);
 }
 
@@ -541,6 +571,18 @@ watch(() => props.isConnected, (isConnected) => {
   background: var(--rs-agora-transparent-white-10);
   border-radius: 12px;
   backdrop-filter: blur(10px);
+}
+
+.widget-icon svg {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+}
+
+/* Emoji icon için özel stil */
+.widget-icon:not(:has(svg)) {
+  font-size: 20px;
+  line-height: 1;
 }
 
 .widget-header h4 {
@@ -699,6 +741,12 @@ watch(() => props.isConnected, (isConnected) => {
   flex-shrink: 0;
 }
 
+.metric-icon svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
 .metric-content {
   flex: 1;
   min-width: 0;
@@ -828,14 +876,20 @@ watch(() => props.isConnected, (isConnected) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 3px;
+  padding: 8px 12px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Emoji icon için özel stil */
+.recording-btn:first-child {
+  font-size: 12px;
 }
 
 .recording-btn:disabled {
@@ -877,6 +931,12 @@ watch(() => props.isConnected, (isConnected) => {
   font-size: 16px;
 }
 
+.btn-icon svg {
+  width: 8px;
+  height: 8px;
+  color: currentColor;
+}
+
 .recording-files {
   margin-top: 20px;
 }
@@ -892,6 +952,12 @@ watch(() => props.isConnected, (isConnected) => {
 
 .files-icon {
   font-size: 16px;
+}
+
+.files-icon svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
 }
 
 .files-title {
@@ -951,6 +1017,12 @@ watch(() => props.isConnected, (isConnected) => {
   transform: translateY(-1px);
 }
 
+.download-icon {
+  width: 12px;
+  height: 12px;
+  color: currentColor;
+}
+
 .recording-error {
   display: flex;
   align-items: center;
@@ -974,6 +1046,12 @@ watch(() => props.isConnected, (isConnected) => {
   font-size: 16px;
 }
 
+.error-icon svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
 .clear-error-btn {
   background: none;
   border: none;
@@ -982,6 +1060,12 @@ watch(() => props.isConnected, (isConnected) => {
   padding: 4px;
   border-radius: 4px;
   font-size: 16px;
+}
+
+.clear-error-btn svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
 }
 
 .clear-error-btn:hover {
@@ -1223,12 +1307,17 @@ watch(() => props.isConnected, (isConnected) => {
   }
   
   .recording-btn {
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 13px;
   }
   
   .btn-icon {
     font-size: 14px;
+  }
+  
+  .btn-icon svg {
+    width: 6px;
+    height: 6px;
   }
   
   .file-item {

@@ -4,5 +4,5 @@
  */
 
 // Video yönetimi bileşenleri
-export { default as VideoGrid } from './VideoGrid.vue'
+// VideoGrid component removed - now using GridLayout directly
 export { default as VideoItem } from './VideoItem.vue'

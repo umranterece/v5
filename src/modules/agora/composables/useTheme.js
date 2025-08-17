@@ -30,9 +30,9 @@ export function useTheme() {
     },
     {
       id: 'cosmic-purple',
-      name: 'Kozmik Mor',
-      description: 'Mor ve pembe galaksi tonları',
-      icon: '🌌'
+      name: 'Rehberim Sensin',
+      description: 'Hafif mor ve pembe tonları',
+      icon: '💜'
     },
     {
       id: 'neon-cyber',

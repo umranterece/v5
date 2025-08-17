@@ -1,12 +1,5 @@
 <template>
   <div id="app">
-    <!-- Tema Seçici -->
-    <div class="app-header">
-      <ThemeSelector />
-    </div>
-    
-
-    
     <AgoraConference 
       :channelName="channelName"
       :autoJoin="autoJoin"
@@ -27,7 +20,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { AgoraConference, ThemeSelector } from './modules/agora/index.js'
+import { AgoraConference } from './modules/agora/index.js'
 import { useTheme } from './modules/agora/composables/useTheme.js'
 
 // Tema sistemini başlat
@@ -122,19 +115,7 @@ body {
   padding: 0;
 }
 
-/* App Header */
-.app-header {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 1001;
-  padding: 16px;
-  background: var(--rs-agora-surface-primary);
-  border-bottom: 1px solid var(--rs-agora-border-primary);
-  border-left: 1px solid var(--rs-agora-border-primary);
-  border-bottom-left-radius: var(--rs-agora-radius-lg);
-  box-shadow: var(--rs-agora-shadow-md);
-}
+
 
 
 </style>

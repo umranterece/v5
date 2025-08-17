@@ -20,7 +20,9 @@
         <!-- No presenter message -->
         <div v-else class="no-presenter">
           <div class="no-presenter-content">
-            <div class="no-presenter-icon">📊</div>
+            <div class="no-presenter-icon">
+              <PresentationChartBarIcon />
+            </div>
             <h3>Sunum Modu</h3>
             <p>Sunum yapacak kişi bekleniyor...</p>
             <p class="hint">Ekran paylaşımı yaparak sunuma başlayabilirsiniz</p>
@@ -30,14 +32,16 @@
     </div>
 
     <!-- Sidebar Toggle Button - Always Visible -->
+    <!-- Toggle Button - Sadece Desktop'ta görünür -->
     <button 
+      v-if="!isMobile"
       @click="toggleSidebar" 
       class="sidebar-toggle-btn"
       :title="isSidebarCollapsed ? 'Katılımcıları göster' : 'Katılımcıları gizle'"
     >
       <div class="toggle-icon">
-        <span v-if="isSidebarCollapsed" class="icon-open">▶️</span>
-        <span v-else class="icon-close">◀️</span>
+        <UsersIcon v-if="isSidebarCollapsed" class="icon-open" />
+        <XMarkIcon v-else class="icon-close" />
       </div>
     </button>
 
@@ -48,7 +52,7 @@
       <div class="sidebar-content">
         <div class="sidebar-header">
           <div class="header-content">
-            <div class="header-icon">👥</div>
+            <UsersIcon class="header-icon" />
             <div class="header-text">
               <h4>Katılımcılar</h4>
               <span class="participant-count">{{ participants.length }} kişi</span>
@@ -83,7 +87,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { PresentationChartBarIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAgoraStore } from '../../store/index.js'
 import { isScreenShareUser } from '../../constants.js'
 import VideoItem from '../video/VideoItem.vue'
@@ -102,6 +107,15 @@ const emit = defineEmits(['video-click', 'set-video-ref', 'set-local-video-ref',
 
 // Local state
 const isSidebarCollapsed = ref(false)
+
+// Mobil cihaz kontrolü
+const isMobile = ref(false)
+
+// Mobil kontrolü yap
+const checkMobile = () => {
+  const newMobileState = window.innerWidth <= 1024 // Tablet ve mobil için
+  isMobile.value = newMobileState
+}
 
 // Computed
 const presenter = computed(() => {
@@ -175,6 +189,34 @@ const participants = computed(() => {
 })
 
 
+
+// Window resize handler
+const handleResize = () => {
+  const wasMobile = isMobile.value
+  checkMobile() // Mobil durumu güncelle
+  
+  // Eğer desktop'tan mobil'e geçiş yapıldıysa ve sidebar kapalıysa
+  if (!wasMobile && isMobile.value && isSidebarCollapsed.value) {
+    props.logUI('Desktop\'tan mobil\'e geçiş, sidebar otomatik açılıyor')
+    isSidebarCollapsed.value = false
+  }
+  
+  // Eğer mobil'den desktop'a geçiş yapıldıysa
+  if (wasMobile && !isMobile.value) {
+    props.logUI('Mobil\'den desktop\'a geçiş')
+    // Desktop'ta sidebar durumunu koru (kullanıcı tercihi)
+  }
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  checkMobile() // İlk mobil kontrolü
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 
 // Methods
 const getUserHasVideo = (user) => {
@@ -407,6 +449,12 @@ const toggleSidebar = () => {
   opacity: 0.5;
 }
 
+.no-presenter-icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--rs-agora-text-secondary);
+}
+
 .no-presenter h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
@@ -431,10 +479,10 @@ const toggleSidebar = () => {
   top: 1rem; /* Header ile aynı hizada (presentation-layout padding: 1rem) */
   right: 1rem;
   height: calc(100% - 2rem); /* 100% - top ve bottom padding */
-  background: var(--rs-agora-gradient-blue-10);
+  background: var(--rs-agora-gradient-video);
   border-radius: var(--rs-agora-radius-xl);
-  border: 1px solid var(--rs-agora-transparent-white-20);
-  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
+  border: 1px solid var(--rs-agora-border-primary-light);
+  box-shadow: 0 8px 32px var(--rs-agora-border-primary-light);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -458,8 +506,8 @@ const toggleSidebar = () => {
   top: 50%;
   right: 1rem; /* Sağ tarafta sabit */
   transform: translateY(-50%);
-  background: var(--rs-agora-gradient-blue-95);
-  border: 2px solid var(--rs-agora-transparent-white-50);
+  background: var(--rs-agora-gradient-primary);
+  border: 2px solid var(--rs-agora-border-primary-medium);
   color: var(--rs-agora-white);
   font-size: 1.1rem;
   cursor: pointer;
@@ -468,7 +516,7 @@ const toggleSidebar = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--rs-agora-shadow-xl);
+  box-shadow: 0 4px 16px var(--rs-agora-border-primary-medium);
   transition: all 0.3s ease;
   z-index: 9999; /* Çok yüksek z-index */
   backdrop-filter: blur(15px);
@@ -480,8 +528,8 @@ const toggleSidebar = () => {
 }
 
 .sidebar-toggle-btn:hover {
-  background: var(--rs-agora-gradient-blue-30);
-  border-color: var(--rs-agora-transparent-white-40);
+  background: var(--rs-agora-gradient-secondary);
+  border-color: var(--rs-agora-border-primary-heavy);
   transform: translateY(-50%) scale(1.05);
 }
 
@@ -494,34 +542,25 @@ const toggleSidebar = () => {
   height: 100%;
 }
 
-.sidebar-toggle-btn .toggle-icon .icon-open {
-  font-size: 1.8rem;
+.sidebar-toggle-btn .toggle-icon .icon-open,
+.sidebar-toggle-btn .toggle-icon .icon-close {
+  width: 24px;
+  height: 24px;
   color: var(--rs-agora-white);
   transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 4px var(--rs-agora-transparent-white-30));
-  display: block;
-  line-height: 1;
-}
-
-.sidebar-toggle-btn .toggle-icon .icon-close {
-  font-size: 1.6rem;
-  color: var(--rs-agora-white);
-  transition: all var(--rs-agora-transition-normal);
-  filter: drop-shadow(0 2px 4px var(--rs-agora-transparent-white-30));
-  display: block;
-  line-height: 1;
+  filter: drop-shadow(0 2px 4px var(--rs-agora-filter-primary-light));
 }
 
 .sidebar-toggle-btn:hover .toggle-icon .icon-open {
-  color: var(--rs-agora-success);
-  transform: scale(1.15);
-  filter: drop-shadow(0 4px 8px var(--rs-agora-transparent-success-50));
+  color: var(--rs-agora-white);
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px var(--rs-agora-filter-primary-medium));
 }
 
 .sidebar-toggle-btn:hover .toggle-icon .icon-close {
-  color: var(--rs-agora-warning);
-  transform: scale(1.15);
-  filter: drop-shadow(0 4px 8px var(--rs-agora-transparent-warning-50));
+  color: var(--rs-agora-white);
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px var(--rs-agora-filter-primary-medium));
 }
 
 
@@ -548,8 +587,8 @@ const toggleSidebar = () => {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
-  background: var(--rs-agora-gradient-blue-15);
+  border-bottom: 1px solid var(--rs-agora-border-primary-light);
+  background: var(--rs-agora-transparent-primary-10);
   padding: 1rem;
   border-radius: 8px;
   backdrop-filter: blur(5px);
@@ -562,8 +601,10 @@ const toggleSidebar = () => {
 }
 
 .sidebar-header .header-icon {
-  font-size: 1.8rem;
-  color: var(--rs-agora-success);
+  width: 28px;
+  height: 28px;
+  color: var(--rs-agora-primary);
+  filter: drop-shadow(0 2px 4px var(--rs-agora-filter-primary-light));
 }
 
 .sidebar-header .header-text {
@@ -588,11 +629,21 @@ const toggleSidebar = () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow-y: auto;
+  overflow-y: auto; /* Masaüstünde dikey scrolling */
+  overflow-x: hidden; /* Yatay scrolling yok */
 }
 
+/* Desktop'ta katılımcı video item'ları sidebar genişliği kadar kare */
+.participants-list .video-item {
+  width: 100%; /* Sidebar genişliği kadar */
+  height: auto;
+  aspect-ratio: 1; /* Kare yap */
+  min-height: 120px; /* Minimum yükseklik */
+}
+
+/* Masaüstünde dikey scrollbar */
 .participants-list::-webkit-scrollbar {
-  width: 6px;
+  width: 6px; /* Dikey scrollbar genişliği */
 }
 
 .participants-list::-webkit-scrollbar-track {
@@ -640,6 +691,11 @@ const toggleSidebar = () => {
     margin-right: 0;
   }
 
+  /* Tablet ve mobilde sidebar toggle button'ı gizle */
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
   .modern-floating-sidebar {
     position: fixed;
     bottom: 1rem; /* Mobilde altta */
@@ -653,17 +709,25 @@ const toggleSidebar = () => {
     justify-content: flex-start; /* Üstten başla */
     align-items: stretch; /* Tam genişlik */
     padding: 0.5rem;
-    background: var(--rs-agora-gradient-blue-15);
+    background: var(--rs-agora-gradient-video);
     border-radius: 16px;
-      border: 1px solid var(--rs-agora-transparent-white-20);
-  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
+    border: 1px solid var(--rs-agora-border-primary-light);
+    box-shadow: 0 8px 32px var(--rs-agora-shadow-lg);
     backdrop-filter: blur(10px);
     z-index: 1000; /* Mobilde daha yüksek z-index */
   }
 
   .modern-floating-sidebar.collapsed {
-    height: 60px; /* Kapalıyken sadece header yüksekliği */
-    overflow: hidden;
+    height: 200px !important; /* Tablet'te her zaman tam yükseklik */
+    overflow: visible !important;
+  }
+  
+  /* Mobilde collapsed state'i devre dışı bırak */
+  @media (max-width: 768px) {
+    .modern-floating-sidebar.collapsed {
+      height: 180px !important; /* Mobilde her zaman tam yükseklik */
+      overflow: visible !important;
+    }
   }
 
   .sidebar-toggle-btn {
@@ -673,11 +737,11 @@ const toggleSidebar = () => {
     left: auto; /* Sol'u kaldır */
     transform: none; /* Transform kaldır */
     margin-left: 0;
-    background: var(--rs-agora-gradient-blue-30);
+    background: var(--rs-agora-gradient-primary);
     border-radius: 50%;
     padding: 0.3rem;
     gap: 0;
-    border: 1px solid var(--rs-agora-transparent-white-20);
+    border: 1px solid var(--rs-agora-border-primary-medium);
     z-index: 1001;
   }
 
@@ -704,7 +768,7 @@ const toggleSidebar = () => {
 
   .sidebar-header {
     padding: 0.5rem;
-    background: var(--rs-agora-gradient-blue-20);
+    background: var(--rs-agora-transparent-primary-10);
     margin-bottom: 0.5rem;
     border-radius: 8px;
     backdrop-filter: blur(5px);
@@ -730,28 +794,29 @@ const toggleSidebar = () => {
 
   .participants-list {
     display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
+    flex-direction: row; /* Yatay layout */
+    overflow-x: auto; /* Yatay scrolling */
+    overflow-y: hidden; /* Dikey scrolling yok */
     padding: 0.5rem;
     gap: 0.5rem;
-    flex-wrap: nowrap; /* Mobilde wrap yapma, scroll yap */
+    flex-wrap: nowrap; /* Wrap yapma, scroll yap */
     align-items: center;
     min-height: 80px; /* Thumb yüksekliği için minimum yükseklik */
   }
 
-  /* Mobilde thumb şeklinde video item'lar */
+  /* Tablet'te sidebar altta olduğunda yatay scrolling ve sidebar yüksekliği kadar kare */
   .participants-list .video-item {
     flex-shrink: 0; /* Shrink yapma */
-    width: 80px; /* Sabit genişlik */
-    height: 80px; /* Sabit yükseklik */
-    min-width: 80px; /* Minimum genişlik */
-    min-height: 80px; /* Minimum yükseklik */
+    width: 80px; /* Sidebar yüksekliği kadar kare */
+    height: 80px;
+    min-width: 80px;
+    min-height: 80px;
+    aspect-ratio: 1; /* Kare yap */
   }
 
-  /* Mobilde scroll bar'ı gizle ama scroll çalışsın */
+  /* Tablet'te yatay scrollbar */
   .participants-list::-webkit-scrollbar {
-    height: 4px;
+    height: 4px; /* Yatay scrollbar yüksekliği */
   }
 
   .participants-list::-webkit-scrollbar-track {
@@ -786,15 +851,22 @@ const toggleSidebar = () => {
     padding: 0.3rem;
   }
 
+  /* Mobilde collapsed state yok - her zaman açık */
   .modern-floating-sidebar.collapsed {
-    height: 50px; /* Mobilde daha küçük */
+    height: 180px !important; /* Mobilde her zaman tam yükseklik */
+    overflow: visible !important;
+  }
+  
+  /* Mobilde toggle button'ı gizle */
+  .sidebar-toggle-btn {
+    display: none !important;
   }
 
   .sidebar-toggle-btn {
     top: 0.3rem;
     right: 0.3rem;
     padding: 0.25rem;
-    background: var(--rs-agora-gradient-blue-40);
+    background: var(--rs-agora-gradient-primary);
   }
 
   .sidebar-toggle-btn .toggle-icon {
@@ -803,12 +875,12 @@ const toggleSidebar = () => {
   
   .sidebar-toggle-btn .toggle-icon .icon-open {
     font-size: 1rem;
-    color: var(--rs-agora-success);
+    color: var(--rs-agora-white);
   }
   
   .sidebar-toggle-btn .toggle-icon .icon-close {
     font-size: 0.9rem;
-    color: var(--rs-agora-error);
+    color: var(--rs-agora-white);
   }
 
   .sidebar-content {
@@ -817,7 +889,7 @@ const toggleSidebar = () => {
 
   .sidebar-header {
     padding: 0.3rem;
-    background: var(--rs-agora-gradient-blue-25);
+    background: var(--rs-agora-transparent-primary-10);
     margin-bottom: 0.3rem;
   }
 
@@ -834,18 +906,47 @@ const toggleSidebar = () => {
   }
 
   .participants-list {
+    display: flex;
+    flex-direction: row; /* Yatay layout */
+    overflow-x: auto; /* Yatay scrolling */
+    overflow-y: hidden; /* Dikey scrolling yok */
     padding: 0.3rem;
     gap: 0.3rem;
+    flex-wrap: nowrap; /* Wrap yapma, scroll yap */
+    align-items: center;
     min-height: 70px; /* Mobilde daha küçük thumb */
   }
-
-  /* Mobilde daha küçük thumb'lar */
+  
+  /* Mobilde sidebar altta olduğunda yatay scrolling ve sidebar yüksekliği kadar kare */
   .participants-list .video-item {
-    width: 70px;
+    flex-shrink: 0; /* Shrink yapma */
+    width: 70px; /* Sidebar yüksekliği kadar kare */
     height: 70px;
     min-width: 70px;
     min-height: 70px;
+    aspect-ratio: 1; /* Kare yap */
   }
+  
+  /* Mobilde yatay scrollbar */
+  .participants-list::-webkit-scrollbar {
+    height: 3px; /* Mobilde daha ince yatay scrollbar */
+  }
+
+  .participants-list::-webkit-scrollbar-track {
+    background: var(--rs-agora-transparent-white-10);
+    border-radius: 2px;
+  }
+
+  .participants-list::-webkit-scrollbar-thumb {
+    background: var(--rs-agora-transparent-primary-50);
+    border-radius: 2px;
+  }
+
+  .participants-list::-webkit-scrollbar-thumb:hover {
+    background: var(--rs-agora-transparent-primary-70);
+  }
+
+
   
 
 }

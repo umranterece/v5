@@ -23,6 +23,7 @@
     "vue": "^3.0.0"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "agora-rtc-sdk-ng": "^4.0.0",
     "mitt": "^3.0.0",
     "pinia": "^3.0.0",

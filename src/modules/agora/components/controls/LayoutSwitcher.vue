@@ -8,7 +8,9 @@
     >
       <span class="layout-icon">{{ currentLayoutInfo.icon }}</span>
       <span class="layout-name">{{ currentLayoutInfo.name }}</span>
-      <span class="modal-arrow">🎨</span>
+              <span class="modal-arrow">
+          <ViewColumnsIcon />
+        </span>
     </button>
 
     <!-- Layout Modal Overlay -->
@@ -17,7 +19,9 @@
         <!-- Modal Header -->
         <div class="layout-modal-header">
           <div class="header-content">
-            <div class="header-icon">🎨</div>
+            <div class="header-icon">
+          <ViewColumnsIcon />
+        </div>
             <div class="header-text">
               <h2>Görünüm Seçenekleri</h2>
               <p>Video konferans görünümünü özelleştirin</p>
@@ -59,11 +63,15 @@
         <div class="layout-modal-footer">
           <div class="footer-actions">
             <button @click="resetToDefault" class="reset-btn">
-              <span class="reset-icon">🔄</span>
+              <span class="reset-icon">
+          <ArrowPathIcon />
+        </span>
               Varsayılana Dön
             </button>
             <button @click="closeLayoutMenu" class="close-btn">
-              <span class="close-icon">✕</span>
+              <span class="close-icon">
+          <XMarkIcon />
+        </span>
               Kapat
             </button>
           </div>
@@ -74,7 +82,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { 
+  ViewColumnsIcon,
+  ArrowPathIcon,
+  XMarkIcon
+} from '@heroicons/vue/24/outline'
+import { ref, computed } from 'vue'
 import { useLayoutStore } from '../../store/layout.js'
 
 const layoutStore = useLayoutStore()
@@ -331,5 +344,29 @@ const getCategoryTitle = (category) => {
     font-size: 1.25rem;
     width: 1.5rem;
   }
+}
+
+.modal-arrow svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
+.header-icon svg {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+}
+
+.reset-icon svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+
+.close-icon svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
 }
 </style>
