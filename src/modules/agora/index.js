@@ -13,7 +13,7 @@ export { AgoraControls, LayoutSwitcher, RecordingControls } from './components/c
 export { InfoModal, LayoutModal, LogModal, SettingsModal } from './components/modals'
 
 // Video Components
-export { VideoGrid, VideoItem, StreamQualityBar } from './components/video'
+export { VideoGrid, VideoItem } from './components/video'
 
 // Form Components
 export { JoinForm } from './components/forms'

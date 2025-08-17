@@ -152,6 +152,97 @@
               </div>
             </div>
           </div>
+
+          <!-- Recording Status Widget -->
+          <div class="info-widget recording-widget">
+            <div class="widget-header">
+              <div class="widget-icon">🎥</div>
+              <h4>Kayıt Durumu</h4>
+            </div>
+            <div class="widget-content">
+              <!-- Recording Status -->
+              <div class="recording-status" :class="recordingStatusClass">
+                <div class="status-indicator">
+                  <div class="recording-dot" v-if="isRecording"></div>
+                  <span class="status-text">{{ getRecordingStatusText() }}</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container" v-if="isRecording">
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill" 
+                      :style="{ width: `${recordingProgress}%` }"
+                    ></div>
+                  </div>
+                  <span class="progress-text">{{ recordingProgress.toFixed(1) }}%</span>
+                </div>
+              </div>
+              
+              <!-- Recording Controls -->
+              <div class="recording-controls">
+                <button 
+                  @click="startRecording"
+                  :disabled="!canStartRecording"
+                  class="recording-btn start-btn"
+                  :class="{ disabled: !canStartRecording }"
+                >
+                  <span class="btn-icon">🔴</span>
+                  Kayıt Başlat
+                </button>
+                
+                <button 
+                  @click="stopRecording"
+                  :disabled="!canStopRecording"
+                  class="recording-btn stop-btn"
+                  :class="{ disabled: !canStopRecording }"
+                >
+                  <span class="btn-icon">⏹️</span>
+                  Kayıt Durdur
+                </button>
+                
+                <button 
+                  @click="resetRecording"
+                  class="recording-btn reset-btn"
+                  v-if="hasRecordingFiles"
+                >
+                  <span class="btn-icon">🔄</span>
+                  Sıfırla
+                </button>
+              </div>
+              
+              <!-- Recording Files -->
+              <div class="recording-files" v-if="hasRecordingFiles">
+                <div class="files-header">
+                  <span class="files-icon">📁</span>
+                  <span class="files-title">Kayıt Dosyaları</span>
+                </div>
+                <div class="files-list">
+                  <div v-for="file in recordingFiles" :key="file.fileId" class="file-item">
+                    <div class="file-info">
+                      <span class="file-name">{{ file.fileName }}</span>
+                      <span class="file-size">{{ file.fileSize || 'N/A' }}</span>
+                      <span class="file-duration">{{ file.duration || 'N/A' }}</span>
+                    </div>
+                    <button @click="downloadRecordingFile(file.fileId)" class="download-btn">
+                      📥 İndir
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Error Display -->
+              <div class="recording-error" v-if="recordingError">
+                <div class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  <span class="error-text">{{ recordingError }}</span>
+                </div>
+                <button @click="clearRecordingError" class="clear-error-btn">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Users List - Full Width -->
@@ -194,15 +285,67 @@ const props = defineProps({
   canUseMicrophone: { type: Boolean, default: true },
   isLocalVideoOff: { type: Boolean, default: false },
   isLocalAudioMuted: { type: Boolean, default: false },
-  allUsers: { type: Array, default: () => [] }
+  allUsers: { type: Array, default: () => [] },
+  // Recording props
+  isRecording: { type: Boolean, default: false },
+  recordingStatus: { type: String, default: 'IDLE' },
+  recordingFiles: { type: Array, default: () => [] },
+  recordingError: { type: String, default: '' },
+  recordingProgress: { type: Number, default: 0 },
+  canStartRecording: { type: Boolean, default: true },
+  canStopRecording: { type: Boolean, default: false },
+  hasRecordingFiles: { type: Boolean, default: false }
 })
 
 // Emits
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'startRecording', 'stopRecording', 'resetRecording', 'downloadRecordingFile', 'clearRecordingError'])
+
+// Computed
+const recordingStatusClass = computed(() => {
+  return {
+    'status-idle': props.recordingStatus === 'IDLE',
+    'status-starting': props.recordingStatus === 'STARTING',
+    'status-recording': props.recordingStatus === 'RECORDING',
+    'status-stopping': props.recordingStatus === 'STOPPING',
+    'status-error': props.recordingStatus === 'ERROR'
+  }
+})
+
+// Helper functions
+const getRecordingStatusText = () => {
+  switch (props.recordingStatus) {
+    case 'IDLE': return 'Hazır'
+    case 'STARTING': return 'Başlatılıyor...'
+    case 'RECORDING': return 'Kaydediliyor'
+    case 'STOPPING': return 'Durduruluyor...'
+    case 'ERROR': return 'Hata!'
+    default: return 'Bilinmiyor'
+  }
+}
 
 // Methods
 const handleOverlayClick = () => {
   emit('close')
+}
+
+const startRecording = () => {
+  emit('startRecording')
+}
+
+const stopRecording = () => {
+  emit('stopRecording')
+}
+
+const resetRecording = () => {
+  emit('resetRecording')
+}
+
+const downloadRecordingFile = (fileId) => {
+  emit('downloadRecordingFile', fileId)
+}
+
+const clearRecordingError = () => {
+  emit('clearRecordingError')
 }
 </script>
 
@@ -528,6 +671,261 @@ const handleOverlayClick = () => {
   50% { opacity: 0.7; }
 }
 
+/* Recording Widget Styles */
+.recording-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-transparent-white-10);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--rs-agora-error);
+  animation: recordingPulse 1.5s infinite;
+}
+
+@keyframes recordingPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-idle .status-text {
+  color: var(--rs-agora-text-secondary);
+}
+
+.status-starting .status-text {
+  color: var(--rs-agora-warning);
+}
+
+.status-recording .status-text {
+  color: var(--rs-agora-error);
+}
+
+.status-stopping .status-text {
+  color: var(--rs-agora-warning);
+}
+
+.status-error .status-text {
+  color: var(--rs-agora-error);
+}
+
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  margin-left: 20px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--rs-agora-transparent-white-10);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--rs-agora-gradient-error);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--rs-agora-text-secondary);
+  min-width: 40px;
+}
+
+.recording-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.recording-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recording-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.start-btn {
+  background: var(--rs-agora-success);
+  color: var(--rs-agora-white);
+}
+
+.start-btn:hover:not(.disabled) {
+  background: var(--rs-agora-success-light);
+  transform: translateY(-1px);
+}
+
+.stop-btn {
+  background: var(--rs-agora-error);
+  color: var(--rs-agora-white);
+}
+
+.stop-btn:hover:not(.disabled) {
+  background: var(--rs-agora-error-light);
+  transform: translateY(-1px);
+}
+
+.reset-btn {
+  background: var(--rs-agora-transparent-white-10);
+  color: var(--rs-agora-text-primary);
+}
+
+.reset-btn:hover {
+  background: var(--rs-agora-transparent-white-20);
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.recording-files {
+  margin-top: 20px;
+}
+
+.files-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+}
+
+.files-icon {
+  font-size: 16px;
+}
+
+.files-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rs-agora-text-primary);
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--rs-agora-transparent-white-05);
+  border-radius: 8px;
+  border: 1px solid var(--rs-agora-transparent-white-08);
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--rs-agora-text-primary);
+  font-size: 14px;
+}
+
+.file-size,
+.file-duration {
+  font-size: 12px;
+  color: var(--rs-agora-text-secondary);
+}
+
+.download-btn {
+  background: var(--rs-agora-primary);
+  color: var(--rs-agora-white);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  background: var(--rs-agora-primary-light);
+  transform: translateY(-1px);
+}
+
+.recording-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--rs-agora-transparent-error-10);
+  border: 1px solid var(--rs-agora-error);
+  border-radius: 8px;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--rs-agora-error);
+  font-size: 14px;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.clear-error-btn {
+  background: none;
+  border: none;
+  color: var(--rs-agora-error);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.clear-error-btn:hover {
+  background: var(--rs-agora-transparent-error-20);
+}
 
 
 /* Device Badges */
@@ -746,6 +1144,46 @@ const handleOverlayClick = () => {
     font-size: 13px;
   }
   
+  /* Recording Widget Responsive */
+  .recording-status {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .progress-container {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .recording-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .recording-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .btn-icon {
+    font-size: 14px;
+  }
+  
+  .file-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .file-info {
+    width: 100%;
+  }
+  
+  .download-btn {
+    align-self: stretch;
+    text-align: center;
+  }
 
 }
 
