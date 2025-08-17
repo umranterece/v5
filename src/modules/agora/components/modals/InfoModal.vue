@@ -267,20 +267,17 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useStreamQuality } from '../../composables/useStreamQuality.js'
+import { watch } from 'vue'
+import { useAgoraStore } from '../../store/agora.js'
+
 // Props
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
   channelName: { type: String, default: '' },
   isConnected: { type: Boolean, default: false },
   connectedUsersCount: { type: Number, default: 0 },
-  networkQualityLevel: { type: String, default: 'Unknown' },
-  networkQualityColor: { type: String, default: 'var(--rs-agora-gray-500)' },
-  networkQualityScore: { type: Number, default: 0 },
-  networkQualityPercentage: { type: Number, default: 0 },
-  networkBitrate: { type: Number, default: 0 },
-  networkFrameRate: { type: Number, default: 0 },
-  networkRtt: { type: Number, default: 0 },
-  networkPacketLoss: { type: Number, default: 0 },
   canUseCamera: { type: Boolean, default: true },
   canUseMicrophone: { type: Boolean, default: true },
   isLocalVideoOff: { type: Boolean, default: false },
@@ -297,6 +294,24 @@ const props = defineProps({
   hasRecordingFiles: { type: Boolean, default: false }
 })
 
+// Stream Quality Composable
+const {
+  networkQuality,
+  bitrate,
+  frameRate,
+  packetLoss,
+  rtt,
+  qualityLevel,
+  qualityColor,
+  qualityPercentage,
+  isMonitoring,
+  startMonitoring,
+  stopMonitoring
+} = useStreamQuality()
+
+// Agora Store
+const agoraStore = useAgoraStore()
+
 // Emits
 const emit = defineEmits(['close', 'startRecording', 'stopRecording', 'resetRecording', 'downloadRecordingFile', 'clearRecordingError'])
 
@@ -310,6 +325,16 @@ const recordingStatusClass = computed(() => {
     'status-error': props.recordingStatus === 'ERROR'
   }
 })
+
+// Network Quality Computed
+const networkQualityLevel = computed(() => qualityLevel.value)
+const networkQualityColor = computed(() => qualityColor.value)
+const networkQualityScore = computed(() => networkQuality.value)
+const networkQualityPercentage = computed(() => qualityPercentage.value)
+const networkBitrate = computed(() => bitrate.value)
+const networkFrameRate = computed(() => frameRate.value)
+const networkRtt = computed(() => rtt.value)
+const networkPacketLoss = computed(() => packetLoss.value)
 
 // Helper functions
 const getRecordingStatusText = () => {
@@ -347,6 +372,42 @@ const downloadRecordingFile = (fileId) => {
 const clearRecordingError = () => {
   emit('clearRecordingError')
 }
+
+// Start monitoring when modal opens
+const startQualityMonitoring = () => {
+  if (props.isConnected && !isMonitoring.value) {
+    // Agora client'ı store'dan al
+    const videoClient = agoraStore.clients.video.client
+    if (videoClient) {
+      startMonitoring(videoClient)
+    }
+  }
+}
+
+// Stop monitoring when modal closes
+const stopQualityMonitoring = () => {
+  if (isMonitoring.value) {
+    stopMonitoring()
+  }
+}
+
+// Watch modal open/close to start/stop monitoring
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    startQualityMonitoring()
+  } else {
+    stopQualityMonitoring()
+  }
+})
+
+// Watch connection status
+watch(() => props.isConnected, (isConnected) => {
+  if (isConnected && props.isOpen) {
+    startQualityMonitoring()
+  } else {
+    stopQualityMonitoring()
+  }
+})
 </script>
 
 <style scoped>
