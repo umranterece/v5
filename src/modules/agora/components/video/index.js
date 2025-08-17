@@ -6,4 +6,3 @@
 // Video yönetimi bileşenleri
 export { default as VideoGrid } from './VideoGrid.vue'
 export { default as VideoItem } from './VideoItem.vue'
-export { default as StreamQualityBar } from './StreamQualityBar.vue'
