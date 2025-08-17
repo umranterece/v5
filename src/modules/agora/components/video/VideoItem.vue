@@ -277,9 +277,9 @@ const emit = defineEmits(['video-click'])
 <style scoped>
 .video-item {
   position: relative;
-  border-radius: 12px;
+  border-radius: var(--rs-agora-radius-lg);
   overflow: hidden;
-  background: #1a1a1a;
+  background: var(--rs-agora-dark-gray);
   aspect-ratio: 1;
   width: 100%;
   height: 100%;
@@ -300,7 +300,7 @@ const emit = defineEmits(['video-click'])
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--rs-agora-radius-lg);
 }
 
 /* Yerel video için normal mod (sağ el sağda) - ayna modu yok */
@@ -322,31 +322,31 @@ const emit = defineEmits(['video-click'])
   padding: 1rem;
   text-align: center;
   width: 100%;
-  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-  border-radius: 12px;
+  background: var(--rs-agora-gradient-surface);
+  border-radius: var(--rs-agora-radius-lg);
 }
 
 .avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
   font-weight: bold;
-  color: white;
+  color: var(--rs-agora-white);
   margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--rs-agora-shadow-md);
 }
 
 .user-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--rs-agora-text-primary);
   margin-bottom: 0.5rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px var(--rs-agora-transparent-black-50);
 }
 
 .user-status {
@@ -360,23 +360,23 @@ const emit = defineEmits(['video-click'])
   font-size: 1.2rem;
   padding: 0.25rem;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   backdrop-filter: blur(10px);
 }
 
 .status-icon.muted {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.2);
+  color: var(--rs-agora-error);
+  background: var(--rs-agora-transparent-error-20);
 }
 
 .status-icon.video-off {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.2);
+  color: var(--rs-agora-warning);
+  background: var(--rs-agora-transparent-warning-20);
 }
 
 .status-icon.screen-share {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.2);
+  color: var(--rs-agora-info);
+  background: var(--rs-agora-transparent-info-20);
 }
 
 .user-info {
@@ -384,9 +384,9 @@ const emit = defineEmits(['video-click'])
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  background: linear-gradient(transparent, var(--rs-agora-transparent-black-70));
   padding: 1rem;
-  color: white;
+  color: var(--rs-agora-white);
 }
 
 .user-info .user-name {
@@ -405,12 +405,12 @@ const emit = defineEmits(['video-click'])
 
 /* Local video styling */
 .local-video {
-  border: 2px solid #3b82f6;
+  border: 2px solid var(--rs-agora-info);
 }
 
 /* Screen share styling */
 .screen-share {
-  border: 2px solid #10b981;
+  border: 2px solid var(--rs-agora-success);
 }
 
 /* Clickable styling */
@@ -421,7 +421,7 @@ const emit = defineEmits(['video-click'])
 
 .clickable:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--rs-agora-shadow-lg);
 }
 
 .clickable:active {
@@ -430,7 +430,7 @@ const emit = defineEmits(['video-click'])
 
 /* Focus styling for accessibility */
 .clickable:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--rs-agora-blue-primary);
   outline-offset: 2px;
 }
 

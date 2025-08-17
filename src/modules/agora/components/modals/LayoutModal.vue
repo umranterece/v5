@@ -65,7 +65,7 @@ const handleOverlayClick = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
+  background: linear-gradient(135deg, var(--rs-agora-dark-surface-15) 0%, var(--rs-agora-dark-surface-26) 100%);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -75,18 +75,18 @@ const handleOverlayClick = () => {
 }
 
 .layout-modal {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
+  background: linear-gradient(135deg, var(--rs-agora-dark-surface-26) 0%, var(--rs-agora-dark-surface-22) 100%);
   backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
   max-height: 70vh;
   overflow: hidden;
   box-shadow: 
-    0 32px 64px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    var(--rs-agora-shadow-xl),
+    0 0 0 1px var(--rs-agora-transparent-white-05),
+    inset 0 1px 0 var(--rs-agora-transparent-white-10);
   display: flex;
   flex-direction: column;
   animation: modalSlideIn 0.2s ease-out;
@@ -109,22 +109,22 @@ const handleOverlayClick = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-08);
+  background: linear-gradient(135deg, var(--rs-agora-transparent-white-03) 0%, var(--rs-agora-transparent-white-01) 100%);
 }
 
 .layout-modal-header h2 {
   margin: 0;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 1.25rem;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 4px var(--rs-agora-transparent-black-30);
 }
 
 .close-modal-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-transparent-white-10);
+  color: var(--rs-agora-transparent-white-80);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -139,9 +139,9 @@ const handleOverlayClick = () => {
 }
 
 .close-modal-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--rs-agora-transparent-white-10);
+  border-color: var(--rs-agora-transparent-white-20);
+  color: var(--rs-agora-white);
 }
 
 /* Modal Content */
@@ -156,17 +156,17 @@ const handleOverlayClick = () => {
 }
 
 .layout-modal-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--rs-agora-transparent-white-05);
   border-radius: 3px;
 }
 
 .layout-modal-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-20);
   border-radius: 3px;
 }
 
 .layout-modal-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--rs-agora-transparent-white-30);
 }
 
 .layout-grid {
@@ -182,8 +182,8 @@ const handleOverlayClick = () => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, var(--rs-agora-transparent-white-10) 0%, var(--rs-agora-transparent-white-05) 100%);
+  border: 1px solid var(--rs-agora-transparent-white-15);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -194,16 +194,16 @@ const handleOverlayClick = () => {
 }
 
 .layout-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, var(--rs-agora-transparent-white-15) 0%, var(--rs-agora-transparent-white-10) 100%);
+  border-color: var(--rs-agora-transparent-white-25);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--rs-agora-shadow-md);
 }
 
 .layout-card.active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, var(--rs-agora-transparent-primary-30) 0%, var(--rs-agora-transparent-secondary-30) 100%);
+  border-color: var(--rs-agora-transparent-primary-50);
+  box-shadow: 0 0 20px var(--rs-agora-transparent-primary-30);
 }
 
 .layout-icon {
@@ -218,19 +218,19 @@ const handleOverlayClick = () => {
 
 .layout-name {
   margin: 0;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 0.875rem;
   font-weight: 600;
   text-align: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px var(--rs-agora-transparent-black-30);
 }
 
 .active-badge {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: #4ade80;
-  color: black;
+  background: var(--rs-agora-success);
+  color: var(--rs-agora-black);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -239,7 +239,7 @@ const handleOverlayClick = () => {
   justify-content: center;
   font-size: 0.75rem;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--rs-agora-shadow-sm);
 }
 
 /* Responsive */

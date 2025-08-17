@@ -130,7 +130,7 @@ const props = defineProps({
   isConnected: { type: Boolean, default: false },
   connectedUsersCount: { type: Number, default: 0 },
   networkQualityLevel: { type: String, default: 'Unknown' },
-  networkQualityColor: { type: String, default: '#6b7280' },
+  networkQualityColor: { type: String, default: 'var(--rs-agora-gray-500)' },
   networkBitrate: { type: Number, default: 0 },
   networkFrameRate: { type: Number, default: 0 },
   networkRtt: { type: Number, default: 0 },
@@ -159,7 +159,7 @@ const handleOverlayClick = () => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--rs-agora-transparent-black-70);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -170,11 +170,11 @@ const handleOverlayClick = () => {
 
 /* Modal */
 .info-modal {
-  background: rgba(26, 26, 46, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-dark-surface-26-98);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 20px;
   backdrop-filter: blur(20px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--rs-agora-shadow-xl);
   width: 95%;
   max-width: 800px;
   max-height: 90vh;
@@ -188,10 +188,10 @@ const handleOverlayClick = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 25px 15px 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
   position: sticky;
   top: 0;
-  background: rgba(26, 26, 46, 0.98);
+  background: var(--rs-agora-dark-surface-26-98);
   border-radius: 20px 20px 0 0;
 }
 
@@ -199,13 +199,13 @@ const handleOverlayClick = () => {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: #fff;
+  color: var(--rs-agora-white);
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   border: none;
-  color: #fff;
+  color: var(--rs-agora-white);
   font-size: 24px;
   cursor: pointer;
   padding: 8px;
@@ -219,7 +219,7 @@ const handleOverlayClick = () => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-20);
   transform: scale(1.1);
 }
 
@@ -238,8 +238,8 @@ const handleOverlayClick = () => {
 
 /* Widget Styles */
 .info-widget {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--rs-agora-transparent-white-05) 0%, var(--rs-agora-transparent-white-02) 100%);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 16px;
   padding: 20px;
   backdrop-filter: blur(10px);
@@ -255,13 +255,13 @@ const handleOverlayClick = () => {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
 }
 
 .info-widget:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--rs-agora-shadow-lg);
+  border-color: var(--rs-agora-transparent-white-20);
 }
 
 /* Widget Header */
@@ -279,7 +279,7 @@ const handleOverlayClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   border-radius: 12px;
   backdrop-filter: blur(10px);
 }
@@ -288,8 +288,8 @@ const handleOverlayClick = () => {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: var(--rs-agora-text-primary);
+  text-shadow: 0 2px 4px var(--rs-agora-transparent-black-30);
 }
 
 /* Widget Content */
@@ -305,7 +305,7 @@ const handleOverlayClick = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-05);
 }
 
 .widget-stat:last-child {
@@ -314,13 +314,13 @@ const handleOverlayClick = () => {
 
 .stat-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
   font-weight: 500;
 }
 
 .stat-value {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--rs-agora-text-primary);
   font-weight: 600;
   text-align: right;
 }
@@ -336,15 +336,15 @@ const handleOverlayClick = () => {
 }
 
 .status-badge.connected {
-  background: rgba(74, 222, 128, 0.2);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: var(--rs-agora-transparent-success-20);
+  color: var(--rs-agora-success);
+  border: 1px solid var(--rs-agora-transparent-success-30);
 }
 
 .status-badge.disconnected {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--rs-agora-transparent-error-20);
+  color: var(--rs-agora-error);
+  border: 1px solid var(--rs-agora-transparent-error-30);
 }
 
 /* Quality Badge */
@@ -355,9 +355,9 @@ const handleOverlayClick = () => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(var(--quality-color), 0.2);
+  background: color-mix(in srgb, var(--quality-color) 20%, transparent);
   color: var(--quality-color);
-  border: 1px solid rgba(var(--quality-color), 0.3);
+  border: 1px solid color-mix(in srgb, var(--quality-color) 30%, transparent);
 }
 
 /* Device Badges */
@@ -371,15 +371,15 @@ const handleOverlayClick = () => {
 }
 
 .device-badge.available {
-  background: rgba(74, 222, 128, 0.2);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: var(--rs-agora-transparent-success-20);
+  color: var(--rs-agora-success);
+  border: 1px solid var(--rs-agora-transparent-success-30);
 }
 
 .device-badge.unavailable {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--rs-agora-transparent-error-20);
+  color: var(--rs-agora-error);
+  border: 1px solid var(--rs-agora-transparent-error-30);
 }
 
 .users-section {
@@ -391,8 +391,8 @@ const handleOverlayClick = () => {
   margin: 0 0 15px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--rs-agora-white);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-05);
   padding-bottom: 8px;
 }
 
@@ -405,12 +405,12 @@ const handleOverlayClick = () => {
 }
 
 .info-label {
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
   font-size: 14px;
 }
 
 .info-value {
-  color: #fff;
+  color: var(--rs-agora-white);
   font-size: 14px;
   font-weight: 500;
 }
@@ -426,7 +426,7 @@ const handleOverlayClick = () => {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-05);
 }
 
 .user-item:last-child {
@@ -438,26 +438,26 @@ const handleOverlayClick = () => {
 }
 
 .user-name {
-  color: #fff;
+  color: var(--rs-agora-white);
   font-size: 14px;
   flex: 1;
 }
 
 .user-status {
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
 }
 
 .user-status.local {
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.1);
+  color: var(--rs-agora-success);
+  background: var(--rs-agora-transparent-success-10);
 }
 
 .no-users {
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
   font-size: 14px;
   text-align: center;
   padding: 20px 0;
@@ -544,16 +544,16 @@ const handleOverlayClick = () => {
 }
 
 .info-modal::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--rs-agora-transparent-white-05);
   border-radius: 3px;
 }
 
 .info-modal::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-20);
   border-radius: 3px;
 }
 
 .info-modal::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--rs-agora-transparent-white-30);
 }
 </style>

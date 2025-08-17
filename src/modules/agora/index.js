@@ -3,12 +3,26 @@
  * @module agora
  */
 
-// Main Components
+// Core Components
 export { AgoraConference, AgoraVideo } from './components/core'
-export { AgoraControls, RecordingControls } from './components/controls'
-export { LogModal, InfoModal, SettingsModal } from './components/modals'
+
+// Control Components
+export { AgoraControls, LayoutSwitcher, RecordingControls } from './components/controls'
+
+// Modal Components
+export { InfoModal, LayoutModal, LogModal, SettingsModal } from './components/modals'
+
+// Video Components
 export { VideoGrid, VideoItem, StreamQualityBar } from './components/video'
+
+// Form Components
 export { JoinForm } from './components/forms'
+
+// Layout Components
+export { GridLayout, SpotlightLayout, PresentationLayout } from './components/layouts'
+
+// UI Components
+export { ThemeSelector } from './components/ui'
 
 // Composables
 export * from './composables'

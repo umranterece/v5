@@ -226,7 +226,7 @@ export default {
   border-radius: 12px;
   padding: 20px;
   margin: 20px 0;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--rs-agora-shadow-sm);
 }
 
 .recording-status {
@@ -249,7 +249,7 @@ export default {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ff4444;
+  background: var(--rs-agora-error);
   animation: pulse 1.5s infinite;
 }
 
@@ -269,19 +269,19 @@ export default {
 }
 
 .status-starting .status-text {
-  color: #ffa726;
+  color: var(--rs-agora-warning);
 }
 
 .status-recording .status-text {
-  color: #ff4444;
+  color: var(--rs-agora-error);
 }
 
 .status-stopping .status-text {
-  color: #ffa726;
+  color: var(--rs-agora-warning);
 }
 
 .status-error .status-text {
-  color: #f44336;
+  color: var(--rs-agora-error);
 }
 
 .progress-container {
@@ -302,7 +302,7 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff4444, #ff6b6b);
+  background: var(--rs-agora-gradient-error);
   transition: width 0.3s ease;
 }
 
@@ -337,22 +337,22 @@ export default {
 }
 
 .btn-start {
-  background: #4caf50;
-  color: white;
+  background: var(--rs-agora-success);
+  color: var(--rs-agora-white);
 }
 
 .btn-start:hover:not(.disabled) {
-  background: #45a049;
+  background: var(--rs-agora-success-light);
   transform: translateY(-1px);
 }
 
 .btn-stop {
-  background: #f44336;
-  color: white;
+  background: var(--rs-agora-error);
+  color: var(--rs-agora-white);
 }
 
 .btn-stop:hover:not(.disabled) {
-  background: #da190b;
+  background: var(--rs-agora-error-light);
   transform: translateY(-1px);
 }
 
@@ -427,14 +427,14 @@ export default {
 }
 
 .btn-download {
-  background: #2196f3;
-  color: white;
+  background: var(--rs-agora-info);
+  color: var(--rs-agora-white);
   padding: 8px 16px;
   font-size: 12px;
 }
 
 .btn-download:hover {
-  background: #1976d2;
+  background: var(--rs-agora-info-light);
   transform: translateY(-1px);
 }
 
@@ -444,8 +444,8 @@ export default {
   justify-content: space-between;
   margin-top: 16px;
   padding: 12px;
-  background: #ffebee;
-  border: 1px solid #ffcdd2;
+  background: var(--rs-agora-transparent-error-10);
+  border: 1px solid var(--rs-agora-error);
   border-radius: 8px;
 }
 
@@ -453,21 +453,21 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #c62828;
+  color: var(--rs-agora-error);
   font-size: 14px;
 }
 
 .btn-clear-error {
   background: none;
   border: none;
-  color: #c62828;
+  color: var(--rs-agora-error);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
 }
 
 .btn-clear-error:hover {
-  background: rgba(198, 40, 40, 0.1);
+  background: var(--rs-agora-transparent-error-20);
 }
 
 /* Responsive */

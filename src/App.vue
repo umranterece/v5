@@ -1,5 +1,12 @@
 <template>
   <div id="app">
+    <!-- Tema Seçici -->
+    <div class="app-header">
+      <ThemeSelector />
+    </div>
+    
+
+    
     <AgoraConference 
       :channelName="channelName"
       :autoJoin="autoJoin"
@@ -19,8 +26,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { AgoraConference } from './modules/agora/index.js'
+import { ref, onMounted } from 'vue'
+import { AgoraConference, ThemeSelector } from './modules/agora/index.js'
+import { useTheme } from './modules/agora/composables/useTheme.js'
+
+// Tema sistemini başlat
+const { initializeTheme } = useTheme()
 
 // Kanal ayarları
 const channelName = ref('test-252')
@@ -67,9 +78,17 @@ const handleTokenRequested = (data) => {
 const handleTokenReceived = (data) => {
   console.log('Token alındı:', data)
 }
+
+// Component mount olduğunda temayı başlat
+onMounted(() => {
+  initializeTheme()
+})
 </script>
 
 <style>
+/* Tema CSS'ini import et */
+@import './assets/themes.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -102,4 +121,20 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* App Header */
+.app-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1001;
+  padding: 16px;
+  background: var(--rs-agora-surface-primary);
+  border-bottom: 1px solid var(--rs-agora-border-primary);
+  border-left: 1px solid var(--rs-agora-border-primary);
+  border-bottom-left-radius: var(--rs-agora-radius-lg);
+  box-shadow: var(--rs-agora-shadow-md);
+}
+
+
 </style>

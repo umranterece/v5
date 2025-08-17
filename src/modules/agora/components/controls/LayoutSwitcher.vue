@@ -114,18 +114,18 @@ const getCategoryTitle = (category) => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-10);
+  border: 1px solid var(--rs-agora-transparent-white-20);
   border-radius: 8px;
-  color: white;
+  color: var(--rs-agora-white);
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
 }
 
 .current-layout-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--rs-agora-transparent-white-15);
+  border-color: var(--rs-agora-transparent-white-30);
   transform: translateY(-1px);
 }
 
@@ -155,7 +155,7 @@ const getCategoryTitle = (category) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--rs-agora-transparent-black-70);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -165,15 +165,15 @@ const getCategoryTitle = (category) => {
 }
 
 .layout-modal {
-  background: rgba(26, 26, 46, 0.98);
+  background: var(--rs-agora-dark-surface-26-98);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--rs-agora-transparent-white-15);
   border-radius: 24px;
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--rs-agora-shadow-xl);
   display: flex;
   flex-direction: column;
 }
@@ -184,19 +184,19 @@ const getCategoryTitle = (category) => {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .layout-menu-header h3 {
   margin: 0;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 1.2rem;
 }
 
 .close-menu-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.25rem;
@@ -205,7 +205,7 @@ const getCategoryTitle = (category) => {
 }
 
 .close-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
 }
 
 /* Layout Categories */
@@ -223,7 +223,7 @@ const getCategoryTitle = (category) => {
 
 .category-title {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--rs-agora-transparent-white-80);
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -241,24 +241,24 @@ const getCategoryTitle = (category) => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 8px;
-  color: white;
+  color: var(--rs-agora-white);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
 }
 
 .layout-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-10);
+  border-color: var(--rs-agora-transparent-white-20);
   transform: translateX(4px);
 }
 
 .layout-option.active {
-  background: rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.5);
+  background: var(--rs-agora-transparent-primary-20);
+  border-color: var(--rs-agora-transparent-primary-50);
 }
 
 .layout-option-icon {
@@ -281,12 +281,12 @@ const getCategoryTitle = (category) => {
 
 .layout-option-desc {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
   line-height: 1.3;
 }
 
 .active-indicator {
-  color: #4ade80;
+  color: var(--rs-agora-success);
   font-weight: bold;
   font-size: 1.2rem;
 }
@@ -295,15 +295,15 @@ const getCategoryTitle = (category) => {
 .layout-menu-footer {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--rs-agora-transparent-white-10);
   text-align: center;
 }
 
 .reset-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-10);
+  border: 1px solid var(--rs-agora-transparent-white-20);
   border-radius: 8px;
-  color: white;
+  color: var(--rs-agora-white);
   padding: 0.75rem 1.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -311,8 +311,8 @@ const getCategoryTitle = (category) => {
 }
 
 .reset-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--rs-agora-transparent-white-15);
+  border-color: var(--rs-agora-transparent-white-30);
 }
 
 /* Responsive */

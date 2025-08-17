@@ -9,3 +9,6 @@
 // export { default as IconButton } from './IconButton.vue'
 // export { default as Modal } from './Modal.vue'
 // export { default as Widget } from './Widget.vue'
+
+// UI Components
+export { default as ThemeSelector } from './ThemeSelector.vue'

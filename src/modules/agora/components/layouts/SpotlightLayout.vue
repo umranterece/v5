@@ -262,8 +262,10 @@ const toggleSidebar = () => {
   display: flex;
   gap: 1rem;
   height: 100%;
-  width: 100%;
   padding: 1rem;
+  background: var(--rs-agora-gradient-bg);
+  border-radius: var(--rs-agora-radius-lg);
+  overflow: hidden;
 }
 
 .main-speaker {
@@ -272,9 +274,9 @@ const toggleSidebar = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: var(--rs-agora-radius-lg);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--rs-agora-shadow-lg);
   position: relative;
   transition: flex 0.3s ease-in-out;
 }
@@ -289,10 +291,10 @@ const toggleSidebar = () => {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
+  background: var(--rs-agora-transparent-black-70);
+  color: var(--rs-agora-white);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--rs-agora-radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
   z-index: 10;
@@ -302,13 +304,13 @@ const toggleSidebar = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: var(--rs-agora-gradient-blue);
+  border-radius: var(--rs-agora-radius-xl);
+  box-shadow: var(--rs-agora-shadow-lg);
   transition: width 0.3s ease-in-out;
   overflow: hidden;
   position: relative; /* Added for toggle button positioning */
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   backdrop-filter: blur(10px);
 }
 
@@ -319,11 +321,11 @@ const toggleSidebar = () => {
 .sidebar-toggle-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 1.1rem;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 8px;
+  border-radius: var(--rs-agora-radius-md);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -333,14 +335,14 @@ const toggleSidebar = () => {
   top: 0.5rem;
   left: 0.5rem;
   z-index: 10;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-gradient-blue-hover);
+  border: 1px solid var(--rs-agora-transparent-white-20);
   backdrop-filter: blur(10px);
 }
 
 .sidebar-toggle-btn:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--rs-agora-gradient-blue-active);
+  border-color: var(--rs-agora-transparent-white-40);
   transform: scale(1.05);
 }
 
@@ -356,14 +358,14 @@ const toggleSidebar = () => {
 .collapsed-count {
   font-size: 0.75rem;
   font-weight: 600;
-  color: white;
+  color: var(--rs-agora-white);
   position: absolute;
   bottom: 0.5rem;
   left: 0.5rem;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--rs-agora-transparent-black-30);
   padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  border-radius: var(--rs-agora-radius-sm);
   backdrop-filter: blur(5px);
 }
 
@@ -378,9 +380,9 @@ const toggleSidebar = () => {
 
 .sidebar-header {
   padding: 0.5rem 0.5rem 0.5rem 0.5rem; /* Adjusted padding */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
-  border-radius: 8px;
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-gradient-blue);
+  border-radius: var(--rs-agora-radius-md);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -395,19 +397,19 @@ const toggleSidebar = () => {
 
 .header-icon {
   font-size: 1.2rem;
-  color: white;
+  color: var(--rs-agora-white);
 }
 
 .header-text h4 {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: white;
+  color: var(--rs-agora-white);
 }
 
 .header-text .participant-count {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
 }
 
 .participants-list {
@@ -426,7 +428,7 @@ const toggleSidebar = () => {
 
 .no-participants-content {
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
 }
 
 .no-participants-icon {
@@ -472,7 +474,7 @@ const toggleSidebar = () => {
     gap: 0.5rem;
     padding: 0.5rem;
     max-height: 120px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+    background: var(--rs-agora-gradient-blue);
   }
 
   .modern-sidebar.collapsed {
@@ -485,11 +487,11 @@ const toggleSidebar = () => {
 
   .sidebar-toggle-btn {
     position: static;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
-    border-radius: 6px;
+    background: var(--rs-agora-gradient-blue-active);
+    border-radius: var(--rs-agora-radius-sm);
     padding: 0.3rem 0.5rem;
     gap: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--rs-agora-transparent-white-20);
   }
 
   .toggle-icon {
@@ -500,7 +502,7 @@ const toggleSidebar = () => {
     position: static;
     font-size: 0.6rem;
     margin-top: 0.25rem;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--rs-agora-transparent-black-50);
   }
 
   .sidebar-header {
@@ -508,7 +510,7 @@ const toggleSidebar = () => {
     align-items: center;
     gap: 0.25rem;
     padding: 0.3rem 0.3rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
+    background: var(--rs-agora-gradient-blue-hover);
   }
 
   .header-content {
@@ -573,11 +575,11 @@ const toggleSidebar = () => {
   }
 
   .sidebar-toggle-btn {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(147, 51, 234, 0.4) 100%);
-    border-radius: 6px;
+    background: var(--rs-agora-gradient-blue-active);
+    border-radius: var(--rs-agora-radius-sm);
     padding: 0.3rem 0.5rem;
     gap: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--rs-agora-transparent-white-30);
   }
 
   .toggle-icon {
@@ -586,12 +588,12 @@ const toggleSidebar = () => {
 
   .collapsed-count {
     font-size: 0.6rem;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--rs-agora-transparent-black-50);
   }
 
   .sidebar-header {
     padding: 0.2rem 0.2rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 51, 234, 0.25) 100%);
+    background: var(--rs-agora-gradient-blue-active);
   }
 
   .header-icon {

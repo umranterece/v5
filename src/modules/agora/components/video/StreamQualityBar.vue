@@ -64,7 +64,7 @@ const props = defineProps({
   packetLoss: { type: Number, default: 0 },
   rtt: { type: Number, default: 0 },
   qualityLevel: { type: String, default: 'unknown' },
-  qualityColor: { type: String, default: '#6b7280' },
+  qualityColor: { type: String, default: 'var(--rs-agora-gray-500)' },
   qualityPercentage: { type: Number, default: 0 },
   isConnected: { type: Boolean, default: false }
 })
@@ -85,12 +85,12 @@ const showQualityBar = computed(() => {
 }
 
 .quality-container {
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--rs-agora-dark-surface-80);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--rs-agora-shadow-xl);
 }
 
 .quality-header {
@@ -105,7 +105,7 @@ const showQualityBar = computed(() => {
 }
 
 .quality-label {
-  color: #e5e7eb;
+  color: var(--rs-agora-text-primary);
   font-size: 14px;
   font-weight: 500;
   flex: 1;
@@ -121,7 +121,7 @@ const showQualityBar = computed(() => {
 .quality-progress {
   position: relative;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   border-radius: 4px;
   margin-bottom: 12px;
   overflow: hidden;
@@ -140,8 +140,8 @@ const showQualityBar = computed(() => {
   transform: translate(-50%, -50%);
   font-size: 10px;
   font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  color: var(--rs-agora-white);
+  text-shadow: 0 1px 2px var(--rs-agora-transparent-black-50);
 }
 
 .quality-details {
@@ -158,17 +158,17 @@ const showQualityBar = computed(() => {
 }
 
 .detail-label {
-  color: #9ca3af;
+  color: var(--rs-agora-text-secondary);
   font-weight: 500;
 }
 
 .detail-value {
-  color: #e5e7eb;
+  color: var(--rs-agora-text-primary);
   font-weight: 600;
 }
 
 .detail-value.warning {
-  color: #f59e0b;
+  color: var(--rs-agora-warning);
 }
 
 /* Responsive */

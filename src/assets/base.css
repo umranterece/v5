@@ -1,24 +1,24 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  --vt-c-white: var(--rs-agora-white);
+  --vt-c-white-soft: var(--rs-agora-gray-100);
+  --vt-c-white-mute: var(--rs-agora-gray-200);
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  --vt-c-black: var(--rs-agora-gray-900);
+  --vt-c-black-soft: var(--rs-agora-gray-800);
+  --vt-c-black-mute: var(--rs-agora-gray-700);
 
-  --vt-c-indigo: #2c3e50;
+  --vt-c-indigo: var(--rs-agora-primary);
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  --vt-c-divider-light-1: var(--rs-agora-transparent-black-29);
+  --vt-c-divider-light-2: var(--rs-agora-transparent-black-12);
+  --vt-c-divider-dark-1: var(--rs-agora-transparent-black-65);
+  --vt-c-divider-dark-2: var(--rs-agora-transparent-black-48);
 
   --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  --vt-c-text-light-2: var(--rs-agora-transparent-black-66);
   --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  --vt-c-text-dark-2: var(--rs-agora-transparent-white-64);
 }
 
 /* semantic color variables for this project */
@@ -49,22 +49,22 @@
   --color-text: var(--vt-c-text-dark-2);
   
   /* Agora Module CSS Variables */
-  --bg-primary: rgba(255, 255, 255, 0.1);
-  --bg-secondary: rgba(255, 255, 255, 0.05);
-  --bg-tertiary: rgba(255, 255, 255, 0.03);
-  --bg-quaternary: rgba(255, 255, 255, 0.08);
+  --bg-primary: var(--rs-agora-transparent-white-10);
+  --bg-secondary: var(--rs-agora-transparent-white-05);
+  --bg-tertiary: var(--rs-agora-transparent-white-03);
+  --bg-quaternary: var(--rs-agora-transparent-white-08);
   
-  --text-primary: #e0e0e0;
-  --text-secondary: #b0b0b0;
-  --text-tertiary: #808080;
+  --text-primary: var(--rs-agora-text-primary);
+  --text-secondary: var(--rs-agora-text-secondary);
+  --text-tertiary: var(--rs-agora-text-muted);
   
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-color-hover: rgba(255, 255, 255, 0.2);
+  --border-color: var(--rs-agora-transparent-white-10);
+  --border-color-hover: var(--rs-agora-transparent-white-20);
   
-  --success-color: #4caf50;
-  --error-color: #f44336;
-  --warning-color: #ff9800;
-  --info-color: #2196f3;
+  --success-color: var(--rs-agora-success);
+  --error-color: var(--rs-agora-error);
+  --warning-color: var(--rs-agora-warning);
+  --info-color: var(--rs-agora-info);
 }
 }
 

@@ -149,7 +149,7 @@ const formatTime = (timestamp) => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--rs-agora-transparent-black-80);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -160,14 +160,14 @@ const formatTime = (timestamp) => {
 .log-modal {
   width: 95vw;
   height: 90vh;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--rs-agora-bg-primary);
+  border: 1px solid var(--rs-agora-gray-700);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--rs-agora-shadow-xl);
 }
 
 .log-modal-header {
@@ -175,15 +175,15 @@ const formatTime = (timestamp) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 25px;
-  background: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background: var(--rs-agora-bg-secondary);
+  border-bottom: 1px solid var(--rs-agora-gray-700);
   border-radius: 12px 12px 0 0;
   flex-shrink: 0;
 }
 
 .log-modal-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--rs-agora-text-primary);
   font-size: 18px;
   font-weight: 600;
 }
@@ -195,9 +195,9 @@ const formatTime = (timestamp) => {
 
 .log-modal-controls button {
   padding: 8px 12px;
-  border: 1px solid #555;
-  background: #333;
-  color: #fff;
+  border: 1px solid var(--rs-agora-gray-600);
+  background: var(--rs-agora-gray-700);
+  color: var(--rs-agora-text-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
@@ -206,44 +206,44 @@ const formatTime = (timestamp) => {
 }
 
 .log-modal-controls button:hover {
-  background: #444;
-  border-color: #666;
+  background: var(--rs-agora-gray-600);
+  border-color: var(--rs-agora-gray-500);
   transform: translateY(-1px);
 }
 
 .btn-export {
-  background: #2d5a2d !important;
-  border-color: #4a7c4a !important;
+  background: var(--rs-agora-success) !important;
+  border-color: var(--rs-agora-success) !important;
 }
 
 .btn-export:hover {
-  background: #3a6a3a !important;
+  background: var(--rs-agora-success-light) !important;
 }
 
 .btn-clear {
-  background: #5a2d2d !important;
-  border-color: #7c4a4a !important;
+  background: var(--rs-agora-error) !important;
+  border-color: var(--rs-agora-error) !important;
 }
 
 .btn-clear:hover {
-  background: #6a3a3a !important;
+  background: var(--rs-agora-error-light) !important;
 }
 
 .btn-close {
-  background: #2d2d5a !important;
-  border-color: #4a4a7c !important;
+  background: var(--rs-agora-info) !important;
+  border-color: var(--rs-agora-info) !important;
 }
 
 .btn-close:hover {
-  background: #3a3a6a !important;
+  background: var(--rs-agora-info-light) !important;
 }
 
 .log-stats {
   display: flex;
   gap: 20px;
   padding: 15px 25px;
-  background: #252525;
-  border-bottom: 1px solid #333;
+  background: var(--rs-agora-bg-tertiary);
+  border-bottom: 1px solid var(--rs-agora-gray-700);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -255,52 +255,52 @@ const formatTime = (timestamp) => {
 }
 
 .stat-label {
-  color: #ccc;
+  color: var(--rs-agora-gray-300);
   font-weight: 500;
 }
 
 .stat-value {
-  color: #fff;
+  color: var(--rs-agora-text-primary);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #333;
+  background: var(--rs-agora-gray-700);
 }
 
 .stat-value.level-error {
-  background: #5a2d2d;
-  color: #ff6b6b;
+  background: var(--rs-agora-transparent-error-20);
+  color: var(--rs-agora-error);
 }
 
 .stat-value.level-warn {
-  background: #5a4a2d;
-  color: #ffd93d;
+  background: var(--rs-agora-transparent-warning-20);
+  color: var(--rs-agora-warning);
 }
 
 .stat-value.level-info {
-  background: #2d5a2d;
-  color: #6bcf7f;
+  background: var(--rs-agora-transparent-success-20);
+  color: var(--rs-agora-success);
 }
 
 .stat-value.level-debug {
-  background: #2d4a5a;
-  color: #6bb5ff;
+  background: var(--rs-agora-transparent-info-20);
+  color: var(--rs-agora-info);
 }
 
 .log-filters {
   display: flex;
   gap: 15px;
   padding: 15px 25px;
-  background: #202020;
-  border-bottom: 1px solid #333;
+  background: var(--rs-agora-bg-primary);
+  border-bottom: 1px solid var(--rs-agora-gray-700);
   flex-shrink: 0;
 }
 
 .filter-select {
   padding: 8px 12px;
-  border: 1px solid #555;
-  background: #333;
-  color: #fff;
+  border: 1px solid var(--rs-agora-gray-600);
+  background: var(--rs-agora-gray-700);
+  color: var(--rs-agora-white);
   border-radius: 6px;
   font-size: 12px;
   min-width: 120px;
@@ -308,9 +308,9 @@ const formatTime = (timestamp) => {
 
 .filter-search {
   padding: 8px 12px;
-  border: 1px solid #555;
-  background: #333;
-  color: #fff;
+  border: 1px solid var(--rs-agora-gray-600);
+  background: var(--rs-agora-gray-700);
+  color: var(--rs-agora-white);
   border-radius: 6px;
   font-size: 12px;
   flex: 1;
@@ -320,49 +320,49 @@ const formatTime = (timestamp) => {
 .filter-select:focus,
 .filter-search:focus {
   outline: none;
-  border-color: #666;
-  background: #3a3a3a;
+  border-color: var(--rs-agora-gray-500);
+  background: var(--rs-agora-bg-secondary);
 }
 
 .log-container {
   flex: 1;
   overflow-y: auto;
   padding: 20px 25px;
-  background: #1a1a1a;
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-item {
   margin-bottom: 15px;
   padding: 12px;
   border-radius: 6px;
-  border-left: 4px solid #555;
-  background: #252525;
+  border-left: 4px solid var(--rs-agora-gray-600);
+  background: var(--rs-agora-bg-tertiary);
   transition: all 0.2s;
 }
 
 .log-item:hover {
-  background: #2a2a2a;
+  background: var(--rs-agora-bg-secondary);
   transform: translateX(2px);
 }
 
 .log-item.level-error {
-  border-left-color: #ff6b6b;
-  background: #2a1a1a;
+  border-left-color: var(--rs-agora-error);
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-item.level-warn {
-  border-left-color: #ffd93d;
-  background: #2a251a;
+  border-left-color: var(--rs-agora-warning);
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-item.level-info {
-  border-left-color: #6bcf7f;
-  background: #1a2a1a;
+  border-left-color: var(--rs-agora-success);
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-item.level-debug {
-  border-left-color: #6bb5ff;
-  background: #1a1f2a;
+  border-left-color: var(--rs-agora-info);
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-item .log-header {
@@ -373,7 +373,7 @@ const formatTime = (timestamp) => {
 }
 
 .log-timestamp {
-  color: #888;
+  color: var(--rs-agora-gray-400);
   font-weight: 500;
 }
 
@@ -386,40 +386,40 @@ const formatTime = (timestamp) => {
 }
 
 .level-error .log-level {
-  background: #5a2d2d;
-  color: #ff6b6b;
+  background: var(--rs-agora-error);
+  color: var(--rs-agora-white);
 }
 
 .level-warn .log-level {
-  background: #5a4a2d;
-  color: #ffd93d;
+  background: var(--rs-agora-warning);
+  color: var(--rs-agora-white);
 }
 
 .level-info .log-level {
-  background: #2d5a2d;
-  color: #6bcf7f;
+  background: var(--rs-agora-success);
+  color: var(--rs-agora-white);
 }
 
 .level-debug .log-level {
-  background: #2d4a5a;
-  color: #6bb5ff;
+  background: var(--rs-agora-info);
+  color: var(--rs-agora-white);
 }
 
 .log-category {
-  color: #aaa;
+  color: var(--rs-agora-gray-300);
   font-weight: 500;
 }
 
 .log-message {
-  color: #fff;
+  color: var(--rs-agora-text-primary);
   font-weight: 500;
   margin-bottom: 8px;
   line-height: 1.4;
 }
 
 .log-data {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--rs-agora-bg-primary);
+  border: 1px solid var(--rs-agora-gray-700);
   border-radius: 4px;
   padding: 10px;
   margin-top: 8px;
@@ -427,7 +427,7 @@ const formatTime = (timestamp) => {
 
 .log-data pre {
   margin: 0;
-  color: #ccc;
+  color: var(--rs-agora-gray-300);
   font-size: 11px;
   line-height: 1.3;
   white-space: pre-wrap;
@@ -436,7 +436,7 @@ const formatTime = (timestamp) => {
 
 .no-logs {
   text-align: center;
-  color: #666;
+  color: var(--rs-agora-gray-500);
   font-style: italic;
   padding: 40px;
   font-size: 14px;
@@ -448,16 +448,16 @@ const formatTime = (timestamp) => {
 }
 
 .log-container::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--rs-agora-bg-primary);
 }
 
 .log-container::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--rs-agora-gray-600);
   border-radius: 4px;
 }
 
 .log-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--rs-agora-gray-500);
 }
 
 /* Responsive design */

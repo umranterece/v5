@@ -397,7 +397,7 @@ const toggleSidebar = () => {
 
 .no-presenter-content {
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
   max-width: 400px;
 }
 
@@ -431,15 +431,15 @@ const toggleSidebar = () => {
   top: 1rem; /* Header ile aynı hizada (presentation-layout padding: 1rem) */
   right: 1rem;
   height: calc(100% - 2rem); /* 100% - top ve bottom padding */
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: var(--rs-agora-gradient-blue-10);
+  border-radius: var(--rs-agora-radius-xl);
+  border: 1px solid var(--rs-agora-transparent-white-20);
+  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 100; /* Lower z-index so it doesn't overlap main content */
-  transition: width 0.3s ease, max-width 0.3s ease;
+  transition: width var(--rs-agora-transition-normal), max-width var(--rs-agora-transition-normal);
   width: 300px; /* Default width */
   max-width: 300px; /* Default max-width */
   overflow: hidden;
@@ -458,9 +458,9 @@ const toggleSidebar = () => {
   top: 50%;
   right: 1rem; /* Sağ tarafta sabit */
   transform: translateY(-50%);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(147, 51, 234, 0.95) 100%);
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  color: white;
+  background: var(--rs-agora-gradient-blue-95);
+  border: 2px solid var(--rs-agora-transparent-white-50);
+  color: var(--rs-agora-white);
   font-size: 1.1rem;
   cursor: pointer;
   padding: 0.75rem;
@@ -468,7 +468,7 @@ const toggleSidebar = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--rs-agora-shadow-xl);
   transition: all 0.3s ease;
   z-index: 9999; /* Çok yüksek z-index */
   backdrop-filter: blur(15px);
@@ -480,8 +480,8 @@ const toggleSidebar = () => {
 }
 
 .sidebar-toggle-btn:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--rs-agora-gradient-blue-30);
+  border-color: var(--rs-agora-transparent-white-40);
   transform: translateY(-50%) scale(1.05);
 }
 
@@ -496,32 +496,32 @@ const toggleSidebar = () => {
 
 .sidebar-toggle-btn .toggle-icon .icon-open {
   font-size: 1.8rem;
-  color: white;
+  color: var(--rs-agora-white);
   transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+  filter: drop-shadow(0 2px 4px var(--rs-agora-transparent-white-30));
   display: block;
   line-height: 1;
 }
 
 .sidebar-toggle-btn .toggle-icon .icon-close {
   font-size: 1.6rem;
-  color: white;
-  transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+  color: var(--rs-agora-white);
+  transition: all var(--rs-agora-transition-normal);
+  filter: drop-shadow(0 2px 4px var(--rs-agora-transparent-white-30));
   display: block;
   line-height: 1;
 }
 
 .sidebar-toggle-btn:hover .toggle-icon .icon-open {
-  color: #4ade80;
+  color: var(--rs-agora-success);
   transform: scale(1.15);
-  filter: drop-shadow(0 4px 8px rgba(74, 222, 128, 0.5));
+  filter: drop-shadow(0 4px 8px var(--rs-agora-transparent-success-50));
 }
 
 .sidebar-toggle-btn:hover .toggle-icon .icon-close {
-  color: #f59e0b;
+  color: var(--rs-agora-warning);
   transform: scale(1.15);
-  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5));
+  filter: drop-shadow(0 4px 8px var(--rs-agora-transparent-warning-50));
 }
 
 
@@ -534,7 +534,7 @@ const toggleSidebar = () => {
   padding: 1rem;
   overflow-y: auto;
   transition: opacity 0.3s ease, visibility 0.3s ease;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+  background: var(--rs-agora-gradient-blue-05);
 }
 
 .modern-floating-sidebar.collapsed .sidebar-content {
@@ -548,8 +548,8 @@ const toggleSidebar = () => {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-gradient-blue-15);
   padding: 1rem;
   border-radius: 8px;
   backdrop-filter: blur(5px);
@@ -563,7 +563,7 @@ const toggleSidebar = () => {
 
 .sidebar-header .header-icon {
   font-size: 1.8rem;
-  color: #4ade80;
+  color: var(--rs-agora-success);
 }
 
 .sidebar-header .header-text {
@@ -573,13 +573,13 @@ const toggleSidebar = () => {
 
 .sidebar-header h4 {
   margin: 0;
-  color: white;
+  color: var(--rs-agora-white);
   font-size: 1.1rem;
   font-weight: 600;
 }
 
 .sidebar-header .participant-count {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
   font-size: 0.8rem;
 }
 
@@ -596,22 +596,22 @@ const toggleSidebar = () => {
 }
 
 .participants-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   border-radius: 3px;
 }
 
 .participants-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--rs-agora-transparent-white-30);
   border-radius: 3px;
 }
 
 .participants-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--rs-agora-transparent-white-50);
 }
 
 .no-participants {
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--rs-agora-transparent-white-50);
   padding: 2rem 1rem;
 }
 
@@ -653,10 +653,10 @@ const toggleSidebar = () => {
     justify-content: flex-start; /* Üstten başla */
     align-items: stretch; /* Tam genişlik */
     padding: 0.5rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+    background: var(--rs-agora-gradient-blue-15);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--rs-agora-transparent-white-20);
+  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
     backdrop-filter: blur(10px);
     z-index: 1000; /* Mobilde daha yüksek z-index */
   }
@@ -673,11 +673,11 @@ const toggleSidebar = () => {
     left: auto; /* Sol'u kaldır */
     transform: none; /* Transform kaldır */
     margin-left: 0;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
+    background: var(--rs-agora-gradient-blue-30);
     border-radius: 50%;
     padding: 0.3rem;
     gap: 0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--rs-agora-transparent-white-20);
     z-index: 1001;
   }
 
@@ -704,7 +704,7 @@ const toggleSidebar = () => {
 
   .sidebar-header {
     padding: 0.5rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
+    background: var(--rs-agora-gradient-blue-20);
     margin-bottom: 0.5rem;
     border-radius: 8px;
     backdrop-filter: blur(5px);
@@ -755,17 +755,17 @@ const toggleSidebar = () => {
   }
 
   .participants-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--rs-agora-transparent-white-10);
     border-radius: 2px;
   }
 
   .participants-list::-webkit-scrollbar-thumb {
-    background: rgba(59, 130, 246, 0.5);
+    background: var(--rs-agora-transparent-primary-50);
     border-radius: 2px;
   }
 
   .participants-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(59, 130, 246, 0.7);
+    background: var(--rs-agora-transparent-primary-70);
   }
 }
 
@@ -794,7 +794,7 @@ const toggleSidebar = () => {
     top: 0.3rem;
     right: 0.3rem;
     padding: 0.25rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(147, 51, 234, 0.4) 100%);
+    background: var(--rs-agora-gradient-blue-40);
   }
 
   .sidebar-toggle-btn .toggle-icon {
@@ -803,12 +803,12 @@ const toggleSidebar = () => {
   
   .sidebar-toggle-btn .toggle-icon .icon-open {
     font-size: 1rem;
-    color: #4ade80;
+    color: var(--rs-agora-success);
   }
   
   .sidebar-toggle-btn .toggle-icon .icon-close {
     font-size: 0.9rem;
-    color: #ef4444;
+    color: var(--rs-agora-error);
   }
 
   .sidebar-content {
@@ -817,7 +817,7 @@ const toggleSidebar = () => {
 
   .sidebar-header {
     padding: 0.3rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 51, 234, 0.25) 100%);
+    background: var(--rs-agora-gradient-blue-25);
     margin-bottom: 0.3rem;
   }
 

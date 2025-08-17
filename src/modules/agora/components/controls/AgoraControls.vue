@@ -21,6 +21,16 @@
         <span class="icon">⚙️</span>
         <span class="label"></span>
       </button>
+      
+      <!-- Info Button -->
+      <button 
+        @click="props.onOpenInfoModal"
+        class="info-button-top"
+        title="Toplantı Bilgileri"
+      >
+        <span class="icon">ℹ️</span>
+        <span class="label"></span>
+      </button>
     </div>
 
 
@@ -103,7 +113,7 @@ const props = defineProps({
   onOpenLayoutModal: { type: Function, default: () => {} },
   // Network Quality Props
   networkQualityLevel: { type: String, default: 'Unknown' },
-  networkQualityColor: { type: String, default: '#6b7280' },
+  networkQualityColor: { type: String, default: 'var(--rs-agora-gray-500)' },
   networkBitrate: { type: Number, default: 0 },
   networkFrameRate: { type: Number, default: 0 },
   networkRtt: { type: Number, default: 0 },
@@ -113,7 +123,9 @@ const props = defineProps({
   logError: { type: Function, default: () => {} },
   trackUserAction: { type: Function, default: () => {} },
   // Settings Props
-  onOpenSettings: { type: Function, default: () => {} }
+  onOpenSettings: { type: Function, default: () => {} },
+  // Info Modal Props
+  onOpenInfoModal: { type: Function, default: () => {} }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -216,10 +228,10 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 <style scoped>
 .agora-controls {
   padding: 8px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: var(--rs-agora-gradient-surface);
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--rs-agora-shadow-lg);
+  border: 1px solid var(--rs-agora-border-primary);
   backdrop-filter: blur(10px);
   position: relative; /* Added for settings button positioning */
 
@@ -241,44 +253,44 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  background: var(--rs-agora-transparent-white-05);
+  border: 2px solid var(--rs-agora-transparent-white-10);
+  border-radius: var(--rs-agora-radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--rs-agora-transition-normal);
   min-width: 70px;
   backdrop-filter: blur(10px);
 }
 
 .control-button:hover {
-  border-color: #667eea;
+  border-color: var(--rs-agora-primary);
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px var(--rs-agora-primary);
+  background: var(--rs-agora-transparent-white-10);
 }
 
 .control-button.active {
-  border-color: #4ade80;
-  background: rgba(74, 222, 128, 0.2);
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+  border-color: var(--rs-agora-success);
+  background: var(--rs-agora-transparent-success-20);
+  box-shadow: 0 0 20px var(--rs-agora-success);
 }
 
 .control-button.active:hover {
-  border-color: #4ade80;
-  background: rgba(74, 222, 128, 0.3);
-  box-shadow: 0 8px 25px rgba(74, 222, 128, 0.4);
+  border-color: var(--rs-agora-success);
+  background: var(--rs-agora-transparent-success-30);
+  box-shadow: 0 8px 25px var(--rs-agora-success);
   transform: translateY(-3px);
 }
 
 .control-button.leave-button {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
+  border-color: var(--rs-agora-error);
+  color: var(--rs-agora-error);
 }
 
 .control-button.leave-button:hover {
-  background: #ff6b6b;
-  color: white;
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  background: var(--rs-agora-error);
+  color: var(--rs-agora-white);
+  box-shadow: 0 8px 25px var(--rs-agora-error);
 }
 
 .control-button:disabled {
@@ -295,7 +307,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   font-size: 10px;
   font-weight: 600;
   text-align: center;
-  color: #e0e0e0;
+  color: var(--rs-agora-text-primary);
 }
 
 
@@ -308,8 +320,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   top: 32px;
   right: 32px;
   z-index: 1200;
-  background: rgba(34, 34, 34, 0.85);
-  color: #fff;
+  background: var(--rs-agora-transparent-black-70);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 56px;
@@ -318,14 +330,14 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  box-shadow: var(--rs-agora-shadow-lg);
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
   backdrop-filter: blur(6px);
 }
 .settings-fab:hover {
-  background: rgba(60, 60, 60, 0.95);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  background: var(--rs-agora-transparent-black-50);
+  box-shadow: var(--rs-agora-shadow-xl);
   transform: scale(1.07);
 }
 
@@ -344,7 +356,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(20, 20, 40, 0.45);
+  background: var(--rs-agora-dark-surface-20);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -353,22 +365,22 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   overflow-y: auto;
 }
 .settings-modal-glass {
-  background: rgba(34, 34, 44, 0.85);
+  background: var(--rs-agora-dark-surface-44);
   border-radius: 20px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.45);
+  box-shadow: 0 12px 48px var(--rs-agora-transparent-black-45);
   padding: 32px 28px 28px 28px;
   width: 100%;
   max-width: 420px;
-  color: #fff;
+  color: var(--rs-agora-white);
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border: 1.5px solid rgba(255,255,255,0.08);
+  border: 1.5px solid var(--rs-agora-transparent-white-08);
   backdrop-filter: blur(16px);
   animation: modalPopIn 0.25s cubic-bezier(.4,2,.6,1) 1;
   box-sizing: border-box;
-  max-height: 90vh;
+  max-height: 90vh
 }
 
 @keyframes modalPopIn {
@@ -384,7 +396,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 .settings-modal-icon {
   font-size: 2.7rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -405,13 +417,13 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 .settings-section label {
   font-size: 1rem;
   font-weight: 500;
-  color: #bdbfff;
+  color: var(--rs-agora-text-accent);
   margin-bottom: 2px;
 }
 .settings-section select {
-  background: rgba(40,40,60,0.85);
-  color: #fff;
-  border: 1.5px solid #667eea;
+  background: var(--rs-agora-dark-surface-40);
+  color: var(--rs-agora-white);
+  border: 1.5px solid var(--rs-agora-primary);
   border-radius: 8px;
   padding: 7px 12px;
   font-size: 1rem;
@@ -419,7 +431,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   transition: border 0.2s;
 }
 .settings-section select:focus {
-  border: 1.5px solid #764ba2;
+  border: 1.5px solid var(--rs-agora-secondary);
 }
 .settings-actions {
   display: flex;
@@ -428,24 +440,24 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   margin-top: 18px;
 }
 .save-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: var(--rs-agora-gradient-primary);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 8px;
   padding: 10px 28px;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(102,126,234,0.12);
+  box-shadow: 0 2px 8px var(--rs-agora-transparent-primary-12);
   transition: background 0.2s, box-shadow 0.2s;
 }
 .save-button:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  box-shadow: 0 4px 16px rgba(118,75,178,0.18);
+  background: var(--rs-agora-gradient-secondary);
+  box-shadow: 0 4px 16px var(--rs-agora-transparent-secondary-18);
 }
 .cancel-button {
-  background: #444;
-  color: #fff;
+  background: var(--rs-agora-gray-600);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 8px;
   padding: 10px 28px;
@@ -454,7 +466,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   transition: background 0.2s;
 }
 .cancel-button:hover {
-  background: #222;
+  background: var(--rs-agora-gray-800);
 }
 
 
@@ -472,8 +484,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 
 /* Layout button (top center) */
 .layout-button-top {
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -483,17 +495,17 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   margin-right: 8px;
 }
 
 /* Settings button (top center) */
 .settings-button-top {
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -503,16 +515,16 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 /* Log button (top center) */
 .log-button-top {
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -522,34 +534,41 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 .layout-button-top:hover {
-  background: rgba(60, 60, 60, 0.95);
-  box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
+  background: var(--rs-agora-dark-surface-60);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-warning-25), 0 0 0 4px var(--rs-agora-warning);
   transform: scale(1.1);
 }
 
 .settings-button-top:hover,
 .settings-button-top.active {
-  background: rgba(60, 60, 60, 0.95);
-  box-shadow: 0 4px 12px rgba(102,126,234,0.25), 0 0 0 4px #764ba2aa;
+  background: var(--rs-agora-dark-surface-60);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-primary-25), 0 0 0 4px var(--rs-agora-secondary);
   transform: scale(1.1);
 }
 
 .log-button-top:hover {
-  background: rgba(60, 60, 60, 0.95);
-  box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
+  background: var(--rs-agora-dark-surface-60);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-warning-25), 0 0 0 4px var(--rs-agora-warning);
+  transform: scale(1.1);
+}
+
+.info-button-top:hover,
+.info-button-top.active {
+  background: var(--rs-agora-dark-surface-60);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-info-25), 0 0 0 4px var(--rs-agora-info);
   transform: scale(1.1);
 }
 
 /* Info button (top center) */
 .info-button-top {
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -559,24 +578,24 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  transition: background var(--rs-agora-transition-fast), box-shadow var(--rs-agora-transition-fast), transform var(--rs-agora-transition-fast);
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px var(--rs-agora-transparent-black-20);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .info-button-top:hover,
 .info-button-top.active {
-  background: rgba(60, 60, 60, 0.95);
-  box-shadow: 0 4px 12px rgba(34,197,94,0.25), 0 0 0 4px #22c55eaa;
+  background: var(--rs-agora-dark-surface-60);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-success-25), 0 0 0 4px var(--rs-agora-success);
   transform: scale(1.1);
 }
 
 
 .settings-button-top.purple-glow {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 0 0 4px #764ba2aa, 0 8px 32px rgba(102,126,234,0.25);
-  color: #fff;
+  background: var(--rs-agora-gradient-primary);
+  box-shadow: 0 0 0 4px var(--rs-agora-secondary), 0 8px 32px var(--rs-agora-transparent-primary-25);
+  color: var(--rs-agora-white);
 }
 
 @keyframes pulse {
@@ -602,11 +621,11 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 .sidebar-content {
   width: 320px;
   max-height: calc(100vh - 40px);
-  background: rgba(26, 26, 46, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--rs-agora-dark-surface-26);
+  border: 1px solid var(--rs-agora-transparent-white-10);
+  border-radius: var(--rs-agora-radius-xl);
   backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-40);
   overflow-y: auto;
   transform: translateX(100%);
   opacity: 0;
@@ -620,16 +639,16 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 
 .sidebar-header {
   padding: 20px 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-gradient-blue);
 }
 
 .sidebar-header h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--rs-agora-text-primary);
   margin: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -637,7 +656,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 
 .sidebar-section {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-05);
 }
 
 .sidebar-section:last-child {
@@ -651,7 +670,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   margin-bottom: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #b0b0b0;
+  color: var(--rs-agora-text-secondary);
 }
 
 .section-icon {
@@ -659,10 +678,10 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .info-card, .network-widget, .status-card, .device-status {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  background: var(--rs-agora-transparent-white-05);
+  border-radius: var(--rs-agora-radius-md);
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .info-row {
@@ -678,12 +697,12 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .info-label {
-  color: #b0b0b0;
+  color: var(--rs-agora-text-secondary);
   font-weight: 500;
 }
 
 .info-value {
-  color: #e0e0e0;
+  color: var(--rs-agora-text-primary);
   font-weight: 600;
 }
 
@@ -700,27 +719,27 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .network-label {
-  color: #b0b0b0;
+  color: var(--rs-agora-text-secondary);
   font-weight: 500;
 }
 
 .network-value {
-  color: #e0e0e0;
+  color: var(--rs-agora-text-primary);
   font-weight: 600;
 }
 
 .quality-indicator {
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--rs-agora-radius-sm);
   font-size: 11px;
   font-weight: 600;
-  color: white;
+  color: var(--rs-agora-white);
   text-align: center;
   min-width: 40px;
 }
 
 .quality-text {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px var(--rs-agora-transparent-black-30);
 }
 
 .status-indicator {
@@ -735,8 +754,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+  background: var(--rs-agora-success);
+  box-shadow: 0 0 8px var(--rs-agora-transparent-success-50);
   animation: statusPulse 2s infinite;
 }
 
@@ -746,7 +765,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .status-text {
-  color: #4ade80;
+  color: var(--rs-agora-success);
 }
 
 .device-item {
@@ -769,7 +788,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 
 .device-name {
   flex: 1;
-  color: #b0b0b0;
+  color: var(--rs-agora-text-secondary);
   font-weight: 500;
 }
 
@@ -781,13 +800,13 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .device-status.available {
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.1);
+  color: var(--rs-agora-success);
+  background: var(--rs-agora-transparent-success-10);
 }
 
 .device-status.unavailable {
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.1);
+  color: var(--rs-agora-error);
+  background: var(--rs-agora-transparent-error-10);
 }
 
 /* Custom scrollbar for sidebar */
@@ -796,18 +815,18 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .sidebar-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--rs-agora-transparent-white-05);
   border-radius: 3px;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.3);
+  background: var(--rs-agora-transparent-primary-30);
   border-radius: 3px;
-  transition: background 0.2s;
+  transition: background var(--rs-agora-transition-fast);
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.5);
+  background: var(--rs-agora-transparent-primary-50);
 }
 
 /* Responsive */
@@ -838,7 +857,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
     min-width: 0;
     padding: 8px 0;
     font-size: 13px;
-    border-radius: 10px;
+    border-radius: var(--rs-agora-radius-md);
     flex-direction: column;
     align-items: center;
     gap: 2px;
@@ -852,7 +871,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
     font-size: 9px;
     font-weight: 600;
     text-align: center;
-    color: #e0e0e0;
+    color: var(--rs-agora-text-primary);
     display: block;
   }
   

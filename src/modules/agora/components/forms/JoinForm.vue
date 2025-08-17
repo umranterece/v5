@@ -85,59 +85,49 @@ watch(() => props.defaultChannel, (newValue) => {
 .join-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  width: 100%;
-  max-width: 500px;
-  padding: 40px;
-}
-
-.join-content {
+  gap: 2rem;
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--rs-agora-gradient-surface);
+  border-radius: var(--rs-agora-radius-xl);
+  box-shadow: var(--rs-agora-shadow-xl);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--rs-agora-border-primary);
+}
+
+.form-header {
   text-align: center;
+  margin-bottom: 1rem;
 }
 
-.join-header {
-  margin-bottom: 32px;
-}
-
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.logo-icon {
-  font-size: 48px;
-  animation: pulse 2s infinite;
-}
-
-.logo h2 {
-  font-size: 28px;
+.form-title {
+  font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin-bottom: 0.5rem;
+  background: var(--rs-agora-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0;
 }
 
-.join-subtitle {
-  color: #a0a0a0;
-  font-size: 16px;
-  margin: 0;
-  line-height: 1.5;
+.form-subtitle {
+  color: var(--rs-agora-text-secondary);
+  font-size: 1rem;
+  opacity: 0.8;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  width: 100%;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--rs-agora-text-primary);
+  font-size: 0.9rem;
 }
 
 .input-wrapper {
@@ -148,24 +138,24 @@ watch(() => props.defaultChannel, (newValue) => {
 .channel-input {
   width: 100%;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  background: var(--rs-agora-transparent-white-05);
+  border: 2px solid var(--rs-agora-transparent-white-10);
+  border-radius: var(--rs-agora-radius-lg);
   font-size: 16px;
-  color: white;
+  color: var(--rs-agora-white);
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
 }
 
 .channel-input::placeholder {
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
 }
 
 .channel-input:focus {
   outline: none;
-  border-color: #667eea;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+  border-color: var(--rs-agora-primary);
+  background: var(--rs-agora-transparent-white-10);
+  box-shadow: 0 0 20px var(--rs-agora-primary);
 }
 
 .input-border {
@@ -174,8 +164,8 @@ watch(() => props.defaultChannel, (newValue) => {
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: var(--rs-agora-radius-lg);
+  background: var(--rs-agora-gradient-primary);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: -1;
@@ -189,10 +179,10 @@ watch(() => props.defaultChannel, (newValue) => {
   position: relative;
   width: 100%;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--rs-agora-gradient-primary);
+  color: var(--rs-agora-white);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--rs-agora-radius-lg);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -202,7 +192,7 @@ watch(() => props.defaultChannel, (newValue) => {
 
 .join-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px var(--rs-agora-primary);
 }
 
 .join-button:active:not(:disabled) {
@@ -210,7 +200,7 @@ watch(() => props.defaultChannel, (newValue) => {
 }
 
 .join-button:disabled {
-  background: #444;
+  background: var(--rs-agora-medium-gray);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -227,7 +217,7 @@ watch(() => props.defaultChannel, (newValue) => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, var(--rs-agora-transparent-white-20), transparent);
   transition: left 0.5s ease;
 }
 
@@ -240,19 +230,48 @@ watch(() => props.defaultChannel, (newValue) => {
   50% { transform: scale(1.05); }
 }
 
-/* Responsive */
+.join-button:disabled {
+  animation: pulse 2s infinite;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
   .join-form {
-    padding: 30px 20px;
-    margin: 20px;
+    padding: 1.5rem;
+    margin: 1rem;
   }
   
-  .join-header h2 {
-    font-size: 2rem;
+  .form-title {
+    font-size: 1.5rem;
   }
   
-  .logo-icon {
-    font-size: 3rem;
+  .form-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .channel-input {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  
+  .join-button {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .join-form {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .form-title {
+    font-size: 1.25rem;
+  }
+  
+  .form-subtitle {
+    font-size: 0.8rem;
   }
 }
 </style>

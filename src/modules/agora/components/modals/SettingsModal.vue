@@ -201,7 +201,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--rs-agora-transparent-black-80);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -212,11 +212,11 @@ onMounted(() => {
 
 /* Modal Glass */
 .settings-modal-glass {
-  background: rgba(26, 26, 46, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-dark-surface-26-98);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 20px;
   backdrop-filter: blur(20px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--rs-agora-shadow-xl);
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
@@ -230,7 +230,7 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   padding: 25px 25px 20px 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .settings-modal-icon {
@@ -240,7 +240,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-10);
   border-radius: 15px;
   backdrop-filter: blur(10px);
 }
@@ -249,14 +249,14 @@ onMounted(() => {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--rs-agora-white);
   flex: 1;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--rs-agora-transparent-white-70);
   font-size: 28px;
   cursor: pointer;
   padding: 5px;
@@ -270,8 +270,8 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--rs-agora-transparent-white-10);
+  color: var(--rs-agora-white);
 }
 
 /* Content */
@@ -291,17 +291,17 @@ onMounted(() => {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--rs-agora-transparent-white-90);
   font-size: 14px;
 }
 
 .settings-section select {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   border-radius: 12px;
-  color: #ffffff;
+  color: var(--rs-agora-text-primary);
   font-size: 14px;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
@@ -309,8 +309,8 @@ onMounted(() => {
 
 .settings-section select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--rs-agora-primary);
+  box-shadow: 0 0 0 3px var(--rs-agora-transparent-primary-10);
 }
 
 /* Actions */
@@ -318,7 +318,7 @@ onMounted(() => {
   display: flex;
   gap: 15px;
   padding: 20px 25px 25px 25px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .save-button, .cancel-button {
@@ -333,24 +333,24 @@ onMounted(() => {
 }
 
 .save-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--rs-agora-gradient-primary);
+  color: var(--rs-agora-white);
 }
 
 .save-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px var(--rs-agora-transparent-primary-40);
 }
 
 .cancel-button {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--rs-agora-transparent-white-10);
+  color: var(--rs-agora-transparent-white-80);
+  border: 1px solid var(--rs-agora-transparent-white-20);
 }
 
 .cancel-button:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  background: var(--rs-agora-transparent-white-15);
+  color: var(--rs-agora-white);
 }
 
 /* Animations */

@@ -102,6 +102,7 @@
           :trackUserAction="trackUserAction"
           :onOpenSettings="toggleSettings"
           :onOpenLayoutModal="toggleLayoutModal"
+          :onOpenInfoModal="toggleInfo"
         />
       </div>
     </main>
@@ -118,9 +119,8 @@
       @close="closeLog"
     />
 
-    <!-- Info Modal - Sadece debug mode açıkken göster -->
+    <!-- Info Modal -->
     <InfoModal
-      v-if="debugMode"
       :isOpen="isInfoOpen"
       :channelName="channelName"
       :isConnected="!!isConnected"
@@ -582,8 +582,8 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
-  color: #e0e0e0;
+  background: var(--rs-agora-gradient-bg);
+  color: var(--rs-agora-text-primary);
   min-height: 100vh;
   position: relative;
 }
@@ -595,7 +595,7 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+  background: var(--rs-agora-gradient-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -604,7 +604,7 @@ defineExpose({
 
 .loading-content {
   text-align: center;
-  color: #e0e0e0;
+  color: var(--rs-agora-text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -617,14 +617,14 @@ defineExpose({
   width: 300px;
   height: auto;
   margin-bottom: 30px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 4px 8px var(--rs-agora-transparent-black-30));
 }
 
 .loading-spinner {
   width: 60px;
   height: 60px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top: 4px solid #667eea;
+  border: 4px solid var(--rs-agora-border-primary);
+  border-top: 4px solid var(--rs-agora-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -640,7 +640,7 @@ defineExpose({
 .progress-bar {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-border-primary);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -648,7 +648,7 @@ defineExpose({
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
   border-radius: 3px;
   transition: width 0.5s ease;
 }
@@ -656,7 +656,7 @@ defineExpose({
 .progress-text {
   text-align: center;
   font-size: 12px;
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
   font-weight: 500;
 }
 
@@ -664,7 +664,7 @@ defineExpose({
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 10px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--rs-agora-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -672,7 +672,7 @@ defineExpose({
 
 .loading-content p {
   font-size: 16px;
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
   margin: 0;
 }
 
@@ -682,7 +682,7 @@ defineExpose({
   gap: 8px;
   margin-top: 20px;
   font-size: 14px;
-  color: #a0a0a0;
+  color: var(--rs-agora-text-secondary);
 }
 
 .status-item {
@@ -697,14 +697,14 @@ defineExpose({
 
 .status-item.active {
   opacity: 1;
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  background: var(--rs-agora-surface-accent);
+  color: var(--rs-agora-primary);
   transform: scale(1.02);
 }
 
 .status-item.completed {
   opacity: 0.8;
-  color: #4ade80;
+  color: var(--rs-agora-success);
 }
 
 .status-icon {
@@ -714,13 +714,13 @@ defineExpose({
 .loading-message {
   margin-top: 20px;
   font-size: 16px;
-  color: #667eea;
+  color: var(--rs-agora-primary);
   font-weight: 500;
   text-align: center;
   padding: 12px 20px;
-  background: rgba(102, 126, 234, 0.1);
+  background: var(--rs-agora-surface-accent);
   border-radius: 8px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  border: 1px solid var(--rs-agora-border-secondary);
 }
 
 @keyframes spin {
@@ -742,11 +742,11 @@ defineExpose({
   flex: 1;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--rs-agora-transparent-black-30);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--rs-agora-shadow-xl);
+  border: 1px solid var(--rs-agora-transparent-white-10);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -774,8 +774,8 @@ defineExpose({
   top: 20px;
   right: 20px;
   z-index: 2000;
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 48px;
@@ -787,14 +787,14 @@ defineExpose({
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: var(--rs-agora-shadow-sm);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .info-float-btn.active,
 .info-float-btn:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 12px rgba(102,126,234,0.25), 0 0 0 4px #764ba2aa;
+  background: var(--rs-agora-gradient-primary);
+  box-shadow: 0 4px 12px var(--rs-agora-shadow-lg), 0 0 0 4px var(--rs-agora-secondary);
   transform: scale(1.1);
 }
 
@@ -803,8 +803,8 @@ defineExpose({
   top: 20px;
   left: 20px;
   z-index: 2000;
-  background: rgba(34, 34, 34, 0.9);
-  color: #fff;
+  background: var(--rs-agora-dark-surface-34);
+  color: var(--rs-agora-white);
   border: none;
   border-radius: 50%;
   width: 48px;
@@ -816,20 +816,20 @@ defineExpose({
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: var(--rs-agora-shadow-sm);
+  border: 1px solid var(--rs-agora-transparent-white-10);
 }
 
 .log-float-btn.active,
 .log-float-btn:hover {
-  background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
-  box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
+  background: var(--rs-agora-gradient-warning);
+  box-shadow: 0 4px 12px var(--rs-agora-shadow-lg), 0 0 0 4px var(--rs-agora-warning);
   transform: scale(1.1);
 }
 
 .loading-channel {
   font-weight: bold;
-  color: #667eea;
+  color: var(--rs-agora-primary);
 }
 
 

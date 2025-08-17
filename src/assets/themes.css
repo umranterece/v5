@@ -1,0 +1,1327 @@
+/* ===== RS-AGORA MODULE THEME SYSTEM ===== */
+
+:root {
+  /* ===== DEFAULT THEME (OCEAN DEEP - OKYANUS DERİNLİĞİ) ===== */
+  
+  /* Primary Colors - Ana Renkler (Açık Okyanus Mavisi) */
+  --rs-agora-primary: #3b82f6;
+  --rs-agora-primary-dark: #2563eb;
+  --rs-agora-primary-light: #60a5fa;
+  
+  /* Secondary Colors - İkincil Renkler (Açık Turkuaz) */
+  --rs-agora-secondary: #06b6d4;
+  --rs-agora-secondary-dark: #0891b2;
+  --rs-agora-secondary-light: #22d3ee;
+  
+  /* Background Colors - Arka Plan Renkleri (Okyanus) */
+  --rs-agora-bg-primary: #1e293b;
+  --rs-agora-bg-secondary: #334155;
+  --rs-agora-bg-tertiary: #475569;
+  --rs-agora-bg-quaternary: #64748b;
+  --rs-agora-bg-accent: #3b82f6;
+  
+  /* Surface Colors - Yüzey Renkleri (Okyanus Yüzeyi) */
+  --rs-agora-surface-primary: #334155;
+  --rs-agora-surface-secondary: #475569;
+  --rs-agora-surface-tertiary: #64748b;
+  --rs-agora-surface-accent: rgba(59, 130, 246, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Okyanus Beyaz) */
+  --rs-agora-text-primary: #f8fafc;
+  --rs-agora-text-secondary: #cbd5e1;
+  --rs-agora-text-muted: #94a3b8;
+  --rs-agora-text-accent: var(--rs-agora-primary);
+  
+  /* Border Colors - Kenarlık Renkleri (Okyanus Kenarlıkları) */
+  --rs-agora-border-primary: rgba(248, 250, 252, 0.1);
+  --rs-agora-border-secondary: rgba(14, 165, 233, 0.2);
+  --rs-agora-border-accent: rgba(14, 165, 233, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Okyanus Canlılığı) */
+  --rs-agora-success: #10b981;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #059669;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Mercan Turuncu) */
+  --rs-agora-special-accent: #ff6347;
+  --rs-agora-special-accent-dark: #e55a3f;
+  --rs-agora-special-accent-light: #ff7f6a;
+  
+  /* Neutral Colors - Nötr Renkler */
+  --rs-agora-gray-100: #f3f4f6;
+  --rs-agora-gray-200: #e5e7eb;
+  --rs-agora-gray-300: #d1d5db;
+  --rs-agora-gray-400: #9ca3af;
+  --rs-agora-gray-500: #6b7280;
+  --rs-agora-gray-600: #4b5563;
+  --rs-agora-gray-700: #374151;
+  --rs-agora-gray-800: #1f2937;
+  --rs-agora-gray-900: #111827;
+  
+  /* Base Colors - Temel Renkler */
+  --rs-agora-white: #ffffff;
+  --rs-agora-black: #000000;
+  --rs-agora-dark-gray: #1a1a1a;
+  --rs-agora-medium-gray: #444444;
+  
+  /* Transparency Colors - Şeffaflık Renkleri */
+  --rs-agora-transparent-white-01: rgba(255, 255, 255, 0.01);
+  --rs-agora-transparent-white-02: rgba(255, 255, 255, 0.02);
+  --rs-agora-transparent-white-03: rgba(255, 255, 255, 0.03);
+  --rs-agora-transparent-white-05: rgba(255, 255, 255, 0.05);
+  --rs-agora-transparent-white-08: rgba(255, 255, 255, 0.08);
+  --rs-agora-transparent-white-10: rgba(255, 255, 255, 0.1);
+  --rs-agora-transparent-white-12: rgba(255, 255, 255, 0.12);
+  --rs-agora-transparent-white-15: rgba(255, 255, 255, 0.15);
+  --rs-agora-transparent-white-18: rgba(255, 255, 255, 0.18);
+  --rs-agora-transparent-white-20: rgba(255, 255, 255, 0.2);
+  --rs-agora-transparent-white-25: rgba(255, 255, 255, 0.25);
+  --rs-agora-transparent-white-30: rgba(255, 255, 255, 0.3);
+  --rs-agora-transparent-white-40: rgba(255, 255, 255, 0.4);
+  --rs-agora-transparent-white-45: rgba(255, 255, 255, 0.45);
+  --rs-agora-transparent-white-50: rgba(255, 255, 255, 0.5);
+  --rs-agora-transparent-white-64: rgba(255, 255, 255, 0.64);
+  --rs-agora-transparent-white-70: rgba(255, 255, 255, 0.7);
+  --rs-agora-transparent-white-80: rgba(255, 255, 255, 0.8);
+  --rs-agora-transparent-white-90: rgba(255, 255, 255, 0.9);
+  --rs-agora-transparent-white-98: rgba(255, 255, 255, 0.98);
+  
+  --rs-agora-transparent-black-12: rgba(0, 0, 0, 0.12);
+  --rs-agora-transparent-black-20: rgba(0, 0, 0, 0.2);
+  --rs-agora-transparent-black-25: rgba(0, 0, 0, 0.25);
+  --rs-agora-transparent-black-29: rgba(0, 0, 0, 0.29);
+  --rs-agora-transparent-black-30: rgba(0, 0, 0, 0.3);
+  --rs-agora-transparent-black-35: rgba(0, 0, 0, 0.35);
+  --rs-agora-transparent-black-40: rgba(0, 0, 0, 0.4);
+  --rs-agora-transparent-black-45: rgba(0, 0, 0, 0.45);
+  --rs-agora-transparent-black-48: rgba(0, 0, 0, 0.48);
+  --rs-agora-transparent-black-50: rgba(0, 0, 0, 0.5);
+  --rs-agora-transparent-black-65: rgba(0, 0, 0, 0.65);
+  --rs-agora-transparent-black-66: rgba(0, 0, 0, 0.66);
+  --rs-agora-transparent-black-70: rgba(0, 0, 0, 0.7);
+  --rs-agora-transparent-black-80: rgba(0, 0, 0, 0.8);
+  
+  /* Status Transparency Colors - Durum Şeffaflık Renkleri */
+  --rs-agora-transparent-success-10: rgba(74, 222, 128, 0.1);
+  --rs-agora-transparent-success-20: rgba(74, 222, 128, 0.2);
+  --rs-agora-transparent-success-25: rgba(74, 222, 128, 0.25);
+  --rs-agora-transparent-success-30: rgba(74, 222, 128, 0.3);
+  --rs-agora-transparent-success-50: rgba(74, 222, 128, 0.5);
+  
+  --rs-agora-transparent-warning-20: rgba(251, 191, 36, 0.2);
+  --rs-agora-transparent-warning-25: rgba(255, 193, 7, 0.25);
+  --rs-agora-transparent-warning-50: rgba(255, 193, 7, 0.5);
+  
+  --rs-agora-transparent-error-10: rgba(248, 113, 113, 0.1);
+  --rs-agora-transparent-error-20: rgba(239, 68, 68, 0.2);
+  
+  --rs-agora-transparent-info-20: rgba(96, 165, 250, 0.2);
+  
+  /* Special Accent Transparency Colors - Özel Vurgu Şeffaflık */
+  --rs-agora-transparent-special-accent-10: rgba(255, 99, 71, 0.1);
+  --rs-agora-transparent-special-accent-20: rgba(255, 99, 71, 0.2);
+  --rs-agora-transparent-special-accent-30: rgba(255, 99, 71, 0.3);
+  --rs-agora-transparent-special-accent-50: rgba(255, 99, 71, 0.5);
+  
+  /* Primary Transparency Colors - Ana Renk Şeffaflık */
+  --rs-agora-transparent-primary-01: rgba(102, 126, 234, 0.01);
+  --rs-agora-transparent-primary-02: rgba(102, 126, 234, 0.02);
+  --rs-agora-transparent-primary-03: rgba(102, 126, 234, 0.03);
+  --rs-agora-transparent-primary-08: rgba(102, 126, 234, 0.08);
+  --rs-agora-transparent-primary-10: rgba(102, 126, 234, 0.1);
+  --rs-agora-transparent-primary-12: rgba(102, 126, 234, 0.12);
+  --rs-agora-transparent-primary-15: rgba(102, 126, 234, 0.15);
+  --rs-agora-transparent-primary-25: rgba(102, 126, 234, 0.25);
+  --rs-agora-transparent-primary-30: rgba(102, 126, 234, 0.3);
+  --rs-agora-transparent-primary-35: rgba(102, 126, 234, 0.35);
+  --rs-agora-transparent-primary-40: rgba(102, 126, 234, 0.4);
+  --rs-agora-transparent-primary-50: rgba(102, 126, 234, 0.5);
+  --rs-agora-transparent-primary-70: rgba(102, 126, 234, 0.7);
+  
+  /* Secondary Transparency Colors - İkincil Renk Şeffaflık */
+  --rs-agora-transparent-secondary-18: rgba(118, 75, 178, 0.18);
+  
+  /* Blue Gradient Variations - Mavi Gradyan Varyasyonları */
+  --rs-agora-gradient-blue-05: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+  --rs-agora-gradient-blue-10: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  --rs-agora-gradient-blue-15: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+  --rs-agora-gradient-blue-20: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%);
+  --rs-agora-gradient-blue-25: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 51, 234, 0.25) 100%);
+  --rs-agora-gradient-blue-30: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
+  --rs-agora-gradient-blue-40: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(147, 51, 234, 0.4) 100%);
+  --rs-agora-gradient-blue-95: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(147, 51, 234, 0.95) 100%);
+  
+  /* Dark Surface Colors - Koyu Yüzey Renkleri */
+  --rs-agora-dark-surface-15: rgba(15, 15, 35, 0.95);
+  --rs-agora-dark-surface-20: rgba(20, 20, 40, 0.45);
+  --rs-agora-dark-surface-22: rgba(22, 33, 62, 0.95);
+  --rs-agora-dark-surface-26: rgba(26, 26, 46, 0.95);
+  --rs-agora-dark-surface-26-98: rgba(26, 26, 46, 0.98);
+  --rs-agora-dark-surface-34: rgba(34, 34, 34, 0.9);
+  --rs-agora-dark-surface-40: rgba(40, 40, 60, 0.85);
+  --rs-agora-dark-surface-44: rgba(34, 34, 44, 0.85);
+  --rs-agora-dark-surface-60: rgba(60, 60, 60, 0.95);
+  
+  /* Blue Gradient Colors - Mavi Gradyan Renkleri */
+  --rs-agora-blue-primary: #3b82f6;
+  --rs-agora-blue-secondary: #8b5cf6;
+  --rs-agora-blue-light: #60a5fa;
+  --rs-agora-blue-dark: #1d4ed8;
+  
+  /* Gradient Presets - Gradyan Şablonları */
+  --rs-agora-gradient-primary: linear-gradient(135deg, var(--rs-agora-primary) 0%, var(--rs-agora-secondary) 100%);
+  --rs-agora-gradient-secondary: linear-gradient(135deg, var(--rs-agora-secondary) 0%, var(--rs-agora-primary) 100%);
+  --rs-agora-gradient-bg: linear-gradient(135deg, var(--rs-agora-bg-primary) 0%, var(--rs-agora-bg-secondary) 25%, var(--rs-agora-bg-tertiary) 50%, var(--rs-agora-bg-quaternary) 75%, var(--rs-agora-bg-accent) 100%);
+  --rs-agora-gradient-surface: linear-gradient(135deg, var(--rs-agora-surface-primary) 0%, var(--rs-agora-surface-secondary) 100%);
+  --rs-agora-gradient-warning: linear-gradient(135deg, var(--rs-agora-warning) 0%, #ffcc33 100%);
+  --rs-agora-gradient-error: linear-gradient(90deg, var(--rs-agora-error) 0%, var(--rs-agora-error-light) 100%);
+  
+  /* Blue Gradients - Mavi Gradyanlar */
+  --rs-agora-gradient-blue: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  --rs-agora-gradient-blue-hover: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
+  --rs-agora-gradient-blue-active: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(147, 51, 234, 0.4) 100%);
+  
+  /* Shadow Presets - Gölge Şablonları */
+  --rs-agora-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --rs-agora-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --rs-agora-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --rs-agora-shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.4);
+  
+  /* Border Radius - Kenarlık Yuvarlaklığı */
+  --rs-agora-radius-sm: 4px;
+  --rs-agora-radius-md: 8px;
+  --rs-agora-radius-lg: 12px;
+  --rs-agora-radius-xl: 16px;
+  --rs-agora-radius-full: 9999px;
+  
+  /* Spacing - Boşluklar */
+  --rs-agora-spacing-xs: 4px;
+  --rs-agora-spacing-sm: 8px;
+  --rs-agora-spacing-md: 16px;
+  --rs-agora-spacing-lg: 24px;
+  --rs-agora-spacing-xl: 32px;
+  --rs-agora-spacing-2xl: 48px;
+  
+  /* Transitions - Geçişler */
+  --rs-agora-transition-fast: 0.15s ease;
+  --rs-agora-transition-normal: 0.3s ease;
+  --rs-agora-transition-slow: 0.5s ease;
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --rs-agora-bg-primary: #ffffff;
+  --rs-agora-bg-secondary: #f8fafc;
+  --rs-agora-bg-tertiary: #f1f5f9;
+  --rs-agora-bg-quaternary: #e2e8f0;
+  --rs-agora-bg-accent: #f1f5f9;
+  
+  --rs-agora-surface-primary: #ffffff;
+  --rs-agora-surface-secondary: #f8fafc;
+  --rs-agora-surface-tertiary: #f1f5f9;
+  --rs-agora-surface-accent: rgba(102, 126, 234, 0.05);
+  
+  --rs-agora-text-primary: #1e293b;
+  --rs-agora-text-secondary: #475569;
+  --rs-agora-text-muted: #64748b;
+  --rs-agora-text-accent: #667eea;
+  
+  --rs-agora-border-primary: rgba(0, 0, 0, 0.1);
+  --rs-agora-border-secondary: rgba(102, 126, 234, 0.2);
+  --rs-agora-border-accent: rgba(102, 126, 234, 0.3);
+  
+  --rs-agora-transparent-white-05: rgba(0, 0, 0, 0.05);
+  --rs-agora-transparent-white-10: rgba(0, 0, 0, 0.1);
+  --rs-agora-transparent-white-20: rgba(0, 0, 0, 0.2);
+  --rs-agora-transparent-white-30: rgba(0, 0, 0, 0.3);
+  --rs-agora-transparent-white-40: rgba(0, 0, 0, 0.4);
+  --rs-agora-transparent-white-50: rgba(0, 0, 0, 0.5);
+  --rs-agora-transparent-white-70: rgba(0, 0, 0, 0.7);
+  --rs-agora-transparent-white-08: rgba(0, 0, 0, 0.08);
+  --rs-agora-transparent-white-12: rgba(0, 0, 0, 0.12);
+  --rs-agora-transparent-white-18: rgba(0, 0, 0, 0.18);
+  --rs-agora-transparent-white-25: rgba(0, 0, 0, 0.25);
+  --rs-agora-transparent-white-45: rgba(0, 0, 0, 0.45);
+  --rs-agora-transparent-white-80: rgba(0, 0, 0, 0.8);
+  --rs-agora-transparent-white-90: rgba(0, 0, 0, 0.9);
+  --rs-agora-transparent-white-98: rgba(0, 0, 0, 0.98);
+  
+  --rs-agora-transparent-black-20: rgba(255, 255, 255, 0.2);
+  --rs-agora-transparent-black-25: rgba(255, 255, 255, 0.25);
+  --rs-agora-transparent-black-30: rgba(255, 255, 255, 0.3);
+  --rs-agora-transparent-black-35: rgba(255, 255, 255, 0.35);
+  --rs-agora-transparent-black-40: rgba(255, 255, 255, 0.4);
+  --rs-agora-transparent-black-45: rgba(255, 255, 255, 0.45);
+  --rs-agora-transparent-black-50: rgba(255, 255, 255, 0.5);
+  --rs-agora-transparent-black-70: rgba(255, 255, 255, 0.7);
+  --rs-agora-transparent-black-80: rgba(255, 255, 255, 0.8);
+  
+  --rs-agora-dark-gray: #f1f5f9;
+  --rs-agora-medium-gray: #cbd5e1;
+  
+  --rs-agora-transparent-success-20: rgba(34, 197, 94, 0.2);
+  --rs-agora-transparent-success-30: rgba(34, 197, 94, 0.3);
+  --rs-agora-transparent-warning-20: rgba(251, 191, 36, 0.2);
+  --rs-agora-transparent-error-20: rgba(239, 68, 68, 0.2);
+  --rs-agora-transparent-info-20: rgba(59, 130, 246, 0.2);
+  
+  --rs-agora-dark-surface-20: rgba(248, 250, 252, 0.45);
+  --rs-agora-dark-surface-34: rgba(248, 250, 252, 0.9);
+  --rs-agora-dark-surface-44: rgba(241, 245, 249, 0.85);
+  --rs-agora-dark-surface-60: rgba(226, 232, 240, 0.95);
+  --rs-agora-dark-surface-26: rgba(241, 245, 249, 0.95);
+  --rs-agora-dark-surface-40: rgba(226, 232, 240, 0.85);
+  --rs-agora-dark-surface-15: rgba(248, 250, 252, 0.95);
+  --rs-agora-dark-surface-22: rgba(241, 245, 249, 0.95);
+  --rs-agora-dark-surface-26-98: rgba(241, 245, 249, 0.98);
+}
+
+/* ===== WARM THEME (SICAK TONLAR) ===== */
+[data-theme="warm"] {
+  --rs-agora-primary: #f59e0b;
+  --rs-agora-primary-dark: #d97706;
+  --rs-agora-primary-light: #fbbf24;
+  
+  --rs-agora-secondary: #dc2626;
+  --rs-agora-secondary-dark: #b91c1c;
+  --rs-agora-secondary-light: #ef4444;
+  
+  --rs-agora-bg-primary: #1c1917;
+  --rs-agora-bg-secondary: #292524;
+  --rs-agora-bg-tertiary: #44403c;
+  --rs-agora-bg-quaternary: #57534e;
+  --rs-agora-bg-accent: #7c2d12;
+  
+  --rs-agora-surface-primary: #292524;
+  --rs-agora-surface-secondary: #44403c;
+  --rs-agora-surface-tertiary: #57534e;
+  --rs-agora-surface-accent: rgba(245, 158, 11, 0.1);
+  
+  --rs-agora-text-primary: #fafaf9;
+  --rs-agora-text-secondary: #d6d3d1;
+  --rs-agora-text-muted: #a8a29e;
+  --rs-agora-text-accent: #f59e0b;
+  
+  --rs-agora-border-primary: rgba(255, 255, 255, 0.1);
+  --rs-agora-border-secondary: rgba(245, 158, 11, 0.2);
+  --rs-agora-border-accent: rgba(245, 158, 11, 0.3);
+  
+  --rs-agora-blue-primary: #ea580c;
+  --rs-agora-blue-secondary: #dc2626;
+  --rs-agora-blue-light: #fb923c;
+  --rs-agora-blue-dark: #c2410c;
+  
+  --rs-agora-transparent-success-20: rgba(245, 158, 11, 0.2);
+  --rs-agora-transparent-success-30: rgba(245, 158, 11, 0.3);
+  --rs-agora-transparent-warning-20: rgba(220, 38, 38, 0.2);
+  --rs-agora-transparent-error-20: rgba(220, 38, 38, 0.2);
+  --rs-agora-transparent-info-20: rgba(245, 158, 11, 0.2);
+}
+
+/* ===== COOL THEME (SOĞUK TONLAR) ===== */
+[data-theme="cool"] {
+  --rs-agora-primary: #06b6d4;
+  --rs-agora-primary-dark: #0891b2;
+  --rs-agora-primary-light: #22d3ee;
+  
+  --rs-agora-secondary: #3b82f6;
+  --rs-agora-secondary-dark: #2563eb;
+  --rs-agora-secondary-light: #60a5fa;
+  
+  --rs-agora-bg-primary: #0c0a09;
+  --rs-agora-bg-secondary: #1e1b4b;
+  --rs-agora-bg-tertiary: #312e81;
+  --rs-agora-bg-quaternary: #3730a3;
+  --rs-agora-bg-accent: #1e40af;
+  
+  --rs-agora-surface-primary: #1e1b4b;
+  --rs-agora-surface-secondary: #312e81;
+  --rs-agora-surface-tertiary: #3730a3;
+  --rs-agora-surface-accent: rgba(6, 182, 212, 0.1);
+  
+  --rs-agora-text-primary: #f8fafc;
+  --rs-agora-text-secondary: #cbd5e1;
+  --rs-agora-text-muted: #94a3b8;
+  --rs-agora-text-accent: #06b6d4;
+  
+  --rs-agora-border-primary: rgba(255, 255, 255, 0.1);
+  --rs-agora-border-secondary: rgba(6, 182, 212, 0.2);
+  --rs-agora-border-accent: rgba(6, 182, 212, 0.3);
+  
+  --rs-agora-blue-primary: #06b6d4;
+  --rs-agora-blue-secondary: #3b82f6;
+  --rs-agora-blue-light: #22d3ee;
+  --rs-agora-blue-dark: #0891b2;
+  
+  --rs-agora-transparent-success-20: rgba(6, 182, 212, 0.2);
+  --rs-agora-transparent-success-30: rgba(6, 182, 212, 0.3);
+  --rs-agora-transparent-warning-20: rgba(59, 130, 246, 0.2);
+  --rs-agora-transparent-error-20: rgba(6, 182, 212, 0.2);
+  --rs-agora-transparent-info-20: rgba(59, 130, 246, 0.2);
+}
+
+/* ===== NEUTRAL THEME (NÖTR TONLAR) ===== */
+[data-theme="neutral"] {
+  --rs-agora-primary: #6b7280;
+  --rs-agora-primary-dark: #4b5563;
+  --rs-agora-primary-light: #9ca3af;
+  
+  --rs-agora-secondary: #374151;
+  --rs-agora-secondary-dark: #1f2937;
+  --rs-agora-secondary-light: #6b7280;
+  
+  --rs-agora-bg-primary: #111827;
+  --rs-agora-bg-secondary: #1f2937;
+  --rs-agora-bg-tertiary: #374151;
+  --rs-agora-bg-quaternary: #4b5563;
+  --rs-agora-bg-accent: #6b7280;
+  
+  --rs-agora-surface-primary: #1f2937;
+  --rs-agora-surface-secondary: #374151;
+  --rs-agora-surface-tertiary: #4b5563;
+  --rs-agora-surface-accent: rgba(107, 114, 128, 0.1);
+  
+  --rs-agora-text-primary: #f9fafb;
+  --rs-agora-text-secondary: #d1d5db;
+  --rs-agora-text-muted: #9ca3af;
+  --rs-agora-text-accent: #6b7280;
+  
+  --rs-agora-border-primary: rgba(255, 255, 255, 0.1);
+  --rs-agora-border-secondary: rgba(107, 114, 128, 0.2);
+  --rs-agora-border-accent: rgba(107, 114, 128, 0.3);
+  
+  --rs-agora-blue-primary: #6b7280;
+  --rs-agora-blue-secondary: #4b5563;
+  --rs-agora-blue-light: #9ca3af;
+  --rs-agora-blue-dark: #374151;
+  
+  --rs-agora-transparent-success-20: rgba(107, 114, 128, 0.2);
+  --rs-agora-transparent-success-30: rgba(107, 114, 128, 0.3);
+  --rs-agora-transparent-warning-20: rgba(75, 85, 99, 0.2);
+  --rs-agora-transparent-error-20: rgba(107, 114, 128, 0.2);
+  --rs-agora-transparent-info-20: rgba(75, 85, 99, 0.2);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.rs-agora-bg-primary { background-color: var(--rs-agora-bg-primary); }
+.rs-agora-bg-secondary { background-color: var(--rs-agora-bg-secondary); }
+.rs-agora-bg-tertiary { background-color: var(--rs-agora-bg-tertiary); }
+.rs-agora-bg-accent { background-color: var(--rs-agora-bg-accent); }
+
+.rs-agora-text-primary { color: var(--rs-agora-text-primary); }
+.rs-agora-text-secondary { color: var(--rs-agora-text-secondary); }
+.rs-agora-text-muted { color: var(--rs-agora-text-muted); }
+.rs-agora-text-accent { color: var(--rs-agora-text-accent); }
+
+.rs-agora-border-primary { border-color: var(--rs-agora-border-primary); }
+.rs-agora-border-secondary { border-color: var(--rs-agora-border-secondary); }
+.rs-agora-border-accent { border-color: var(--rs-agora-border-accent); }
+
+.rs-agora-gradient-primary { background: var(--rs-agora-gradient-primary); }
+.rs-agora-gradient-secondary { background: var(--rs-agora-gradient-secondary); }
+.rs-agora-gradient-bg { background: var(--rs-agora-gradient-bg); }
+.rs-agora-gradient-surface { background: var(--rs-agora-gradient-surface); }
+.rs-agora-gradient-warning { background: var(--rs-agora-gradient-warning); }
+.rs-agora-gradient-error { background: var(--rs-agora-gradient-error); }
+.rs-agora-gradient-blue { background: var(--rs-agora-gradient-blue); }
+.rs-agora-gradient-blue-hover { background: var(--rs-agora-gradient-blue-hover); }
+.rs-agora-gradient-blue-active { background: var(--rs-agora-gradient-blue-active); }
+
+/* Extended Status Colors */
+.rs-agora-success-light { color: var(--rs-agora-success-light); }
+.rs-agora-warning-light { color: var(--rs-agora-warning-light); }
+.rs-agora-error-light { color: var(--rs-agora-error-light); }
+.rs-agora-info-light { color: var(--rs-agora-info-light); }
+
+/* Special Accent Colors */
+.rs-agora-special-accent { color: var(--rs-agora-special-accent); }
+.rs-agora-special-accent-dark { color: var(--rs-agora-special-accent-dark); }
+.rs-agora-special-accent-light { color: var(--rs-agora-special-accent-light); }
+
+/* Neutral Colors */
+.rs-agora-gray-100 { color: var(--rs-agora-gray-100); }
+.rs-agora-gray-200 { color: var(--rs-agora-gray-200); }
+.rs-agora-gray-300 { color: var(--rs-agora-gray-300); }
+.rs-agora-gray-400 { color: var(--rs-agora-gray-400); }
+.rs-agora-gray-500 { color: var(--rs-agora-gray-500); }
+.rs-agora-gray-600 { color: var(--rs-agora-gray-600); }
+.rs-agora-gray-700 { color: var(--rs-agora-gray-700); }
+.rs-agora-gray-800 { color: var(--rs-agora-gray-800); }
+.rs-agora-gray-900 { color: var(--rs-agora-gray-900); }
+
+/* Base Colors */
+.rs-agora-white { color: var(--rs-agora-white); }
+.rs-agora-black { color: var(--rs-agora-black); }
+.rs-agora-dark-gray { color: var(--rs-agora-dark-gray); }
+.rs-agora-medium-gray { color: var(--rs-agora-medium-gray); }
+
+/* Transparency Colors */
+.rs-agora-transparent-white-05 { color: var(--rs-agora-transparent-white-05); }
+.rs-agora-transparent-white-10 { color: var(--rs-agora-transparent-white-10); }
+.rs-agora-transparent-white-20 { color: var(--rs-agora-transparent-white-20); }
+.rs-agora-transparent-white-30 { color: var(--rs-agora-transparent-white-30); }
+.rs-agora-transparent-white-40 { color: var(--rs-agora-transparent-white-40); }
+.rs-agora-transparent-white-50 { color: var(--rs-agora-transparent-white-50); }
+.rs-agora-transparent-white-70 { color: var(--rs-agora-transparent-white-70); }
+.rs-agora-transparent-white-08 { color: var(--rs-agora-transparent-white-08); }
+.rs-agora-transparent-white-12 { color: var(--rs-agora-transparent-white-12); }
+.rs-agora-transparent-white-18 { color: var(--rs-agora-transparent-white-18); }
+.rs-agora-transparent-white-25 { color: var(--rs-agora-transparent-white-25); }
+.rs-agora-transparent-white-45 { color: var(--rs-agora-transparent-white-45); }
+.rs-agora-transparent-white-80 { color: var(--rs-agora-transparent-white-80); }
+.rs-agora-transparent-white-90 { color: var(--rs-agora-transparent-white-90); }
+.rs-agora-transparent-white-98 { color: var(--rs-agora-transparent-white-98); }
+
+.rs-agora-transparent-black-20 { color: var(--rs-agora-transparent-black-20); }
+.rs-agora-transparent-black-25 { color: var(--rs-agora-transparent-black-25); }
+.rs-agora-transparent-black-30 { color: var(--rs-agora-transparent-black-30); }
+.rs-agora-transparent-black-35 { color: var(--rs-agora-transparent-black-35); }
+.rs-agora-transparent-black-40 { color: var(--rs-agora-transparent-black-40); }
+.rs-agora-transparent-black-45 { color: var(--rs-agora-transparent-black-45); }
+.rs-agora-transparent-black-50 { color: var(--rs-agora-transparent-black-50); }
+.rs-agora-transparent-black-70 { color: var(--rs-agora-transparent-black-70); }
+.rs-agora-transparent-black-80 { color: var(--rs-agora-transparent-black-80); }
+
+/* Dark Surface Colors */
+.rs-agora-dark-surface-15 { background-color: var(--rs-agora-dark-surface-15); }
+.rs-agora-dark-surface-20 { background-color: var(--rs-agora-dark-surface-20); }
+.rs-agora-dark-surface-22 { background-color: var(--rs-agora-dark-surface-22); }
+.rs-agora-dark-surface-26 { background-color: var(--rs-agora-dark-surface-26); }
+.rs-agora-dark-surface-26-98 { background-color: var(--rs-agora-dark-surface-26-98); }
+.rs-agora-dark-surface-34 { background-color: var(--rs-agora-dark-surface-34); }
+.rs-agora-dark-surface-40 { background-color: var(--rs-agora-dark-surface-40); }
+.rs-agora-dark-surface-44 { background-color: var(--rs-agora-dark-surface-44); }
+.rs-agora-dark-surface-60 { background-color: var(--rs-agora-dark-surface-60); }
+
+/* Blue Gradient Variations */
+.rs-agora-gradient-blue-05 { background: var(--rs-agora-gradient-blue-05); }
+.rs-agora-gradient-blue-10 { background: var(--rs-agora-gradient-blue-10); }
+.rs-agora-gradient-blue-15 { background: var(--rs-agora-gradient-blue-15); }
+.rs-agora-gradient-blue-20 { background: var(--rs-agora-gradient-blue-20); }
+.rs-agora-gradient-blue-25 { background: var(--rs-agora-gradient-blue-25); }
+.rs-agora-gradient-blue-30 { background: var(--rs-agora-gradient-blue-30); }
+.rs-agora-gradient-blue-40 { background: var(--rs-agora-gradient-blue-40); }
+.rs-agora-gradient-blue-95 { background: var(--rs-agora-gradient-blue-95); }
+
+/* Primary Transparency Colors */
+.rs-agora-transparent-primary-01 { background-color: var(--rs-agora-transparent-primary-01); }
+.rs-agora-transparent-primary-02 { background-color: var(--rs-agora-transparent-primary-02); }
+.rs-agora-transparent-primary-03 { background-color: var(--rs-agora-transparent-primary-03); }
+.rs-agora-transparent-primary-08 { background-color: var(--rs-agora-transparent-primary-08); }
+.rs-agora-transparent-primary-10 { background-color: var(--rs-agora-transparent-primary-10); }
+.rs-agora-transparent-primary-12 { background-color: var(--rs-agora-transparent-primary-12); }
+.rs-agora-transparent-primary-15 { background-color: var(--rs-agora-transparent-primary-15); }
+.rs-agora-transparent-primary-25 { background-color: var(--rs-agora-transparent-primary-25); }
+.rs-agora-transparent-primary-30 { background-color: var(--rs-agora-transparent-primary-30); }
+.rs-agora-transparent-primary-35 { background-color: var(--rs-agora-transparent-primary-35); }
+.rs-agora-transparent-primary-40 { background-color: var(--rs-agora-transparent-primary-40); }
+.rs-agora-transparent-primary-50 { background-color: var(--rs-agora-transparent-primary-50); }
+.rs-agora-transparent-primary-70 { background-color: var(--rs-agora-transparent-primary-70); }
+
+/* Secondary Transparency Colors */
+.rs-agora-transparent-secondary-18 { background-color: var(--rs-agora-transparent-secondary-18); }
+
+/* Success Transparency Colors */
+.rs-agora-transparent-success-10 { background-color: var(--rs-agora-transparent-success-10); }
+.rs-agora-transparent-success-20 { background-color: var(--rs-agora-transparent-success-20); }
+.rs-agora-transparent-success-25 { background-color: var(--rs-agora-transparent-success-25); }
+.rs-agora-transparent-success-30 { background-color: var(--rs-agora-transparent-success-30); }
+.rs-agora-transparent-success-50 { background-color: var(--rs-agora-transparent-success-50); }
+
+/* Warning Transparency Colors */
+.rs-agora-transparent-warning-20 { background-color: var(--rs-agora-transparent-warning-20); }
+.rs-agora-transparent-warning-25 { background-color: var(--rs-agora-transparent-warning-25); }
+.rs-agora-transparent-warning-50 { background-color: var(--rs-agora-transparent-warning-50); }
+
+/* Error Transparency Colors */
+.rs-agora-transparent-error-10 { background-color: var(--rs-agora-transparent-error-10); }
+.rs-agora-transparent-error-20 { background-color: var(--rs-agora-transparent-error-20); }
+
+/* Info Transparency Colors */
+.rs-agora-transparent-info-20 { background-color: var(--rs-agora-transparent-info-20); }
+
+/* ===== ALTERNATIVE THEMES ===== */
+
+/* ===== SUNSET WARM THEME ===== */
+[data-theme="sunset-warm"] {
+  /* Primary Colors - Ana Renkler (Gün Batımı Turuncu) */
+  --rs-agora-primary: #f97316;
+  --rs-agora-primary-dark: #ea580c;
+  --rs-agora-primary-light: #fb923c;
+  
+  /* Secondary Colors - İkincil Renkler (Altın Sarısı) */
+  --rs-agora-secondary: #eab308;
+  --rs-agora-secondary-dark: #ca8a04;
+  --rs-agora-secondary-light: #facc15;
+  
+  /* Background Colors - Arka Plan Renkleri (Açık Sıcak Gün Batımı) */
+  --rs-agora-bg-primary: #451a03;
+  --rs-agora-bg-secondary: #7c2d12;
+  --rs-agora-bg-tertiary: #9a3412;
+  --rs-agora-bg-quaternary: #b45309;
+  --rs-agora-bg-accent: #dc2626;
+  
+  /* Surface Colors - Yüzey Renkleri (Sıcak Yüzey) */
+  --rs-agora-surface-primary: #451a03;
+  --rs-agora-surface-secondary: #7c2d12;
+  --rs-agora-surface-tertiary: #9a3412;
+  --rs-agora-surface-accent: rgba(249, 115, 22, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Sıcak Beyaz) */
+  --rs-agora-text-primary: #fef3c7;
+  --rs-agora-text-secondary: #fde68a;
+  --rs-agora-text-muted: #fbbf24;
+  --rs-agora-text-accent: #f97316;
+  
+  /* Border Colors - Kenarlık Renkleri (Sıcak Kenarlıklar) */
+  --rs-agora-border-primary: rgba(254, 243, 199, 0.1);
+  --rs-agora-border-secondary: rgba(249, 255, 22, 0.2);
+  --rs-agora-border-accent: rgba(249, 115, 22, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Sıcak Durumlar) */
+  --rs-agora-success: #22c55e;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #16a34a;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Gün Batımı Altın) */
+  --rs-agora-special-accent: #fbbf24;
+  --rs-agora-special-accent-dark: #f59e0b;
+  --rs-agora-special-accent-light: #fcd34d;
+}
+
+/* ===== FOREST NATURE THEME ===== */
+[data-theme="forest-nature"] {
+  /* Primary Colors - Ana Renkler (Orman Yeşili) */
+  --rs-agora-primary: #16a34a;
+  --rs-agora-primary-dark: #15803d;
+  --rs-agora-primary-light: #22c55e;
+  
+  /* Secondary Colors - İkincil Renkler (Kahverengi Toprak) */
+  --rs-agora-secondary: #a16207;
+  --rs-agora-secondary-dark: #854d0e;
+  --rs-agora-secondary-light: #ca8a04;
+  
+  /* Background Colors - Arka Plan Renkleri (Orman) */
+  --rs-agora-bg-primary: #064e3b;
+  --rs-agora-bg-secondary: #065f46;
+  --rs-agora-bg-tertiary: #047857;
+  --rs-agora-bg-quaternary: #059669;
+  --rs-agora-bg-accent: #166534;
+  
+  /* Surface Colors - Yüzey Renkleri (Orman Yüzeyi) */
+  --rs-agora-surface-primary: #064e3b;
+  --rs-agora-surface-secondary: #065f46;
+  --rs-agora-surface-tertiary: #047857;
+  --rs-agora-surface-accent: rgba(22, 163, 74, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Orman Beyaz) */
+  --rs-agora-text-primary: #f0fdf4;
+  --rs-agora-text-secondary: #dcfce7;
+  --rs-agora-text-muted: #bbf7d0;
+  --rs-agora-text-accent: #16a34a;
+  
+  /* Border Colors - Kenarlık Renkleri (Orman Kenarlıkları) */
+  --rs-agora-border-primary: rgba(240, 253, 244, 0.1);
+  --rs-agora-border-secondary: rgba(22, 163, 74, 0.2);
+  --rs-agora-border-accent: rgba(22, 163, 74, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Doğal Durumlar) */
+  --rs-agora-success: #10b981;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #059669;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+}
+
+/* ===== COSMIC PURPLE THEME ===== */
+[data-theme="cosmic-purple"] {
+  /* Primary Colors - Ana Renkler (Hafif Kozmik Mor) */
+  --rs-agora-primary: #a855f7;
+  --rs-agora-primary-dark: #9333ea;
+  --rs-agora-primary-light: #c084fc;
+  
+  /* Secondary Colors - İkincil Renkler (Hafif Galaksi Pembe) */
+  --rs-agora-secondary: #f472b6;
+  --rs-agora-secondary-dark: #ec4899;
+  --rs-agora-secondary-light: #f9a8d4;
+  
+  /* Background Colors - Arka Plan Renkleri (Kozmik Uzay) */
+  --rs-agora-bg-primary: #1e1b4b;
+  --rs-agora-bg-secondary: #312e81;
+  --rs-agora-bg-tertiary: #4338ca;
+  --rs-agora-bg-quaternary: #6366f1;
+  --rs-agora-bg-accent: #7c3aed;
+  
+  /* Surface Colors - Yüzey Renkleri (Açık Kozmik Yüzey) */
+  --rs-agora-surface-primary: #312e81;
+  --rs-agora-surface-secondary: #4338ca;
+  --rs-agora-surface-tertiary: #6366f1;
+  --rs-agora-surface-accent: rgba(168, 85, 247, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Yıldız Işığı) */
+  --rs-agora-text-primary: #faf5ff;
+  --rs-agora-text-secondary: #f3e8ff;
+  --rs-agora-text-muted: #e9d5ff;
+  --rs-agora-text-accent: #8b5cf6;
+  
+  /* Border Colors - Kenarlık Renkleri (Kozmik Kenarlıklar) */
+  --rs-agora-border-primary: rgba(250, 245, 255, 0.1);
+  --rs-agora-border-secondary: rgba(139, 92, 246, 0.2);
+  --rs-agora-border-accent: rgba(139, 92, 246, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Kozmik Durumlar) */
+  --rs-agora-success: #10b981;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #059669;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+}
+
+/* ===== NEON CYBER THEME ===== */
+[data-theme="neon-cyber"] {
+  /* Primary Colors - Ana Renkler (Neon Yeşil) */
+  --rs-agora-primary: #00ff88;
+  --rs-agora-primary-dark: #00cc6a;
+  --rs-agora-primary-light: #33ffaa;
+  
+  /* Secondary Colors - İkincil Renkler (Neon Mavi) */
+  --rs-agora-secondary: #00d4ff;
+  --rs-agora-secondary-dark: #00a8cc;
+  --rs-agora-secondary-light: #33ddff;
+  
+  /* Background Colors - Arka Plan Renkleri (Açık Siber Uzay) */
+  --rs-agora-bg-primary: #0a0a0a;
+  --rs-agora-bg-secondary: #1a1a1a;
+  --rs-agora-bg-tertiary: #2a2a2a;
+  --rs-agora-bg-quaternary: #3a3a3a;
+  --rs-agora-bg-accent: #004444;
+  
+  /* Surface Colors - Yüzey Renkleri (Açık Siber Yüzey) */
+  --rs-agora-surface-primary: #1a1a1a;
+  --rs-agora-surface-secondary: #2a2a2a;
+  --rs-agora-surface-tertiary: #3a3a3a;
+  --rs-agora-surface-accent: rgba(0, 255, 136, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Neon Işık) */
+  --rs-agora-text-primary: #ffffff;
+  --rs-agora-text-secondary: #e0e0e0;
+  --rs-agora-text-muted: #b0b0b0;
+  --rs-agora-text-accent: #00ff88;
+  
+  /* Border Colors - Kenarlık Renkleri (Neon Kenarlıklar) */
+  --rs-agora-border-primary: rgba(255, 255, 255, 0.1);
+  --rs-agora-border-secondary: rgba(0, 255, 136, 0.2);
+  --rs-agora-border-accent: rgba(0, 255, 136, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Neon Durumlar) */
+  --rs-agora-success: #00ff88;
+  --rs-agora-warning: #ffaa00;
+  --rs-agora-error: #ff0066;
+  --rs-agora-info: #00d4ff;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #00cc6a;
+  --rs-agora-warning-light: #cc8800;
+  --rs-agora-error-light: #cc0052;
+  --rs-agora-info-light: #00a8cc;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Neon Pembe) */
+  --rs-agora-special-accent: #ff0066;
+  --rs-agora-special-accent-dark: #cc0052;
+  --rs-agora-special-accent-light: #ff3385;
+}
+
+/* ===== AURORA BOREALIS THEME ===== */
+[data-theme="aurora-borealis"] {
+  /* Primary Colors - Ana Renkler (Kuzey Işıkları Yeşili) */
+  --rs-agora-primary: #00ff88;
+  --rs-agora-primary-dark: #00cc6a;
+  --rs-agora-primary-light: #33ffaa;
+  
+  /* Secondary Colors - İkincil Renkler (Kuzey Işıkları Mavisi) */
+  --rs-agora-secondary: #00d4ff;
+  --rs-agora-secondary-dark: #00a8cc;
+  --rs-agora-secondary-light: #33ddff;
+  
+  /* Background Colors - Arka Plan Renkleri (Kuzey Gecesi) */
+  --rs-agora-bg-primary: #0a0f1c;
+  --rs-agora-bg-secondary: #1a1f2c;
+  --rs-agora-bg-tertiary: #2a2f3c;
+  --rs-agora-bg-quaternary: #3a3f4c;
+  --rs-agora-bg-accent: #004444;
+  
+  /* Surface Colors - Yüzey Renkleri (Kuzey Yüzeyi) */
+  --rs-agora-surface-primary: #1a1f2c;
+  --rs-agora-surface-secondary: #2a2f3c;
+  --rs-agora-surface-tertiary: #3a3f4c;
+  --rs-agora-surface-accent: rgba(0, 255, 136, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Kuzey Işığı) */
+  --rs-agora-text-primary: #e0f7fa;
+  --rs-agora-text-secondary: #b2ebf2;
+  --rs-agora-text-muted: #80deea;
+  --rs-agora-text-accent: #00ff88;
+  
+  /* Border Colors - Kenarlık Renkleri (Kuzey Kenarlıkları) */
+  --rs-agora-border-primary: rgba(224, 247, 250, 0.1);
+  --rs-agora-border-secondary: rgba(0, 255, 136, 0.2);
+  --rs-agora-border-accent: rgba(0, 255, 136, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Kuzey Durumları) */
+  --rs-agora-success: #00ff88;
+  --rs-agora-warning: #ffaa00;
+  --rs-agora-error: #ff0066;
+  --rs-agora-info: #00d4ff;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #00cc6a;
+  --rs-agora-warning-light: #cc8800;
+  --rs-agora-error-light: #cc0052;
+  --rs-agora-info-light: #00a8cc;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Kuzey Işıkları Pembe) */
+  --rs-agora-special-accent: #ff69b4;
+  --rs-agora-special-accent-dark: #ff1493;
+  --rs-agora-special-accent-light: #ff8ac4;
+}
+
+/* ===== DESERT SUNSET THEME ===== */
+[data-theme="desert-sunset"] {
+  /* Primary Colors - Ana Renkler (Çöl Gün Batımı Turuncu) */
+  --rs-agora-primary: #ff8c42;
+  --rs-agora-primary-dark: #ff6b1a;
+  --rs-agora-primary-light: #ffa366;
+  
+  /* Secondary Colors - İkincil Renkler (Çöl Kum Sarısı) */
+  --rs-agora-secondary: #f4d03f;
+  --rs-agora-secondary-dark: #f1c40f;
+  --rs-agora-secondary-light: #f7dc6f;
+  
+  /* Background Colors - Arka Plan Renkleri (Çöl Gecesi) */
+  --rs-agora-bg-primary: #2c1810;
+  --rs-agora-bg-secondary: #3d2418;
+  --rs-agora-bg-tertiary: #4e3020;
+  --rs-agora-bg-quaternary: #5f3c28;
+  --rs-agora-bg-accent: #8b4513;
+  
+  /* Surface Colors - Yüzey Renkleri (Çöl Yüzeyi) */
+  --rs-agora-surface-primary: #3d2418;
+  --rs-agora-surface-secondary: #4e3020;
+  --rs-agora-surface-tertiary: #5f3c28;
+  --rs-agora-surface-accent: rgba(255, 140, 66, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Çöl Kumu) */
+  --rs-agora-text-primary: #fdf2e9;
+  --rs-agora-text-secondary: #fae5d3;
+  --rs-agora-text-muted: #f7d7bd;
+  --rs-agora-text-accent: #ff8c42;
+  
+  /* Border Colors - Kenarlık Renkleri (Çöl Kenarlıkları) */
+  --rs-agora-border-primary: rgba(253, 242, 233, 0.1);
+  --rs-agora-border-secondary: rgba(255, 140, 66, 0.2);
+  --rs-agora-border-accent: rgba(255, 140, 66, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Çöl Durumları) */
+  --rs-agora-success: #27ae60;
+  --rs-agora-warning: #f39c12;
+  --rs-agora-error: #e74c3c;
+  --rs-agora-info: #3498db;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #2ecc71;
+  --rs-agora-warning-light: #f1c40f;
+  --rs-agora-error-light: #e74c3c;
+  --rs-agora-info-light: #5dade2;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Çöl Mercan) */
+  --rs-agora-special-accent: #e67e22;
+  --rs-agora-special-accent-dark: #d35400;
+  --rs-agora-special-accent-light: #eb984e;
+}
+
+/* ===== OCEAN DEPTH THEME ===== */
+[data-theme="ocean-depth"] {
+  /* Primary Colors - Ana Renkler (Derin Okyanus Mavisi) */
+  --rs-agora-primary: #006994;
+  --rs-agora-primary-dark: #004d6b;
+  --rs-agora-primary-light: #0080b3;
+  
+  /* Secondary Colors - İkincil Renkler (Deniz Yeşili) */
+  --rs-agora-secondary: #20b2aa;
+  --rs-agora-secondary-dark: #1e8a85;
+  --rs-agora-secondary-light: #48c9b0;
+  
+  /* Background Colors - Arka Plan Renkleri (Derin Deniz) */
+  --rs-agora-bg-primary: #001122;
+  --rs-agora-bg-secondary: #002244;
+  --rs-agora-bg-tertiary: #003366;
+  --rs-agora-bg-quaternary: #004488;
+  --rs-agora-bg-accent: #0066aa;
+  
+  /* Surface Colors - Yüzey Renkleri (Deniz Yüzeyi) */
+  --rs-agora-surface-primary: #002244;
+  --rs-agora-surface-secondary: #003366;
+  --rs-agora-surface-tertiary: #004488;
+  --rs-agora-surface-accent: rgba(0, 105, 148, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Deniz Köpüğü) */
+  --rs-agora-text-primary: #e6f3ff;
+  --rs-agora-text-secondary: #b3d9ff;
+  --rs-agora-text-muted: #80bfff;
+  --rs-agora-text-accent: #006994;
+  
+  /* Border Colors - Kenarlık Renkleri (Deniz Kenarlıkları) */
+  --rs-agora-border-primary: rgba(230, 243, 255, 0.1);
+  --rs-agora-border-secondary: rgba(0, 105, 148, 0.2);
+  --rs-agora-border-accent: rgba(0, 105, 148, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Deniz Durumları) */
+  --rs-agora-success: #00b894;
+  --rs-agora-warning: #fdcb6e;
+  --rs-agora-error: #e17055;
+  --rs-agora-info: #74b9ff;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #00cec9;
+  --rs-agora-warning-light: #ffeaa7;
+  --rs-agora-error-light: #fab1a0;
+  --rs-agora-info-light: #a29bfe;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Deniz Mercanı) */
+  --rs-agora-special-accent: #fd79a8;
+  --rs-agora-special-accent-dark: #e84393;
+  --rs-agora-special-accent-light: #fdcb6e;
+}
+
+/* ===== MOUNTAIN MIST THEME ===== */
+[data-theme="mountain-mist"] {
+  /* Primary Colors - Ana Renkler (Dağ Sis Mavisi) */
+  --rs-agora-primary: #6c7b7f;
+  --rs-agora-primary-dark: #5a6b6f;
+  --rs-agora-primary-light: #8e9ba0;
+  
+  /* Secondary Colors - İkincil Renkler (Sis Gri) */
+  --rs-agora-secondary: #95a5a6;
+  --rs-agora-secondary-dark: #7f8c8d;
+  --rs-agora-secondary-light: #bdc3c7;
+  
+  /* Background Colors - Arka Plan Renkleri (Dağ Gecesi) */
+  --rs-agora-bg-primary: #2c3e50;
+  --rs-agora-bg-secondary: #34495e;
+  --rs-agora-bg-tertiary: #3c5a78;
+  --rs-agora-bg-quaternary: #4a6b8a;
+  --rs-agora-bg-accent: #5d6d7e;
+  
+  /* Surface Colors - Yüzey Renkleri (Sis Yüzeyi) */
+  --rs-agora-surface-primary: #34495e;
+  --rs-agora-surface-secondary: #3c5a78;
+  --rs-agora-surface-tertiary: #4a6b8a;
+  --rs-agora-surface-accent: rgba(108, 123, 127, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Sis Beyazı) */
+  --rs-agora-text-primary: #ecf0f1;
+  --rs-agora-text-secondary: #d5dbdb;
+  --rs-agora-text-muted: #bdc3c7;
+  --rs-agora-text-accent: #6c7b7f;
+  
+  /* Border Colors - Kenarlık Renkleri (Sis Kenarlıkları) */
+  --rs-agora-border-primary: rgba(236, 240, 241, 0.1);
+  --rs-agora-border-secondary: rgba(108, 123, 127, 0.2);
+  --rs-agora-border-accent: rgba(108, 123, 127, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Sis Durumları) */
+  --rs-agora-success: #27ae60;
+  --rs-agora-warning: #f39c12;
+  --rs-agora-error: #e74c3c;
+  --rs-agora-info: #3498db;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #2ecc71;
+  --rs-agora-warning-light: #f1c40f;
+  --rs-agora-error-light: #e74c3c;
+  --rs-agora-info-light: #5dade2;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Sis Altın) */
+  --rs-agora-special-accent: #f39c12;
+  --rs-agora-special-accent-dark: #e67e22;
+  --rs-agora-special-accent-light: #f1c40f;
+}
+
+/* ===== CANDY DREAM THEME ===== */
+[data-theme="candy-dream"] {
+  /* Primary Colors - Ana Renkler (Şeker Pembe) */
+  --rs-agora-primary: #ff69b4;
+  --rs-agora-primary-dark: #ff1493;
+  --rs-agora-primary-light: #ff8ac4;
+  
+  /* Secondary Colors - İkincil Renkler (Şeker Mavisi) */
+  --rs-agora-secondary: #87ceeb;
+  --rs-agora-secondary-dark: #5f9ea0;
+  --rs-agora-secondary-light: #b0e0e6;
+  
+  /* Background Colors - Arka Plan Renkleri (Şeker Gecesi) */
+  --rs-agora-bg-primary: #2d1b69;
+  --rs-agora-bg-secondary: #3d2b79;
+  --rs-agora-bg-tertiary: #4d3b89;
+  --rs-agora-bg-quaternary: #5d4b99;
+  --rs-agora-bg-accent: #6d5ba9;
+  
+  /* Surface Colors - Yüzey Renkleri (Şeker Yüzeyi) */
+  --rs-agora-surface-primary: #3d2b79;
+  --rs-agora-surface-secondary: #4d3b89;
+  --rs-agora-surface-tertiary: #5d4b99;
+  --rs-agora-surface-accent: rgba(255, 105, 180, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Şeker Beyazı) */
+  --rs-agora-text-primary: #fff0f5;
+  --rs-agora-text-secondary: #ffe4e1;
+  --rs-agora-text-muted: #f0e6ff;
+  --rs-agora-text-accent: #ff69b4;
+  
+  /* Border Colors - Kenarlık Renkleri (Şeker Kenarlıkları) */
+  --rs-agora-border-primary: rgba(255, 240, 245, 0.1);
+  --rs-agora-border-secondary: rgba(255, 105, 180, 0.2);
+  --rs-agora-border-accent: rgba(255, 105, 180, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Şeker Durumları) */
+  --rs-agora-success: #98fb98;
+  --rs-agora-warning: #ffd700;
+  --rs-agora-error: #ff6347;
+  --rs-agora-info: #87ceeb;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #90ee90;
+  --rs-agora-warning-light: #ffa500;
+  --rs-agora-error-light: #ff4500;
+  --rs-agora-info-light: #b0e0e6;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Şeker Lavanta) */
+  --rs-agora-special-accent: #dda0dd;
+  --rs-agora-special-accent-dark: #ba55d3;
+  --rs-agora-special-accent-light: #e6e6fa;
+}
+
+/* ===== SOFT PASTEL THEME ===== */
+[data-theme="soft-pastel"] {
+  /* Primary Colors - Ana Renkler (Yumuşak Pastel Mavi) */
+  --rs-agora-primary: #a8d8ea;
+  --rs-agora-primary-dark: #8bc6d9;
+  --rs-agora-primary-light: #c4e6f7;
+  
+  /* Secondary Colors - İkincil Renkler (Yumuşak Pastel Pembe) */
+  --rs-agora-secondary: #f8b4d9;
+  --rs-agora-secondary-dark: #f69ac2;
+  --rs-agora-secondary-light: #fad0e6;
+  
+  /* Background Colors - Arka Plan Renkleri (Yumuşak Pastel) */
+  --rs-agora-bg-primary: #fefefe;
+  --rs-agora-bg-secondary: #f8f9fa;
+  --rs-agora-bg-tertiary: #f1f3f4;
+  --rs-agora-bg-quaternary: #e8eaed;
+  --rs-agora-bg-accent: #e3f2fd;
+  
+  /* Surface Colors - Yüzey Renkleri (Yumuşak Pastel) */
+  --rs-agora-surface-primary: #f8f9fa;
+  --rs-agora-surface-secondary: #f1f3f4;
+  --rs-agora-surface-tertiary: #e8eaed;
+  --rs-agora-surface-accent: rgba(168, 216, 234, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Koyu Pastel) */
+  --rs-agora-text-primary: #202124;
+  --rs-agora-text-secondary: #5f6368;
+  --rs-agora-text-muted: #9aa0a6;
+  --rs-agora-text-accent: #a8d8ea;
+  
+  /* Border Colors - Kenarlık Renkleri (Yumuşak Kenarlıklar) */
+  --rs-agora-border-primary: rgba(32, 33, 36, 0.1);
+  --rs-agora-border-secondary: rgba(168, 216, 234, 0.2);
+  --rs-agora-border-accent: rgba(168, 216, 234, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Yumuşak Durumlar) */
+  --rs-agora-success: #81c784;
+  --rs-agora-warning: #ffb74d;
+  --rs-agora-error: #e57373;
+  --rs-agora-info: #64b5f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #a5d6a7;
+  --rs-agora-warning-light: #ffcc80;
+  --rs-agora-error-light: #ef9a9a;
+  --rs-agora-info-light: #90caf9;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Yumuşak Lavanta) */
+  --rs-agora-special-accent: #b39ddb;
+  --rs-agora-special-accent-dark: #9575cd;
+  --rs-agora-special-accent-light: #d1c4e9;
+}
+
+/* ===== WARM CREAM THEME ===== */
+[data-theme="warm-cream"] {
+  /* Primary Colors - Ana Renkler (Sıcak Krem Kahve) */
+  --rs-agora-primary: #d4a574;
+  --rs-agora-primary-dark: #c19a6b;
+  --rs-agora-primary-light: #e6c08c;
+  
+  /* Secondary Colors - İkincil Renkler (Sıcak Krem Bej) */
+  --rs-agora-secondary: #f5e6d3;
+  --rs-agora-secondary-dark: #e8d5c4;
+  --rs-agora-secondary-light: #faf0e6;
+  
+  /* Background Colors - Arka Plan Renkleri (Sıcak Krem) */
+  --rs-agora-bg-primary: #fdf6e3;
+  --rs-agora-bg-secondary: #faf0e6;
+  --rs-agora-bg-tertiary: #f5e6d3;
+  --rs-agora-bg-quaternary: #e8d5c4;
+  --rs-agora-bg-accent: #d4a574;
+  
+  /* Surface Colors - Yüzey Renkleri (Sıcak Krem) */
+  --rs-agora-surface-primary: #faf0e6;
+  --rs-agora-surface-secondary: #f5e6d3;
+  --rs-agora-surface-tertiary: #e8d5c4;
+  --rs-agora-surface-accent: rgba(212, 165, 116, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Koyu Krem) */
+  --rs-agora-text-primary: #2d1810;
+  --rs-agora-text-secondary: #5d3a2a;
+  --rs-agora-text-muted: #8d6b5a;
+  --rs-agora-text-accent: #d4a574;
+  
+  /* Border Colors - Kenarlık Renkleri (Sıcak Kenarlıklar) */
+  --rs-agora-border-primary: rgba(45, 24, 16, 0.1);
+  --rs-agora-border-secondary: rgba(212, 165, 116, 0.2);
+  --rs-agora-border-accent: rgba(212, 165, 116, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Sıcak Durumlar) */
+  --rs-agora-success: #8bc34a;
+  --rs-agora-warning: #ff9800;
+  --rs-agora-error: #f44336;
+  --rs-agora-info: #2196f3;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #a5d6a7;
+  --rs-agora-warning-light: #ffb74d;
+  --rs-agora-error-light: #e57373;
+  --rs-agora-info-light: #64b5f6;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (Sıcak Altın) */
+  --rs-agora-special-accent: #ffc107;
+  --rs-agora-special-accent-dark: #ffa000;
+  --rs-agora-special-accent-light: #ffd54f;
+}
+
+/* ===== LIGHT MODERN THEME ===== */
+[data-theme="light-modern"] {
+  /* Primary Colors - Ana Renkler (Modern Mavi) */
+  --rs-agora-primary: #3b82f6;
+  --rs-agora-primary-dark: #2563eb;
+  --rs-agora-primary-light: #60a5fa;
+  
+  /* Secondary Colors - İkincil Renkler (Modern Mor) */
+  --rs-agora-secondary: #8b5cf6;
+  --rs-agora-secondary-dark: #7c3aed;
+  --rs-agora-secondary-light: #a78bfa;
+  
+  /* Background Colors - Arka Plan Renkleri (Açık Modern) */
+  --rs-agora-bg-primary: #ffffff;
+  --rs-agora-bg-secondary: #f8fafc;
+  --rs-agora-bg-tertiary: #f1f5f9;
+  --rs-agora-bg-quaternary: #e2e8f0;
+  --rs-agora-bg-accent: #dbeafe;
+  
+  /* Surface Colors - Yüzey Renkleri (Modern Yüzey) */
+  --rs-agora-surface-primary: #f8fafc;
+  --rs-agora-surface-secondary: #f1f5f9;
+  --rs-agora-surface-tertiary: #e2e8f0;
+  --rs-agora-surface-accent: rgba(59, 130, 246, 0.1);
+  
+  /* Text Colors - Metin Renkleri (Koyu Modern) */
+  --rs-agora-text-primary: #0f172a;
+  --rs-agora-text-secondary: #334155;
+  --rs-agora-text-muted: #64748b;
+  --rs-agora-text-accent: #3b82f6;
+  
+  /* Border Colors - Kenarlık Renkleri (Modern Kenarlıklar) */
+  --rs-agora-border-primary: rgba(15, 23, 42, 0.1);
+  --rs-agora-border-secondary: rgba(59, 130, 246, 0.2);
+  --rs-agora-border-accent: rgba(59, 130, 246, 0.3);
+  
+  /* Status Colors - Durum Renkleri (Modern Durumlar) */
+  --rs-agora-success: #10b981;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #059669;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+}
+
+/* ===== SPECIAL EFFECTS & ANIMATIONS ===== */
+
+/* Glow Effects - Işıltı Efektleri */
+.rs-agora-glow-primary {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-primary-30);
+}
+
+.rs-agora-glow-secondary {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-secondary-30);
+}
+
+.rs-agora-glow-success {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-success-30);
+}
+
+.rs-agora-glow-warning {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-warning-30);
+}
+
+.rs-agora-glow-error {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-error-30);
+}
+
+.rs-agora-glow-info {
+  box-shadow: 0 0 20px var(--rs-agora-transparent-info-30);
+}
+
+.rs-agora-glow-special-accent {
+  box-shadow: 0 0 20px var(--rs-agora-special-accent);
+}
+
+/* Hover Effects - Hover Efektleri */
+.rs-agora-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rs-agora-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px var(--rs-agora-transparent-black-20);
+}
+
+.rs-agora-hover-scale {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rs-agora-hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.rs-agora-hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rs-agora-hover-glow:hover {
+  box-shadow: 0 0 30px var(--rs-agora-transparent-primary-40);
+}
+
+/* Pulse Animation - Nabız Animasyonu */
+@keyframes rs-agora-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.rs-agora-pulse {
+  animation: rs-agora-pulse 2s infinite;
+}
+
+/* Bounce Animation - Zıplama Animasyonu */
+@keyframes rs-agora-bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+.rs-agora-bounce {
+  animation: rs-agora-bounce 1s infinite;
+}
+
+/* Shimmer Effect - Parıltı Efekti */
+@keyframes rs-agora-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.rs-agora-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--rs-agora-transparent-white-20),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: rs-agora-shimmer 2s infinite;
+}
+
+/* Gradient Text - Gradyan Metin */
+.rs-agora-gradient-text-primary {
+  background: var(--rs-agora-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rs-agora-gradient-text-secondary {
+  background: var(--rs-agora-gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass Morphism - Cam Morfolojisi */
+.rs-agora-glass {
+  background: var(--rs-agora-transparent-white-10);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--rs-agora-transparent-white-20);
+  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-20);
+}
+
+.rs-agora-glass-dark {
+  background: var(--rs-agora-transparent-black-20);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--rs-agora-transparent-black-30);
+  box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
+}
