@@ -3,8 +3,10 @@
     class="video-item"
     :class="{
       'local-video': isLocal,
-      'screen-share': isScreenShare
+      'screen-share': isScreenShare,
+      'clickable': isClickable
     }"
+    @click="handleVideoClick"
   >
     <div class="video-wrapper">
       <div 
@@ -55,6 +57,7 @@ const props = defineProps({
   track: { type: Object, default: null }, // Yeni track prop'u
   isLocal: { type: Boolean, default: false },
   isScreenShare: { type: Boolean, default: false },
+  isClickable: { type: Boolean, default: false }, // Yeni prop: sadece Spotlight modunda true
   logUI: { type: Function, default: () => {} }
 })
 
@@ -151,21 +154,55 @@ watch(() => props.user?.isVideoOff, (newVideoOff) => {
 watch(
   [() => props.track, videoElement],
   async ([newTrack, el], [oldTrack]) => {
+    console.log('🟢 [VIDEOITEM] Track/Element değişti:', {
+      uid: props.user?.uid,
+      name: props.user?.name,
+      isScreenShare: props.isScreenShare,
+      hasNewTrack: !!newTrack,
+      hasElement: !!el,
+      trackId: newTrack?.id,
+      trackEnabled: newTrack?.enabled,
+      trackReadyState: newTrack?.readyState
+    })
+    
     // Eski track'ı güvenli şekilde durdur
     if (oldTrack && lastPlayedTrack) {
-      try { lastPlayedTrack.stop(); } catch (e) {}
+      try { 
+        console.log('🟡 [VIDEOITEM] Eski track durduruluyor:', oldTrack.id)
+        oldTrack.stop(); 
+      } catch (e) {
+        console.log('🔴 [VIDEOITEM] Eski track durdurma hatası:', e)
+      }
       lastPlayedTrack = null
     }
+    
     // Yeni track varsa ve element DOM'da ise
     if (newTrack && el) {
       try {
+        console.log('🟢 [VIDEOITEM] Track play edilmeye çalışılıyor:', {
+          trackId: newTrack.id,
+          trackEnabled: newTrack.enabled,
+          trackReadyState: newTrack.readyState,
+          elementType: el.constructor.name
+        })
+        
         await nextTick();
         await newTrack.play(el);
         lastPlayedTrack = newTrack;
+        
+        console.log('🟢 [VIDEOITEM] Track başarıyla play edildi:', newTrack.id)
       } catch (e) {
+        console.error('🔴 [VIDEOITEM] track.play() hatası:', e)
         props.logUI('track.play() hatası', e)
       }
+    } else {
+      console.log('🟡 [VIDEOITEM] Track play edilemedi:', {
+        hasTrack: !!newTrack,
+        hasElement: !!el,
+        trackId: newTrack?.id
+      })
     }
+    
     // Video element değiştiğinde ref callback'ini çağır
     if (el && !hasCalledVideoRef.value) {
       handleVideoRef(el)
@@ -214,6 +251,27 @@ const handleVideoRef = (el) => {
     props.logUI('Ekran paylaşımı video elementi hazır, event gönderiliyor')
   }
 }
+
+// Handle video click event
+const handleVideoClick = () => {
+  // Sadece clickable olduğunda çalışsın
+  if (!props.isClickable) {
+    return
+  }
+  
+  props.logUI('Video öğesine tıklandı', {
+    user: props.user,
+    isLocal: props.isLocal,
+    isScreenShare: props.isScreenShare,
+    hasVideo: props.hasVideo,
+    isVideoOff: props.user?.isVideoOff,
+    isClickable: props.isClickable
+  })
+  emit('video-click', props.user)
+}
+
+// Emit video-click event
+const emit = defineEmits(['video-click'])
 </script>
 
 <style scoped>
@@ -353,6 +411,27 @@ const handleVideoRef = (el) => {
 /* Screen share styling */
 .screen-share {
   border: 2px solid #10b981;
+}
+
+/* Clickable styling */
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.clickable:active {
+  transform: scale(0.98);
+}
+
+/* Focus styling for accessibility */
+.clickable:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 /* Büyük ekranlar için daha büyük video alanları */

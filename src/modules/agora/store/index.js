@@ -6,8 +6,10 @@
  */
 
 import { useAgoraStore } from './agora.js'
+import { useLayoutStore } from './layout.js'
 
 export { useAgoraStore }
+export { useLayoutStore }
 
 // TODO: Create separate store files for better modularity:
 // - video.js: Video-specific state management

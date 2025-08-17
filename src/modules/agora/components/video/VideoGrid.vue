@@ -11,6 +11,7 @@
       :video-ref="el => setLocalVideoRef(el)"
       :track="localTracks.video && localTracks.video.video"
       :is-local="true"
+      :is-clickable="false"
       :logUI="logUI"
     />
 
@@ -23,6 +24,7 @@
       :track="localTracks.screen && localTracks.screen.video"
       :is-local="true"
       :is-screen-share="true"
+      :is-clickable="false"
       :logUI="logUI"
     />
 
@@ -33,8 +35,9 @@
       :user="user"
       :has-video="getUserHasVideo(user)"
       :video-ref="el => setVideoRef(el, user.uid)"
-      :track="user.track"
+      :track="getUserTrack(user)"
       :is-local="false"
+      :is-clickable="false"
       :logUI="logUI"
     />
 
@@ -45,9 +48,10 @@
       :user="user"
       :has-video="getUserHasVideo(user)"
       :video-ref="el => setVideoRef(el, user.uid)"
-      :track="user.track"
+      :track="getUserTrack(user)"
       :is-local="user.isLocal"
       :is-screen-share="true"
+      :is-clickable="false"
       :logUI="logUI"
     />
   </div>
@@ -55,6 +59,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useAgoraStore } from '../../store/index.js'
 import VideoItem from './VideoItem.vue'
 
 // Props
@@ -105,6 +110,20 @@ const getUserHasVideo = (user) => {
     user
   })
   return hasVideoTrack && notVideoOff && userExists
+}
+
+const getUserTrack = (user) => {
+  if (!user) return null
+  
+  const agoraStore = useAgoraStore()
+  
+  if (user.isScreenShare) {
+    // Ekran paylaşımı kullanıcısı için
+    return agoraStore.tracks.remote.get(user.uid)?.screen
+  } else {
+    // Normal video kullanıcısı için
+    return agoraStore.tracks.remote.get(user.uid)?.video
+  }
 }
 
 const setLocalVideoRef = (el) => {

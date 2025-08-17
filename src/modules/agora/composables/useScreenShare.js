@@ -6,6 +6,7 @@ import { useStreamQuality } from './useStreamQuality.js'
 import { centralEmitter } from '../utils/centralEmitter.js'
 import { logger, LOG_CATEGORIES } from '../services/logger.js'
 import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
+import { useLayoutStore } from '../store/layout.js'
 
 /**
  * Ekran Paylaşımı Composable - Ekran paylaşımı işlemlerini yönetir
@@ -48,6 +49,59 @@ export function useScreenShare(agoraStore) {
 
   // Kalite optimizasyonu composable'ı
   const { optimizeScreenShareQuality } = useStreamQuality()
+
+  /**
+   * Ekran paylaşımı kullanıcısına abone olur
+   * @param {number} uid - Kullanıcı ID'si
+   */
+  const subscribeToScreenUser = async (uid) => {
+    try {
+      console.log('🟢 [SCREEN] subscribeToScreenUser BAŞLADI:', uid)
+      
+      const client = agoraStore.clients.screen.client
+      if (!client) {
+        console.log('🔴 [SCREEN] Ekran client mevcut değil:', uid)
+        return
+      }
+
+      const users = client.remoteUsers || []
+      const user = users.find(u => u.uid === uid)
+      
+      if (!user) {
+        console.log('🔴 [SCREEN] Ekran paylaşımı kullanıcısı bulunamadı:', uid)
+        return
+      }
+
+      // Subscribe to screen track
+      console.log('🟡 [SCREEN] Track subscribe başlıyor:', uid)
+      await client.subscribe(user, 'video')
+      console.log('🟢 [SCREEN] Track subscribe tamamlandı:', uid)
+      
+      const track = user.videoTrack
+      if (track) {
+        // Store'u hemen güncelle
+        agoraStore.setRemoteTrack(uid, 'screen', track)
+        console.log('🟢 [SCREEN] Store güncellendi:', uid)
+        
+        // Kullanıcı durumunu hemen güncelle
+        const currentUser = agoraStore.users.remote.filter(u => u.isScreenShare).find(u => u.uid === uid)
+        if (currentUser) {
+          const updatedUser = { ...currentUser, hasVideo: true }
+          agoraStore.addRemoteUser(updatedUser)
+        }
+        
+        // Event'i hemen emit et
+        console.log('🟢 [SCREEN] remote-screen-ready emit ediliyor:', uid)
+        centralEmitter.emit(AGORA_EVENTS.REMOTE_SCREEN_READY, { uid, track, clientType: 'screen' })
+        
+        console.log('🎉 [SCREEN] subscribeToScreenUser BAŞARILI:', uid)
+      }
+      
+    } catch (error) {
+      console.log('🔴 [SCREEN] subscribeToScreenUser HATA:', uid, error)
+      throw error
+    }
+  }
 
   /**
    * Ekran paylaşımı için UID oluşturur
@@ -283,6 +337,13 @@ export function useScreenShare(agoraStore) {
       logScreen('Ekran paylaşımı başarıyla başlatıldı')
       centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STARTED, { track: screenTrack, clientType: 'screen' })
       
+      // Layout mantığı: Ekran paylaşımı başladığında presentation'a geç
+      const layoutStore = useLayoutStore()
+      if (layoutStore.currentLayout !== 'presentation') {
+        console.log('🟢 [SCREEN] Yerel ekran paylaşımı başladı, layout presentation\'a geçiliyor')
+        layoutStore.switchLayoutWithSave('presentation')
+      }
+      
       logScreen('Ekran paylaşımı kullanıcısı tüm kullanıcılara eklendi:', agoraStore.users.local.screen)
       logScreen('Toplam kullanıcı sayısı:', agoraStore.allUsers.length)
       
@@ -360,6 +421,15 @@ export function useScreenShare(agoraStore) {
         // Store'u güncelle
         agoraStore.setLocalTrack('screen', 'video', null)
         agoraStore.setScreenSharing(false)
+        
+        // Layout mantığı: Ekran paylaşımı durduğunda grid'e dön (eğer başka ekran paylaşımı yoksa)
+        const layoutStore = useLayoutStore()
+        const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+        
+        if (!hasScreenShare && layoutStore.currentLayout === 'presentation') {
+          console.log('🟢 [SCREEN] Yerel ekran paylaşımı durdu, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+          layoutStore.switchLayoutWithSave('grid')
+        }
         
         logScreen('Ekran paylaşımı başarıyla durduruldu')
         logScreen('Ekran paylaşımı kullanıcısı tüm kullanıcılardan kaldırıldı')
@@ -454,7 +524,7 @@ export function useScreenShare(agoraStore) {
 
     // Ekran kullanıcısı katıldı
     client.on(AGORA_EVENTS.USER_JOINED, (user) => {
-      logScreen('Ekran kullanıcısı katıldı:', user.uid)
+      console.log('🟢 [SCREEN] USER_JOINED:', user.uid)
       if (agoraStore.isLocalUID(user.uid)) {
         logScreen('Yerel kullanıcı ekran client\'ında yoksayılıyor:', user.uid)
         return;
@@ -478,7 +548,43 @@ export function useScreenShare(agoraStore) {
         isScreenShare: true
       }
       agoraStore.addRemoteUser(remoteUser)
-      centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { ...remoteUser, clientType: 'screen' })
+      
+      console.log('🟢 [SCREEN] Uzak ekran paylaşımı kullanıcısı eklendi:', {
+        uid: user.uid,
+        name: remoteUser.name,
+        isScreenShare: remoteUser.isScreenShare
+      })
+      
+      // Layout mantığı: Sadece ekran paylaşımı varsa presentation'a geç
+      const layoutStore = useLayoutStore()
+      const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+      
+      if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
+        console.log('🟢 [SCREEN] Ekran paylaşımı var, layout presentation\'a geçiliyor:', user.uid)
+        layoutStore.switchLayoutWithSave('presentation')
+      } else if (!hasScreenShare && layoutStore.currentLayout !== 'grid') {
+        console.log('🟢 [SCREEN] Ekran paylaşımı yok, layout grid\'e zorlanıyor:', user.uid)
+        layoutStore.switchLayoutWithSave('grid')
+      }
+      
+                    // Basit ve etkili yaklaşım: Hızlı retry
+      if (user.videoTrack) {
+        console.log('🟢 [SCREEN] Track hazır, hemen abone olunuyor:', user.uid)
+        subscribeToScreenUser(user.uid)
+      } else {
+        console.log('🟡 [SCREEN] Track hazır değil, retry başlatılıyor:', user.uid)
+        
+        // Hemen dene
+        setTimeout(() => subscribeToScreenUser(user.uid), 0)
+        
+        // 100ms sonra tekrar dene
+        setTimeout(() => subscribeToScreenUser(user.uid), 100)
+        
+        // 500ms sonra tekrar dene
+        setTimeout(() => subscribeToScreenUser(user.uid), 500)
+      }
+      
+              centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { ...remoteUser, clientType: 'screen' })
     });
 
     // Ekran kullanıcısı ayrıldı
@@ -491,6 +597,19 @@ export function useScreenShare(agoraStore) {
         return
       }
       
+      // Uzak ekran paylaşımı kullanıcısı ayrıldığında layout'u kontrol et
+      const layoutStore = useLayoutStore()
+      if (layoutStore.currentLayout === 'presentation') {
+        // Eğer başka ekran paylaşımı kullanıcısı yoksa grid'e dön
+        const remainingScreenUsers = agoraStore.users.remote.filter(u => u.isScreenShare)
+        if (remainingScreenUsers.length === 0) {
+          logScreen('Uzak ekran paylaşımı kullanıcısı ayrıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+          layoutStore.switchLayoutWithSave('grid')
+        }
+      }
+      
+      // Screen track'ini temizle
+      agoraStore.setRemoteTrack(user.uid, 'screen', null)
       agoraStore.removeRemoteUser(user.uid)
       centralEmitter.emit(AGORA_EVENTS.USER_LEFT, { uid: user.uid, clientType: 'screen' })
     })
@@ -507,11 +626,25 @@ export function useScreenShare(agoraStore) {
       
       if (mediaType === 'video') {
         try {
-          logScreen('Ekran paylaşımı için hemen abone olma işlemi başlatılıyor...')
-          // Hemen async olarak başlat
-          createSafeTimeout(() => {
-            subscribeToRemoteScreen(user.uid)
-          }, 0)
+          logScreen('Ekran paylaşımı için hızlı abone olma işlemi başlatılıyor...')
+          
+          // Layout'u presentation'a geç (eğer ekran paylaşımı varsa)
+          const layoutStore = useLayoutStore()
+          const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+          if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
+            logScreen('Ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
+            layoutStore.switchLayoutWithSave('presentation')
+          }
+          
+          // Hemen dene
+          setTimeout(() => subscribeToRemoteScreen(user.uid), 0)
+          
+          // 100ms sonra tekrar dene
+          setTimeout(() => subscribeToRemoteScreen(user.uid), 100)
+          
+          // 500ms sonra tekrar dene
+          setTimeout(() => subscribeToRemoteScreen(user.uid), 500)
+          
         } catch (error) {
           logError('Ekran paylaşımından abone olunamadı:', error)
         }
@@ -529,6 +662,19 @@ export function useScreenShare(agoraStore) {
       }
       
       if (mediaType === 'video') {
+        // Uzak ekran paylaşımı durduğunda grid layout'a geri dön
+        const layoutStore = useLayoutStore()
+        if (layoutStore.currentLayout === 'presentation') {
+          // Eğer başka ekran paylaşımı kullanıcısı yoksa grid'e dön
+          const remainingScreenUsers = agoraStore.users.remote.filter(u => u.isScreenShare)
+          if (remainingScreenUsers.length === 0) {
+            logScreen('Uzak ekran paylaşımı durdu, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+            layoutStore.switchLayoutWithSave('grid')
+          }
+        }
+        
+        // Screen track'ini temizle
+        agoraStore.setRemoteTrack(user.uid, 'screen', null)
         agoraStore.removeRemoteUser(user.uid)
         centralEmitter.emit(AGORA_EVENTS.USER_UNPUBLISHED, { user, mediaType, clientType: 'screen' })
       }
@@ -607,6 +753,7 @@ export function useScreenShare(agoraStore) {
     toggleScreenShare,
     generateScreenUID,
     supportsScreenShare,
+    subscribeToScreenUser,
     cleanup
   }
 } 

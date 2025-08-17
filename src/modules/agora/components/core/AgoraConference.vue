@@ -4,9 +4,46 @@
     <div v-if="isLoading" class="loading-screen">
       <div class="loading-content">
         <div class="loading-spinner"></div>
+        
+        <!-- Progress Bar -->
+        <div v-if="props.autoJoin && channelName" class="progress-container">
+          <div class="progress-bar">
+            <div 
+              class="progress-fill" 
+              :style="{ width: getProgressWidth() }"
+            ></div>
+          </div>
+          <div class="progress-text">{{ getProgressText() }}</div>
+        </div>
+        
         <img src="https://www.rehberimsensin.com/assets/images/logo.svg" alt="Rehberim Sensin" class="loading-logo" />
-        <h3>Agora Konferans Yükleniyor...</h3>
-        <p>Lütfen bekleyin, sistem hazırlanıyor</p>
+        <h3 v-if="props.autoJoin && channelName">Agora Konferans Bağlanıyor...</h3>
+        <h3 v-else>Agora Konferans Yükleniyor...</h3>
+        <p v-if="props.autoJoin && channelName">
+          <span class="loading-channel">{{ channelName }}</span> kanalına bağlanılıyor...
+        </p>
+        <p v-else>Lütfen bekleyin, sistem hazırlanıyor</p>
+        
+        <!-- Auto join durumu için ek bilgi -->
+        <div v-if="props.autoJoin && channelName" class="loading-status">
+          <div class="status-item" :class="{ active: loadingStatus === 'token' }">
+            <span class="status-icon">🔗</span>
+            <span>Token alınıyor...</span>
+          </div>
+          <div class="status-item" :class="{ active: loadingStatus === 'connecting' }">
+            <span class="status-icon">📡</span>
+            <span>Kanala katılım yapılıyor...</span>
+          </div>
+          <div class="status-item" :class="{ active: loadingStatus === 'connected' }">
+            <span class="status-icon">✅</span>
+            <span>Bağlantı kuruldu!</span>
+          </div>
+        </div>
+        
+        <!-- Genel loading mesajı -->
+        <div class="loading-message">
+          {{ loadingMessage }}
+        </div>
       </div>
     </div>
 
@@ -64,6 +101,7 @@
           :logError="logError"
           :trackUserAction="trackUserAction"
           :onOpenSettings="toggleSettings"
+          :onOpenLayoutModal="toggleLayoutModal"
         />
       </div>
     </main>
@@ -99,6 +137,12 @@
       :isLocalAudioMuted="!!isLocalAudioMuted"
       :allUsers="allUsers || []"
       @close="toggleInfo"
+    />
+
+    <!-- Layout Modal -->
+    <LayoutModal
+      :isOpen="isLayoutModalOpen"
+      @close="toggleLayoutModal"
     />
 
     <!-- Settings Modal -->
@@ -141,10 +185,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useMeeting } from '../../composables/index.js'
+import { useLayoutStore } from '../../store/index.js'
 import { AgoraVideo } from './index.js'
 import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
-import { InfoModal, SettingsModal, LogModal } from '../modals/index.js'
+import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
 import { createToken } from '../../services/tokenService.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS } from '../../constants.js'
 
@@ -240,12 +285,54 @@ const {
   exportLogs
 } = useMeeting()
 
+// Layout store initialization
+const layoutStore = useLayoutStore()
+
 const channelName = ref(props.channelName || '')
 
 
 
 // Loading state
 const isLoading = ref(true)
+const loadingStatus = ref('initializing') // 'initializing', 'token', 'connecting', 'connected'
+const loadingMessage = ref('Sistem başlatılıyor...')
+
+// Loading status mesajları
+const loadingMessages = {
+  initializing: 'Sistem başlatılıyor...',
+  token: 'Token alınıyor...',
+  connecting: 'Kanala bağlanılıyor...',
+  connected: 'Bağlantı kuruldu!'
+}
+
+// Loading status'u güncelle
+const updateLoadingStatus = (status) => {
+  loadingStatus.value = status
+  loadingMessage.value = loadingMessages[status]
+  logUI('Loading status updated', { status, message: loadingMessages[status] })
+}
+
+// Progress bar için width hesapla
+const getProgressWidth = () => {
+  const progressMap = {
+    'initializing': '25%',
+    'token': '50%',
+    'connecting': '75%',
+    'connected': '100%'
+  }
+  return progressMap[loadingStatus.value] || '25%'
+}
+
+// Progress bar için text hesapla
+const getProgressText = () => {
+  const progressTextMap = {
+    'initializing': 'Başlatılıyor...',
+    'token': 'Token alınıyor...',
+    'connecting': 'Bağlanıyor...',
+    'connected': 'Tamamlandı!'
+  }
+  return progressTextMap[loadingStatus.value] || 'Başlatılıyor...'
+}
 
 // Log state
 const isLogOpen = ref(false)
@@ -256,6 +343,7 @@ const isInfoOpen = ref(false)
 
 // Settings modal state
 const isSettingsOpen = ref(false)
+const isLayoutModalOpen = ref(false)
 
 // Device selection state
 const selectedCameraId = ref('')
@@ -294,6 +382,12 @@ const toggleSettings = () => {
   logUI('Settings modal toggled', { isOpen: isSettingsOpen.value })
 }
 
+// Layout modal toggle
+const toggleLayoutModal = () => {
+  isLayoutModalOpen.value = !isLayoutModalOpen.value
+  logUI('Layout modal toggled', { isOpen: isLayoutModalOpen.value })
+}
+
 // Handle settings changed
 const handleSettingsChanged = (newSettings) => {
   logUI('Settings changed', newSettings)
@@ -317,6 +411,9 @@ const handleJoin = async (name) => {
     const channelToJoin = name || channelName.value
     channelName.value = channelToJoin
     
+    // Loading status'u güncelle
+    updateLoadingStatus('token')
+    
     // Eğer userUid null ise random UID oluştur
     const finalUid = props.userUid || generateRandomUID()
     
@@ -324,6 +421,9 @@ const handleJoin = async (name) => {
     emit('token-requested', { channelName: channelToJoin, uid: finalUid })
     const tokenResult = await createToken(channelToJoin, finalUid, props.tokenEndpoint)
     emit('token-received', { token: tokenResult.token, channelName: channelToJoin, uid: finalUid })
+    
+    // Loading status'u güncelle
+    updateLoadingStatus('connecting')
     
     // Join parametreleri
     const joinParams = {
@@ -335,6 +435,10 @@ const handleJoin = async (name) => {
     
     // joinChannel içinde zaten clean() çağrılıyor
     await joinChannel(joinParams)
+    
+    // Loading status'u güncelle
+    updateLoadingStatus('connected')
+    
     emit('joined', { channelName: channelToJoin, token: tokenResult.token, uid: finalUid })
   } catch (error) {
     logError(error, { context: 'handleJoin', channelName: name })
@@ -417,14 +521,37 @@ onMounted(async () => {
 
   setupEventListeners()
   
-  // Loading'i biraz daha uzun göster (1 saniye)
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  isLoading.value = false
+  // Layout preference'i sadece kanal değişikliği olmadığında yükle
+  // Bu sayede ilk girişte presentation'dan başlamaz
+  if (!props.autoJoin) {
+    layoutStore.loadLayoutPreference()
+  } else {
+    // Auto join varsa layout'u grid'e sıfırla
+    layoutStore.switchLayoutWithSave('grid')
+  }
   
-  // Auto join if enabled - nextTick ile güvenli çalıştır
+  // Auto join varsa loading devam ederken arka planda bağlantı kur
   if (props.autoJoin && channelName.value) {
-    await nextTick()
-    await handleAutoJoin()
+    // Loading'i göster ama arka planda bağlantı kur
+    logUI('Auto join aktif - Loading devam ederken arka planda bağlantı kuruluyor...')
+    
+    // Arka planda auto join'i başlat
+    handleAutoJoin().then(() => {
+      logUI('Auto join tamamlandı - Loading kaldırılıyor')
+      // Kısa bir delay ile loading'i kaldır (kullanıcı "Bağlantı kuruldu!" mesajını görebilsin)
+      setTimeout(() => {
+        isLoading.value = false
+      }, 800)
+    }).catch((error) => {
+      logError(error, { context: 'autoJoin' })
+      // Hata olsa bile loading'i kaldır
+      isLoading.value = false
+    })
+  } else {
+    // Auto join yoksa sadece kısa loading göster
+    updateLoadingStatus('initializing')
+    await new Promise(resolve => setTimeout(resolve, 300))
+    isLoading.value = false
   }
 })
 
@@ -503,6 +630,36 @@ defineExpose({
   margin: 0 auto 20px;
 }
 
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  max-width: 300px;
+  margin: 20px auto;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 12px;
+  color: #a0a0a0;
+  font-weight: 500;
+}
+
 .loading-content h3 {
   font-size: 24px;
   font-weight: 600;
@@ -517,6 +674,53 @@ defineExpose({
   font-size: 16px;
   color: #a0a0a0;
   margin: 0;
+}
+
+.loading-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #a0a0a0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+}
+
+.status-item.active {
+  opacity: 1;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  transform: scale(1.02);
+}
+
+.status-item.completed {
+  opacity: 0.8;
+  color: #4ade80;
+}
+
+.status-icon {
+  font-size: 18px;
+}
+
+.loading-message {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #667eea;
+  font-weight: 500;
+  text-align: center;
+  padding: 12px 20px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 @keyframes spin {
@@ -621,6 +825,11 @@ defineExpose({
   background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
   box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
   transform: scale(1.1);
+}
+
+.loading-channel {
+  font-weight: bold;
+  color: #667eea;
 }
 
 

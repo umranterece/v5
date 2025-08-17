@@ -6,6 +6,7 @@ import { useAgoraStore } from '../store/index.js'
 import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
 import { useLogger } from './useLogger.js'
+import { useLayoutStore } from '../store/layout.js'
 
 const { 
   logUI, 
@@ -157,6 +158,13 @@ export function useMeeting() {
       // App ID'yi store'a kaydet (varsa)
       if (appId) {
         agoraStore.setAppId(appId)
+      }
+      
+      // Layout'u kanala ilk kez katıldığında grid'e sıfırla
+      const layoutStore = useLayoutStore()
+      if (layoutStore.currentLayout !== 'grid') {
+        logUI('Kanala ilk kez katılındı, layout grid\'e sıfırlanıyor')
+        layoutStore.switchLayoutWithSave('grid')
       }
       
       // Video client ile kanala katıl

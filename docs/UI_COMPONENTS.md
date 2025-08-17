@@ -1133,4 +1133,3 @@ const useTouchGestures = () => {
 ---
 
 > **Not**: Bu UI component dokümantasyonu, projenin **Context Engineering** yaklaşımına uygun olarak hazırlanmıştır. Her component, modern web standartları ve accessibility prensiplerine uygun olarak tasarlanmıştır.
-

@@ -157,19 +157,52 @@ export const useAgoraStore = defineStore('agora', () => {
   const userLookupCache = new Map()
   
   const addRemoteUser = (user) => {
+    console.log('🟢 [STORE] addRemoteUser çağrıldı:', {
+      uid: user.uid,
+      name: user.name,
+      isScreenShare: user.isScreenShare,
+      isLocal: user.isLocal
+    })
+    
+    // UID'ye göre isScreenShare özelliğini otomatik olarak ayarla
+    if (isScreenShareUser(user.uid)) {
+      user.isScreenShare = true
+      console.log('🟢 [STORE] UID\'ye göre ekran paylaşımı kullanıcısı olarak işaretlendi:', user.uid)
+    }
+    
     const existingIndex = users.value.remote.findIndex(u => u.uid === user.uid)
     if (existingIndex >= 0) {
       // Mevcut kullanıcıyı güncelle - Optimized object spread
       const existingUser = users.value.remote[existingIndex]
       Object.assign(existingUser, user)
+      
+      // Eğer ekran paylaşımı kullanıcısı ise, isScreenShare özelliğini kontrol et
+      if (user.isScreenShare) {
+        existingUser.isScreenShare = true
+        console.log('🟢 [STORE] Mevcut uzak ekran paylaşımı kullanıcısı güncellendi:', user.uid)
+      }
+      
       // Update cache
       userLookupCache.set(user.uid, existingIndex)
     } else {
       // Yeni kullanıcı ekle
       users.value.remote.push(user)
+      
+      // Eğer ekran paylaşımı kullanıcısı ise, log ekle
+      if (user.isScreenShare) {
+        console.log('🟢 [STORE] Yeni uzak ekran paylaşımı kullanıcısı eklendi:', user.uid)
+      }
+      
       // Update cache
       userLookupCache.set(user.uid, users.value.remote.length - 1)
     }
+    
+    console.log('🟢 [STORE] Güncel remote users listesi:', users.value.remote.map(u => ({
+      uid: u.uid,
+      name: u.name,
+      isScreenShare: u.isScreenShare,
+      isLocal: u.isLocal
+    })))
   }
 
   const removeRemoteUser = (uid) => {
@@ -209,10 +242,50 @@ export const useAgoraStore = defineStore('agora', () => {
   }
 
   const setRemoteTrack = (uid, type, track) => {
+    console.log('🟢 [STORE] setRemoteTrack çağrıldı:', {
+      uid,
+      type,
+      hasTrack: !!track,
+      trackId: track?.id,
+      trackEnabled: track?.enabled,
+      trackReadyState: track?.readyState
+    })
+    
     // Optimized: Single Map operation
     const userTracks = tracks.value.remote.get(uid) || {}
     userTracks[type] = track
     tracks.value.remote.set(uid, userTracks)
+    
+    // Eğer ekran paylaşımı track'i eklendiyse, kullanıcının isScreenShare özelliğini güncelle
+    if (type === 'screen' && track) {
+      const remoteUser = users.value.remote.find(u => u.uid === uid)
+      if (remoteUser) {
+        remoteUser.isScreenShare = true
+        remoteUser.hasVideo = true
+        console.log('🟢 [STORE] Uzak ekran paylaşımı kullanıcısı güncellendi:', uid, {
+          isScreenShare: true,
+          hasVideo: true
+        })
+      } else {
+        console.log('🟡 [STORE] Uzak ekran paylaşımı kullanıcısı bulunamadı, yeni kullanıcı oluşturuluyor:', uid)
+        // Eğer kullanıcı yoksa, yeni kullanıcı oluştur
+        const newUser = {
+          uid: uid,
+          name: `Ekran Paylaşımı ${uid}`,
+          isLocal: false,
+          hasVideo: true,
+          isScreenShare: true
+        }
+        users.value.remote.push(newUser)
+        console.log('🟢 [STORE] Yeni ekran paylaşımı kullanıcısı oluşturuldu:', uid)
+      }
+    }
+    
+    console.log('🟢 [STORE] Güncel remote tracks:', {
+      uid,
+      userTracks: Object.keys(userTracks),
+      totalRemoteTracks: tracks.value.remote.size
+    })
   }
 
   // Yeni eklenen fonksiyon: remote track'i kaldır
@@ -221,6 +294,17 @@ export const useAgoraStore = defineStore('agora', () => {
       const userTracks = tracks.value.remote.get(uid)
       if (userTracks && userTracks[type]) {
         delete userTracks[type]
+        
+        // Eğer ekran paylaşımı track'i kaldırıldıysa, kullanıcının isScreenShare özelliğini güncelle
+        if (type === 'screen') {
+          const remoteUser = users.value.remote.find(u => u.uid === uid)
+          if (remoteUser) {
+            remoteUser.isScreenShare = false
+            console.log('🟢 [STORE] Uzak ekran paylaşımı kullanıcısı güncellendi:', uid, {
+              isScreenShare: false
+            })
+          }
+        }
       }
       // Eğer kullanıcının hiç track'i kalmadıysa, tamamen kaldır
       if (Object.keys(userTracks).length === 0) {

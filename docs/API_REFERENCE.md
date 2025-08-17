@@ -1,889 +1,1004 @@
-# Vue 3 Agora Video Conference Module - API Referansı
+# API Reference - RS Agora Module
 
-> **Context Engineering** yaklaşımı ile hazırlanmış kapsamlı API dokümantasyonu
+Bu dokümantasyon, RS Agora Module'ün tüm public API'larını detaylandırır.
 
-## 📚 **API Genel Bakış**
+## 📦 Module Exports
 
-Bu dokümantasyon, Vue 3 Agora Video Conference Module'ünün tüm API'larını detaylandırır. Modül, **barrel export pattern** kullanarak tutarlı bir import/export yapısı sağlar.
-
-## 🔧 **Ana Modül Export**
-
+### Main Components
 ```javascript
-// src/modules/agora/index.js
 import { 
-  // Core Components
   AgoraConference,
-  AgoraVideo,
+  AgoraVideo 
+} from 'rs-agora-module'
+```
   
-  // Control Components
+### Control Components
+```javascript
+import { 
   AgoraControls,
-  RecordingControls,
+  RecordingControls 
+} from 'rs-agora-module'
+```
   
-  // Modal Components
+### Modal Components
+```javascript
+import { 
   LogModal,
   InfoModal,
-  SettingsModal,
+  SettingsModal 
+} from 'rs-agora-module'
+```
   
-  // Video Components
+### Video Components
+```javascript
+import { 
   VideoGrid,
   VideoItem,
-  StreamQualityBar,
-  
-  // Form Components
-  JoinForm,
-  
-  // Composables
+  StreamQualityBar 
+} from 'rs-agora-module'
+```
+
+### Form Components
+```javascript
+import { JoinForm } from 'rs-agora-module'
+```
+
+### Composables
+```javascript
+import { 
   useMeeting,
   useVideo,
   useScreenShare,
   useRecording,
   useStreamQuality,
   useTrackManagement,
-  useLogger,
+  useLogger
+} from 'rs-agora-module'
+```
   
-  // Services
+### Services
+```javascript
+import { 
   createToken,
   logger,
-  recordingService,
+  startRecording,
+  stopRecording
+} from 'rs-agora-module'
+```
   
-  // Store
+### Store
+```javascript
+import { 
   useAgoraStore,
+  useLayoutStore
+} from 'rs-agora-module'
+```
   
-  // Utils
-  emitter,
+### Constants
+```javascript
+import { 
   AGORA_EVENTS,
-  EventDeduplicator,
-  
-  // Constants
-  API_ENDPOINTS,
-  USER_ID_RANGES,
-  QUALITY_PRESETS
+  USER_FRIENDLY_ERRORS,
+  VIDEO_CONFIG,
+  SCREEN_SHARE_CONFIG
 } from 'rs-agora-module'
 ```
 
-## 🧩 **Component API'ları**
-
-### **1. AgoraConference.vue**
-
-Ana konferans bileşeni, tüm video konferans işlevselliğini koordine eder.
-
-#### **Props**
-```typescript
-interface AgoraConferenceProps {
-  // Kanal ayarları
-  channelName: string
-  autoJoin?: boolean
-  userUid?: string | number
-  
-  // Token ayarları
-  tokenEndpoint?: string | null
-  
-  // Debug ayarları
-  debugMode?: boolean
-}
+### Utils
+```javascript
+import { 
+  centralEmitter,
+  createSafeTimeout,
+  getUserInitials
+} from 'rs-agora-module'
 ```
 
-#### **Events**
-```typescript
-interface AgoraConferenceEvents {
-  // Bağlantı events
-  'joined': (data: { channelName: string, token: string, uid: string | number }) => void
-  'left': (data: { channelName: string }) => void
-  'error': (data: { error: Error, message: string }) => void
-  
-  // Kullanıcı events
-  'user-joined': (user: User) => void
-  'user-left': (user: User) => void
-  
-  // Bağlantı durumu
-  'connection-state-change': (state: ConnectionState) => void
-  
-  // Token events
-  'token-requested': (data: { channelName: string, uid: string | number }) => void
-  'token-received': (data: { token: string, channelName: string, uid: string | number }) => void
-}
+## 🎯 Core Components API
+
+### AgoraConference.vue
+
+Ana konferans bileşeni - tüm video konferans işlemlerini koordine eder.
+
+#### Props
+```javascript
+// Props yok - tüm state internal olarak yönetilir
 ```
 
-#### **Kullanım Örneği**
+#### Events
+```javascript
+// Events yok - tüm işlemler internal olarak yapılır
+```
+
+#### Slots
+```javascript
+// Slots yok - tüm içerik internal olarak render edilir
+```
+
+#### Usage
 ```vue
 <template>
-  <AgoraConference
-    :channelName="'team-meeting'"
-    :autoJoin="false"
-    :debugMode="true"
-    @joined="handleJoined"
-    @user-joined="handleUserJoined"
-    @error="handleError"
+  <AgoraConference />
+</template>
+
+<script setup>
+import { AgoraConference } from 'rs-agora-module'
+</script>
+```
+
+### AgoraVideo.vue
+
+Video görüntüleme ve layout yönetimi bileşeni.
+
+#### Props
+```javascript
+{
+  centralEmitter: { type: Object, default: () => ({}) },
+  localUser: { type: Object, default: () => ({}) },
+  remoteUsers: { type: Array, default: () => [] },
+  allUsers: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  remoteTracks: { type: Object, default: () => new Map() },
+  logUI: { type: Function, default: () => {} },
+  logError: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+{
+  'set-video-ref': (el, uid) => void,
+  'set-local-video-ref': (el) => void,
+  'set-local-screen-ref': (el) => void,
+  'video-click': (user) => void
+}
+```
+
+#### Usage
+```vue
+<template>
+  <AgoraVideo
+    :centralEmitter="centralEmitter"
+    :localUser="localUser"
+    :remoteUsers="remoteUsers"
+    :allUsers="allUsers"
+    :localTracks="localTracks"
+    :remoteTracks="remoteTracks"
+    :logUI="logUI"
+    :logError="logError"
+    @set-video-ref="handleSetVideoRef"
+    @video-click="handleVideoClick"
   />
 </template>
 ```
 
-### **2. AgoraVideo.vue**
+## 🎨 Layout Components API
 
-Video görüntüleme ve stream yönetimi bileşeni.
+### GridLayout.vue
 
-#### **Props**
-```typescript
-interface AgoraVideoProps {
-  // User data
-  localUser: User | null
-  remoteUsers: User[]
-  
-  // Video settings
-  videoQuality?: string
-  autoPlay?: boolean
-  
-  // UI settings
-  showControls?: boolean
-  showQualityBar?: boolean
+Tüm katılımcıları eşit boyutta gösteren grid layout.
+
+#### Props
+```javascript
+{
+  users: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  localVideoRef: { type: Object, default: null },
+  localScreenRef: { type: Object, default: null },
+  logUI: { type: Function, default: () => {} }
 }
 ```
 
-#### **Events**
-```typescript
-interface AgoraVideoEvents {
-  'video-click': (user: User) => void
-  'quality-change': (quality: string) => void
-  'fullscreen-toggle': (isFullscreen: boolean) => void
+#### Events
+```javascript
+{
+  'video-click': (user) => void,
+  'set-video-ref': (el, uid) => void,
+  'set-local-video-ref': (el) => void,
+  'set-local-screen-ref': (el) => void
 }
 ```
 
-### **3. AgoraControls.vue**
+### SpotlightLayout.vue
 
-Ana kontrol paneli bileşeni.
+Ana konuşmacıyı büyük gösteren, diğerlerini sidebar'da listeleyen layout.
 
-#### **Props**
-```typescript
-interface AgoraControlsProps {
+#### Props
+```javascript
+{
+  users: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  localVideoRef: { type: Object, default: null },
+  localScreenRef: { type: Object, default: null },
+  logUI: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+{
+  'video-click': (user) => void,
+  'set-video-ref': (el, uid) => void,
+  'set-local-video-ref': (el) => void,
+  'set-local-screen-ref': (el) => void
+}
+```
+
+#### Features
+- **Main Speaker**: Ana konuşmacı büyük gösterilir
+- **Sidebar**: Diğer katılımcılar sidebar'da listelenir
+- **Toggle**: Sidebar açılıp kapatılabilir
+- **Responsive**: Mobil ve desktop uyumlu
+
+### PresentationLayout.vue
+
+Sunum odaklı, ekran paylaşımı için optimize edilmiş layout.
+
+#### Props
+```javascript
+{
+  users: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  localVideoRef: { type: Object, default: null },
+  localScreenRef: { type: Object, default: null },
+  logUI: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+{
+  'video-click': (user) => void,
+  'set-video-ref': (el, uid) => void,
+  'set-local-video-ref': (el) => void,
+  'set-local-screen-ref': (el) => void
+}
+```
+
+#### Features
+- **Presentation Area**: Ana sunum alanı
+- **Floating Sidebar**: Katılımcılar floating sidebar'da
+- **Screen Share Focus**: Ekran paylaşımı öncelikli
+- **Collapsible**: Sidebar gizlenebilir
+
+## 🎛️ Control Components API
+
+### AgoraControls.vue
+
+Merkezi kontrol bileşeni - kamera, mikrofon, ekran paylaşımı kontrolleri.
+
+#### Props
+```javascript
+{
+  channelName: { type: String, default: 'test' },
+  isConnected: { type: Boolean, default: false },
+  isLocalVideoOff: { type: Boolean, default: false },
+  isLocalAudioMuted: { type: Boolean, default: false },
+  canUseCamera: { type: Boolean, default: true },
+  canUseMicrophone: { type: Boolean, default: true },
+  connectedUsersCount: { type: Number, default: 0 },
+  isJoining: { type: Boolean, default: false },
+  isLeaving: { type: Boolean, default: false },
+  onJoin: { type: Function, default: () => {} },
+  onLeave: { type: Function, default: () => {} },
+  onToggleCamera: { type: Function, default: () => {} },
+  onToggleMicrophone: { type: Function, default: () => {} },
+  isScreenSharing: { type: Boolean, default: false },
+  onToggleScreenShare: { type: Function, default: () => {} },
+  supportsScreenShare: { type: Boolean, default: true },
+  networkQualityLevel: { type: String, default: 'unknown' },
+  networkQualityColor: { type: String, default: '#666' },
+  networkBitrate: { type: Number, default: 0 },
+  networkFrameRate: { type: Number, default: 0 },
+  networkRtt: { type: Number, default: 0 },
+  networkPacketLoss: { type: Number, default: 0 },
+  logUI: { type: Function, default: () => {} },
+  logError: { type: Function, default: () => {} },
+  trackUserAction: { type: Function, default: () => {} },
+  onOpenSettings: { type: Function, default: () => {} },
+  onOpenLayoutModal: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+// Events yok - tüm işlemler prop callback'ler ile yapılır
+```
+
+#### Features
+- **Camera Toggle**: Kamera açma/kapama
+- **Microphone Toggle**: Mikrofon açma/kapama
+- **Screen Share**: Ekran paylaşımı başlatma/durdurma
+- **Layout Switch**: Layout değiştirme butonu
+- **Settings**: Video ayarları butonu
+- **Leave**: Kanaldan ayrılma butonu
+- **Network Quality**: Ağ kalitesi göstergesi
+
+### RecordingControls.vue
+
+Kayıt kontrol bileşeni.
+
+#### Props
+```javascript
+{
+  isRecording: { type: Boolean, default: false },
+  isPaused: { type: Boolean, default: false },
+  duration: { type: Number, default: 0 },
+  onStart: { type: Function, default: () => {} },
+  onStop: { type: Function, default: () => {} },
+  onPause: { type: Function, default: () => {} },
+  onResume: { type: Function, default: () => {} }
+}
+```
+
+## 📝 Form Components API
+
+### JoinForm.vue
+
+Kanal katılım formu.
+
+#### Props
+```javascript
+{
+  defaultChannel: { type: String, default: '' },
+  isJoining: { type: Boolean, default: false }
+}
+```
+
+#### Events
+```javascript
+{
+  'join': (channelName) => void
+}
+```
+
+#### Usage
+```vue
+<template>
+  <JoinForm
+    :defaultChannel="'test-channel'"
+    :isJoining="isJoining"
+    @join="handleJoin"
+  />
+</template>
+```
+
+## 🎥 Video Components API
+
+### VideoGrid.vue
+
+Video grid düzeni yönetimi.
+
+#### Props
+```javascript
+{
+  allUsers: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  localVideoRef: { type: Object, default: null },
+  localScreenRef: { type: Object, default: null },
+  logUI: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+{
+  'set-video-ref': (el, uid) => void,
+  'set-local-video-ref': (el) => void,
+  'set-local-screen-ref': (el) => void
+}
+```
+
+### VideoItem.vue
+
+Tek video öğesi render'ı.
+
+#### Props
+```javascript
+{
+  user: { type: Object, required: true },
+  hasVideo: { type: Boolean, default: false },
+  videoRef: { type: [Object, Function], default: null },
+  track: { type: Object, default: null },
+  isLocal: { type: Boolean, default: false },
+  isScreenShare: { type: Boolean, default: false },
+  isClickable: { type: Boolean, default: false },
+  logUI: { type: Function, default: () => {} }
+}
+```
+
+#### Events
+```javascript
+{
+  'video-click': (user) => void
+}
+```
+
+#### Features
+- **Video Rendering**: Video track render'ı
+- **Placeholder**: Video yokken placeholder gösterimi
+- **User Info**: Kullanıcı bilgileri
+- **Status Icons**: Mute, video off, screen share durumları
+- **Click Handling**: Tıklanabilir video desteği
+
+## 🔌 Composable API
+
+### useMeeting()
+
+Top-level koordinasyon composable'ı.
+
+#### Returns
+```javascript
+{
   // Connection state
-  isConnected: boolean
-  isJoining: boolean
-  isLeaving: boolean
+  isConnected: ComputedRef<boolean>,
+  isInitialized: ComputedRef<boolean>,
   
-  // Device state
-  isLocalVideoOff: boolean
-  isLocalAudioMuted: boolean
-  canUseCamera: boolean
-  canUseMicrophone: boolean
+  // Users
+  localUser: ComputedRef<Object>,
+  remoteUsers: ComputedRef<Array>,
+  allUsers: ComputedRef<Array>,
+  connectedUsersCount: ComputedRef<number>,
   
-  // Channel info
-  channelName: string
-  connectedUsersCount: number
-  
-  // Features
-  supportsScreenShare: boolean
-  isScreenSharing: boolean
-  
-  // Network quality
-  networkQualityLevel: string
-  networkQualityColor: string
-  networkBitrate: number
-  networkFrameRate: number
-  networkRtt: number
-  networkPacketLoss: number
-  
-  // Callbacks
-  onJoin: (channelName: string) => Promise<void>
-  onLeave: () => Promise<void>
-  onToggleCamera: (off: boolean) => Promise<void>
-  onToggleMicrophone: (muted: boolean) => Promise<void>
-  onToggleScreenShare: () => Promise<void>
-  
-  // Logging
-  logUI: (message: string, data?: any) => void
-  logError: (error: Error, context?: any) => void
-  trackUserAction: (action: string, data?: any) => void
-  
-  // Settings
-  onOpenSettings: () => void
-}
-```
-
-### **4. Modal Components**
-
-#### **InfoModal.vue**
-```typescript
-interface InfoModalProps {
-  isOpen: boolean
-  channelName: string
-  isConnected: boolean
-  connectedUsersCount: number
-  networkQualityLevel: string
-  networkQualityColor: string
-  networkBitrate: number
-  networkFrameRate: number
-  networkRtt: number
-  networkPacketLoss: number
-  canUseCamera: boolean
-  canUseMicrophone: boolean
-  isLocalVideoOff: boolean
-  isLocalAudioMuted: boolean
-  allUsers: User[]
-  isMobile: boolean
-}
-```
-
-#### **LogModal.vue**
-```typescript
-interface LogModalProps {
-  isOpen: boolean
-  logs: LogEntry[]
-  logStats: LogStats
-  getFilteredLogs: () => LogEntry[]
-  clearLogs: () => void
-  exportLogs: () => void
-}
-```
-
-#### **SettingsModal.vue**
-```typescript
-interface SettingsModalProps {
-  isOpen: boolean
-  currentCamera: string
-  currentMicrophone: string
-  currentSpeaker: string
-  currentVideoQuality: string
-  currentAudioQuality: string
-  isMobile: boolean
-}
-```
-
-## 🔧 **Composable API'ları**
-
-### **1. useMeeting()**
-
-Ana meeting state yönetimi composable'ı.
-
-#### **Return Values**
-```typescript
-interface UseMeetingReturn {
-  // Connection state
-  isConnected: Ref<boolean>
-  isJoining: Ref<boolean>
-  isLeaving: Ref<boolean>
-  
-  // Channel info
-  channelName: Ref<string>
-  localUser: Ref<User | null>
-  remoteUsers: Ref<User[]>
-  allUsers: Ref<User[]>
-  connectedUsersCount: Ref<number>
-  
-  // Device state
-  isLocalVideoOff: Ref<boolean>
-  isLocalAudioMuted: Ref<boolean>
-  canUseCamera: Ref<boolean>
-  canUseMicrophone: Ref<boolean>
+  // Controls
+  isLocalVideoOff: ComputedRef<boolean>,
+  isLocalAudioMuted: ComputedRef<boolean>,
+  isScreenSharing: ComputedRef<boolean>,
   
   // Tracks
-  localTracks: Ref<LocalTracks>
-  remoteTracks: Ref<RemoteTracks>
+  localTracks: ComputedRef<Object>,
+  remoteTracks: ComputedRef<Map>,
   
-  // Screen sharing
-  isScreenSharing: Ref<boolean>
-  supportsScreenShare: Ref<boolean>
+  // Actions
+  joinChannel: (channelName, appId) => Promise<void>,
+  leaveChannel: () => Promise<void>,
+  toggleCamera: () => Promise<void>,
+  toggleMicrophone: () => Promise<void>,
+  toggleScreenShare: () => Promise<void>,
   
-  // Methods
-  joinChannel: (params: JoinParams) => Promise<void>
-  leaveChannel: () => Promise<void>
-  toggleCamera: (off: boolean) => Promise<void>
-  toggleMicrophone: (muted: boolean) => Promise<void>
-  toggleScreenShare: () => Promise<void>
+  // Quality
+  networkQuality: ComputedRef<Object>,
+  bitrate: ComputedRef<number>,
+  frameRate: ComputedRef<number>,
+  packetLoss: ComputedRef<number>,
+  rtt: ComputedRef<number>,
+  qualityLevel: ComputedRef<string>,
+  qualityColor: ComputedRef<string>,
+  
+  // Utilities
+  supportsScreenShare: ComputedRef<boolean>,
+  canUseCamera: ComputedRef<boolean>,
+  canUseMicrophone: ComputedRef<boolean>,
   
   // Cleanup
   cleanup: () => void
-  clean: () => void
 }
 ```
 
-#### **Kullanım Örneği**
+#### Usage
 ```javascript
 import { useMeeting } from 'rs-agora-module'
 
 const {
-  joinChannel,
   isConnected,
   localUser,
   remoteUsers,
+  joinChannel,
   toggleCamera,
   toggleMicrophone
 } = useMeeting()
 
-// Channel join
-const handleJoin = async () => {
-  try {
-    await joinChannel({
-      channelName: 'test-channel',
-      token: 'your-token',
-      uid: 'user-123'
-    })
-  } catch (error) {
-    console.error('Join error:', error)
-  }
+// Join channel
+await joinChannel('test-channel', 'your-app-id')
+
+// Toggle controls
+await toggleCamera()
+await toggleMicrophone()
+```
+
+### useVideo()
+
+Video client yönetimi composable'ı.
+
+#### Returns
+```javascript
+{
+  // State
+  isJoining: Ref<boolean>,
+  isLeaving: Ref<boolean>,
+  
+  // Actions
+  initializeClient: (appId) => Promise<void>,
+  joinChannel: (channelName, appId, uid) => Promise<void>,
+  leaveChannel: () => Promise<void>,
+  toggleCamera: () => Promise<void>,
+  toggleMicrophone: () => Promise<void>,
+  
+  // Utilities
+  generateVideoUID: () => number,
+  checkDeviceStatus: () => Promise<Object>,
+  
+  // Cleanup
+  cleanup: () => void
 }
 ```
 
-### **2. useVideo()**
+### useScreenShare()
 
-Video stream yönetimi composable'ı.
+Ekran paylaşımı yönetimi composable'ı.
 
-#### **Return Values**
-```typescript
-interface UseVideoReturn {
-  // Video state
-  isVideoEnabled: Ref<boolean>
-  isAudioEnabled: Ref<boolean>
-  videoDevices: Ref<MediaDeviceInfo[]>
-  audioDevices: Ref<MediaDeviceInfo[]>
+#### Returns
+```javascript
+{
+  // State
+  isJoining: Ref<boolean>,
+  isLeaving: Ref<boolean>,
   
-  // Methods
-  enableVideo: () => Promise<void>
-  disableVideo: () => Promise<void>
-  enableAudio: () => Promise<void>
-  disableAudio: () => Promise<void>
-  switchCamera: (deviceId: string) => Promise<void>
-  switchMicrophone: (deviceId: string) => Promise<void>
+  // Actions
+  joinScreenChannel: (channelName, appId, uid) => Promise<void>,
+  leaveScreenChannel: () => Promise<void>,
+  startScreenShare: () => Promise<void>,
+  stopScreenShare: () => Promise<void>,
+  toggleScreenShare: () => Promise<void>,
   
-  // Device management
-  getDevices: () => Promise<void>
-  refreshDevices: () => Promise<void>
+  // Utilities
+  generateScreenUID: () => number,
+  supportsScreenShare: ComputedRef<boolean>,
+  
+  // Cleanup
+  cleanup: () => void
 }
 ```
 
-### **3. useScreenShare()**
+### useStreamQuality()
 
-Ekran paylaşımı composable'ı.
+Stream kalite izleme composable'ı.
 
-#### **Return Values**
-```typescript
-interface UseScreenShareReturn {
-  // Screen share state
-  isScreenSharing: Ref<boolean>
-  screenTrack: Ref<LocalTrack | null>
-  screenDevices: Ref<MediaDeviceInfo[]>
-  
-  // Methods
-  startScreenShare: (options?: ScreenShareOptions) => Promise<void>
-  stopScreenShare: () => Promise<void>
-  switchScreenSource: (sourceId: string) => Promise<void>
-  
-  // Quality settings
-  setScreenQuality: (quality: string) => Promise<void>
-  getScreenQuality: () => string
-}
-```
-
-### **4. useRecording()**
-
-Cloud recording yönetimi composable'ı.
-
-#### **Return Values**
-```typescript
-interface UseRecordingReturn {
-  // Recording state
-  isRecording: Ref<boolean>
-  recordingStatus: Ref<RecordingStatus | null>
-  recordingConfig: Ref<RecordingConfig>
-  
-  // Methods
-  startRecording: (config?: RecordingConfig) => Promise<void>
-  stopRecording: () => Promise<void>
-  pauseRecording: () => Promise<void>
-  resumeRecording: () => Promise<void>
-  
-  // Status
-  getRecordingStatus: () => Promise<RecordingStatus>
-  getRecordingFiles: () => Promise<RecordingFile[]>
-}
-```
-
-### **5. useStreamQuality()**
-
-Stream kalite monitoring composable'ı.
-
-#### **Return Values**
-```typescript
-interface UseStreamQualityReturn {
+#### Returns
+```javascript
+{
   // Quality metrics
-  networkQuality: Ref<string>
-  bitrate: Ref<number>
-  frameRate: Ref<number>
-  packetLoss: Ref<number>
-  rtt: Ref<number>
+  networkQuality: Ref<Object>,
+  bitrate: Ref<number>,
+  frameRate: Ref<number>,
+  packetLoss: Ref<number>,
+  rtt: Ref<number>,
+  qualityLevel: ComputedRef<string>,
+  qualityColor: ComputedRef<string>,
+  qualityPercentage: ComputedRef<number>,
   
-  // Quality color
-  qualityColor: Ref<string>
-  qualityLevel: Ref<string>
+  // State
+  isMonitoring: Ref<boolean>,
   
-  // Methods
-  adjustQuality: (quality: string) => Promise<void>
-  getQualityStats: () => QualityStats
-  startMonitoring: () => void
-  stopMonitoring: () => void
+  // Actions
+  startMonitoring: (client) => void,
+  stopMonitoring: () => void,
+  
+  // Utilities
+  optimizeScreenShareQuality: (client, quality) => void
 }
 ```
 
-### **6. useLogger()**
+### useTrackManagement()
+
+Track yönetimi composable'ı.
+
+#### Returns
+```javascript
+{
+  // Track validation
+  isTrackValid: (track) => boolean,
+  
+  // Track creation
+  createAudioTrack: (options) => Promise<AudioTrack>,
+  createVideoTrack: (options) => Promise<VideoTrack>,
+  createScreenTrack: (options) => Promise<VideoTrack>,
+  
+  // Client management
+  createVideoClient: () => { success: boolean, client: Client, error: Error },
+  createScreenClient: () => { success: boolean, client: Client, error: Error },
+  
+  // Registration
+  registerClient: (client, type, eventHandler) => void,
+  unregisterClient: (client, type) => void,
+  
+  // Cleanup
+  cleanupTrack: (track) => void,
+  cleanupCentralEvents: () => void
+}
+```
+
+### useLogger()
 
 Logging sistemi composable'ı.
 
-#### **Return Values**
-```typescript
-interface UseLoggerReturn {
-  // Log methods
-  logUI: (message: string, data?: any) => void
-  logError: (error: Error, context?: any) => void
-  logWarning: (message: string, data?: any) => void
-  logInfo: (message: string, data?: any) => void
-  logDebug: (message: string, data?: any) => void
+#### Returns
+```javascript
+{
+  // Log functions
+  logUI: (message, data) => void,
+  logError: (error, context) => void,
+  logWarn: (message, data) => void,
+  logInfo: (message, data) => void,
+  logDebug: (message, data) => void,
+  logVideo: (message, data) => void,
+  logScreen: (message, data) => void,
+  logQuality: (message, data) => void,
   
-  // User tracking
-  trackUserAction: (action: string, data?: any) => void
+  // Performance tracking
+  trackPerformance: (name, fn) => any,
+  trackUserAction: (action, details) => void,
   
   // Log management
-  logs: Ref<LogEntry[]>
-  logStats: Ref<LogStats>
-  clearLogs: () => void
+  logs: Ref<Array>,
+  logStats: ComputedRef<Object>,
+  getFilteredLogs: (filter) => Array,
+  clearLogs: () => void,
   exportLogs: () => void
-  getFilteredLogs: (filters?: LogFilters) => LogEntry[]
 }
 ```
 
-## 🗄️ **Store API'ları**
+## 🗄️ Store API
 
-### **useAgoraStore()**
+### useAgoraStore()
 
-Pinia store for Agora state management.
+Ana Agora store - video ve ekran paylaşımı state'ini yönetir.
 
-#### **State**
-```typescript
-interface AgoraStoreState {
-  // Meeting state
-  isConnected: boolean
-  channelName: string
-  localUser: User | null
-  remoteUsers: User[]
+#### State
+```javascript
+{
+  // Clients
+  clients: {
+    video: { client, isConnected, isInitialized },
+    screen: { client, isConnected, isInitialized }
+  },
   
-  // Device state
-  selectedCamera: string
-  selectedMicrophone: string
-  selectedSpeaker: string
+  // Users
+  users: {
+    local: { video, screen },
+    remote: []
+  },
   
-  // Quality state
-  videoQuality: string
-  audioQuality: string
+  // Tracks
+  tracks: {
+    local: { video: { audio, video }, screen: { video } },
+    remote: Map<UID, { audio, video, screen }>
+  },
   
-  // Recording state
-  isRecording: boolean
-  recordingStatus: RecordingStatus | null
+  // Controls
+  controls: {
+    isLocalVideoOff: false,
+    isLocalAudioMuted: false,
+    isScreenSharing: false
+  },
   
-  // UI state
-  showSettings: boolean
-  showLogs: boolean
-  showInfo: boolean
-}
-```
-
-#### **Actions**
-```typescript
-interface AgoraStoreActions {
-  // Meeting actions
-  setConnectionState: (state: boolean) => void
-  setChannelName: (name: string) => void
-  setLocalUser: (user: User) => void
-  addRemoteUser: (user: User) => void
-  removeRemoteUser: (uid: string | number) => void
+  // Session
+  session: {
+    videoChannelName: null,
+    appId: null
+  },
   
-  // Device actions
-  setSelectedCamera: (cameraId: string) => void
-  setSelectedMicrophone: (micId: string) => void
-  setSelectedSpeaker: (speakerId: string) => void
+  // Devices
+  devices: {
+    hasCamera: false,
+    hasMicrophone: false,
+    cameraPermission: 'unknown',
+    microphonePermission: 'unknown'
+  }
+}
+```
+
+#### Actions
+```javascript
+{
+  // Client management
+  setClient: (type, client) => void,
+  setClientConnected: (type, connected) => void,
+  setClientInitialized: (type, initialized) => void,
   
-  // Quality actions
-  setVideoQuality: (quality: string) => void
-  setAudioQuality: (quality: string) => void
+  // User management
+  setLocalUser: (type, user) => void,
+  addRemoteUser: (user) => void,
+  removeRemoteUser: (uid) => void,
+  updateRemoteUser: (uid, updates) => void,
   
-  // Recording actions
-  setRecordingState: (state: boolean) => void
-  setRecordingStatus: (status: RecordingStatus) => void
+  // Track management
+  setLocalTrack: (type, trackType, track) => void,
+  setRemoteTrack: (uid, type, track) => void,
+  removeRemoteTrack: (uid, type) => void,
   
-  // UI actions
-  toggleSettings: () => void
-  toggleLogs: () => void
-  toggleInfo: () => void
-}
-```
-
-#### **Getters**
-```typescript
-interface AgoraStoreGetters {
-  // Computed values
-  totalUsers: number
-  hasLocalUser: boolean
-  hasRemoteUsers: boolean
-  isDeviceReady: boolean
+  // Control management
+  setLocalVideoOff: (off) => void,
+  setLocalAudioMuted: (muted) => void,
+  setScreenSharing: (sharing) => void,
   
-  // Filtered users
-  videoUsers: User[]
-  audioUsers: User[]
-  screenShareUsers: User[]
+  // Session management
+  setVideoChannelName: (name) => void,
+  setAppId: (appId) => void,
+  
+  // Device management
+  setDeviceStatus: (device, status) => void,
+  setDevicePermission: (device, permission) => void,
+  
+  // Cleanup
+  reset: () => void
 }
 ```
 
-## 🔌 **Event System API'ları**
-
-### **Central Event Emitter**
-
-```typescript
-import { emitter, AGORA_EVENTS } from 'rs-agora-module'
-
-// Event types
-const AGORA_EVENTS = {
-  USER_JOINED: 'user-joined',
-  USER_LEFT: 'user-left',
-  STREAM_PUBLISHED: 'stream-published',
-  STREAM_UNPUBLISHED: 'stream-unpublished',
-  NETWORK_QUALITY: 'network-quality',
-  RECORDING_STATUS: 'recording-status',
-  DEVICE_CHANGED: 'device-changed',
-  QUALITY_CHANGED: 'quality-changed'
-}
-
-// Event listening
-emitter.on(AGORA_EVENTS.USER_JOINED, (user) => {
-  console.log('User joined:', user)
-})
-
-// Event emitting
-emitter.emit(AGORA_EVENTS.CUSTOM_EVENT, { data: 'custom-data' })
-
-// Event removal
-emitter.off(AGORA_EVENTS.USER_JOINED)
-```
-
-### **Event Deduplication**
-
-```typescript
-import { EventDeduplicator } from 'rs-agora-module'
-
-const deduplicator = new EventDeduplicator(1000) // 1 second timeout
-
-if (deduplicator.shouldEmit('user-action', { action: 'click' })) {
-  // Emit event
-  emitter.emit('user-action', { action: 'click' })
+#### Getters
+```javascript
+{
+  // Computed properties
+  allUsers: ComputedRef<Array>,
+  connectedUsersCount: ComputedRef<number>,
+  hasLocalVideo: ComputedRef<boolean>,
+  hasLocalAudio: ComputedRef<boolean>,
+  hasLocalScreenShare: ComputedRef<boolean>,
+  videoChannelName: ComputedRef<string>,
+  isLocalVideoOff: ComputedRef<boolean>,
+  isLocalAudioMuted: ComputedRef<boolean>,
+  isScreenSharing: ComputedRef<boolean>
 }
 ```
 
-## 🎨 **UI Component API'ları**
+### useLayoutStore()
 
-### **VideoGrid.vue**
+Layout yönetimi store'u.
 
-```typescript
-interface VideoGridProps {
-  allUsers: User[]
-  localTracks: LocalTracks
-  localVideoRef: Ref<HTMLElement | null>
-  localScreenRef: Ref<HTMLElement | null>
-  logUI: (message: string, data?: any) => void
-}
-
-interface VideoGridEmits {
-  'set-video-ref': (element: HTMLElement, uid: string | number) => void
-  'set-local-video-ref': (element: HTMLElement) => void
-  'set-local-screen-ref': (element: HTMLElement) => void
+#### State
+```javascript
+{
+  currentLayout: 'grid' | 'spotlight' | 'presentation',
+  currentLayoutInfo: {
+    name: string,
+    description: string,
+    icon: string
+  }
 }
 ```
 
-### **VideoItem.vue**
-
-```typescript
-interface VideoItemProps {
-  user: User
-  isLocal: boolean
-  hasVideo: boolean
-  hasAudio: boolean
-  isScreenShare: boolean
-  showControls: boolean
-  logUI: (message: string, data?: any) => void
-}
-
-interface VideoItemEmits {
-  'video-click': (user: User) => void
-  'fullscreen-toggle': (isFullscreen: boolean) => void
+#### Actions
+```javascript
+{
+  setLayout: (layout) => void,
+  setLayoutInfo: (info) => void
 }
 ```
 
-### **StreamQualityBar.vue**
+## 🔧 Services API
 
-```typescript
-interface StreamQualityBarProps {
-  quality: string
-  bitrate: number
-  frameRate: number
-  packetLoss: number
-  rtt: number
-  showDetails: boolean
-}
-```
+### Token Service
 
-## 📊 **Service API'ları**
+#### createToken(channelName, uid)
+Agora token oluşturur.
 
-### **createToken()**
-
-Agora token oluşturma servisi.
-
-```typescript
-interface TokenResult {
-  token: string
-  app_id: string
-  channel_name: string
-  uid: string | number
-  expire_time: number
-}
-
-const createToken = async (
-  channelName: string,
-  uid: string | number,
-  customEndpoint?: string
-): Promise<TokenResult>
-```
-
-#### **Kullanım Örneği**
 ```javascript
 import { createToken } from 'rs-agora-module'
 
-try {
-  const tokenResult = await createToken('test-channel', 'user-123')
-  console.log('Token created:', tokenResult.token)
-} catch (error) {
-  console.error('Token creation failed:', error)
-}
+const token = await createToken('test-channel', 12345)
 ```
 
-### **logger Service**
+### Logger Service
 
-```typescript
-interface LoggerService {
-  log: (level: LogLevel, message: string, data?: any) => void
-  info: (message: string, data?: any) => void
-  warn: (message: string, data?: any) => void
-  error: (message: string, data?: any) => void
-  debug: (message: string, data?: any) => void
-}
+#### logger.info(category, message, data)
+Info level log kaydı.
+
+```javascript
+import { logger } from 'rs-agora-module'
+
+logger.info('VIDEO', 'Video track created', { trackId: '123' })
 ```
 
-### **recordingService**
+#### logger.error(category, message, data)
+Error level log kaydı.
 
-```typescript
-interface RecordingService {
-  start: (config: RecordingConfig) => Promise<void>
-  stop: () => Promise<void>
-  pause: () => Promise<void>
-  resume: () => Promise<void>
-  getStatus: () => Promise<RecordingStatus>
-  getFiles: () => Promise<RecordingFile[]>
-}
+```javascript
+logger.error('AGORA', 'Failed to join channel', { error: 'Network error' })
 ```
 
-## 🔧 **Utility API'ları**
+#### logger.trackPerformance(name, fn)
+Performance tracking.
 
-### **Common Utils**
-
-```typescript
-import { 
-  formatTime,
-  generateUID,
-  validateChannelName,
-  sanitizeInput,
-  debounce,
-  throttle
-} from 'rs-agora-module'
-
-// Time formatting
-const formattedTime = formatTime(Date.now())
-
-// UID generation
-const uid = generateUID()
-
-// Input validation
-const isValidChannel = validateChannelName('test-channel')
-
-// Input sanitization
-const sanitizedInput = sanitizeInput('<script>alert("xss")</script>')
-
-// Debounced function
-const debouncedSearch = debounce(searchFunction, 300)
-
-// Throttled function
-const throttledScroll = throttle(scrollHandler, 100)
+```javascript
+const result = await logger.trackPerformance('joinChannel', () => 
+  client.join(token, channelName, uid)
+)
 ```
 
-### **Types**
+#### logger.trackUserAction(action, details)
+Kullanıcı aksiyon tracking'i.
 
-```typescript
-import { 
-  User,
-  LocalTrack,
-  RemoteTrack,
-  ConnectionState,
-  RecordingStatus,
-  QualityLevel,
-  LogLevel
-} from 'rs-agora-module'
-
-// Type definitions
-interface User {
-  uid: string | number
-  isLocal: boolean
-  hasVideo: boolean
-  hasAudio: boolean
-  isScreenShare: boolean
-  isVideoOff: boolean
-  isAudioMuted: boolean
-}
-
-interface LocalTrack {
-  video?: MediaStreamTrack
-  audio?: MediaStreamTrack
-  screen?: MediaStreamTrack
-}
+```javascript
+logger.trackUserAction('camera_toggle', { from: 'off', to: 'on' })
 ```
 
-## 📱 **Responsive Design API'ları**
+## 📊 Constants API
 
-### **CSS Variables**
+### AGORA_EVENTS
+Event type sabitleri.
 
-```css
-.agora-component {
-  /* Primary colors */
-  --agora-primary-color: #667eea;
-  --agora-secondary-color: #764ba2;
-  
-  /* Background colors */
-  --agora-background: #1a1a2e;
-  --agora-surface: #16213e;
-  --agora-overlay: #0f3460;
-  
-  /* Border radius */
-  --agora-border-radius: 10px;
-  --agora-border-radius-large: 20px;
-  
-  /* Spacing */
-  --agora-spacing-xs: 4px;
-  --agora-spacing-sm: 8px;
-  --agora-spacing-md: 16px;
-  --agora-spacing-lg: 24px;
-  --agora-spacing-xl: 32px;
-  
-  /* Breakpoints */
-  --agora-mobile: 768px;
-  --agora-tablet: 1024px;
-  --agora-desktop: 1200px;
-}
+```javascript
+import { AGORA_EVENTS } from 'rs-agora-module'
+
+// Event types
+AGORA_EVENTS.CLIENT_INITIALIZED
+AGORA_EVENTS.CHANNEL_JOINED
+AGORA_EVENTS.USER_JOINED
+AGORA_EVENTS.REMOTE_SCREEN_READY
+AGORA_EVENTS.CAMERA_TOGGLED
+AGORA_EVENTS.MICROPHONE_TOGGLED
+AGORA_EVENTS.SCREEN_SHARE_STARTED
+AGORA_EVENTS.SCREEN_SHARE_STOPPED
 ```
 
-### **Media Queries**
+### USER_FRIENDLY_ERRORS
+Kullanıcı dostu hata mesajları.
 
-```scss
-.agora-component {
-  // Mobile first approach
-  padding: var(--agora-spacing-sm);
-  
-  @media (min-width: var(--agora-mobile)) {
-    padding: var(--agora-spacing-md);
-  }
-  
-  @media (min-width: var(--agora-tablet)) {
-    padding: var(--agora-spacing-lg);
-  }
-  
-  @media (min-width: var(--agora-desktop)) {
-    padding: var(--agora-spacing-xl);
-  }
-}
+```javascript
+import { USER_FRIENDLY_ERRORS, getErrorMessage } from 'rs-agora-module'
+
+// Direct access
+USER_FRIENDLY_ERRORS.CAMERA_PERMISSION_DENIED
+
+// Helper function
+const message = getErrorMessage(error)
 ```
 
-## 🧪 **Testing API'ları**
+### VIDEO_CONFIG
+Video konfigürasyon sabitleri.
 
-### **Component Testing**
+```javascript
+import { VIDEO_CONFIG } from 'rs-agora-module'
 
-```typescript
-import { mount } from '@vue/test-utils'
-import { AgoraConference } from 'rs-agora-module'
+// Video settings
+VIDEO_CONFIG.encoderConfig    // '720p_1' | '1080p_1'
+VIDEO_CONFIG.facingMode       // 'user' | 'environment'
+VIDEO_CONFIG.bitrateMin       // 1000 | 2000
+VIDEO_CONFIG.bitrateMax       // 2000 | 4000
+VIDEO_CONFIG.frameRate        // 24 | 30
+```
 
-describe('AgoraConference', () => {
-  it('renders join form when not connected', () => {
-    const wrapper = mount(AgoraConference, {
-      props: {
-        channelName: 'test-channel',
-        autoJoin: false
-      }
-    })
-    
-    expect(wrapper.find('.join-form').exists()).toBe(true)
-  })
+### SCREEN_SHARE_CONFIG
+Ekran paylaşımı konfigürasyon sabitleri.
+
+```javascript
+import { SCREEN_SHARE_CONFIG } from 'rs-agora-module'
+
+// Quality presets
+SCREEN_SHARE_CONFIG.FAST_START    // Hızlı başlatma
+SCREEN_SHARE_CONFIG.LOW_QUALITY   // Düşük kalite
+SCREEN_SHARE_CONFIG.HIGH_QUALITY  // Yüksek kalite
+```
+
+## 🛠️ Utils API
+
+### centralEmitter
+Merkezi event emitter.
+
+```javascript
+import { centralEmitter, AGORA_EVENTS } from 'rs-agora-module'
+
+// Event emit
+centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { uid: 123 })
+
+// Event listen
+centralEmitter.on(AGORA_EVENTS.USER_JOINED, (data) => {
+  console.log('User joined:', data.uid)
+})
+
+// Event off
+centralEmitter.off(AGORA_EVENTS.USER_JOINED)
+```
+
+### createSafeTimeout
+Güvenli timeout oluşturma.
+
+```javascript
+import { createSafeTimeout } from 'rs-agora-module'
+
+const timeoutId = createSafeTimeout(() => {
+  console.log('Timeout completed')
+}, 5000)
+
+// Timeout otomatik olarak cleanup edilir
+```
+
+### getUserInitials
+Kullanıcı adından baş harfler oluşturma.
+
+```javascript
+import { getUserInitials } from 'rs-agora-module'
+
+const initials = getUserInitials('John Doe') // 'JD'
+const initials2 = getUserInitials('Ahmet Yılmaz') // 'AY'
+```
+
+## 🔄 Event System
+
+### Event Types
+Tüm event type'ları `AGORA_EVENTS` constant'ında tanımlanmıştır.
+
+### Event Handling
+Event'ler `centralEmitter` üzerinden yönetilir.
+
+```javascript
+import { centralEmitter, AGORA_EVENTS } from 'rs-agora-module'
+
+// Listen to events
+centralEmitter.on(AGORA_EVENTS.USER_JOINED, (data) => {
+  console.log('User joined:', data.uid)
+})
+
+centralEmitter.on(AGORA_EVENTS.REMOTE_SCREEN_READY, (data) => {
+  console.log('Screen share ready:', data.uid)
+})
+
+// Emit events
+centralEmitter.emit(AGORA_EVENTS.CAMERA_TOGGLED, { 
+  from: 'off', 
+  to: 'on' 
 })
 ```
 
-### **Composable Testing**
+## 🎯 Error Handling
 
-```typescript
-import { useMeeting } from 'rs-agora-module'
-import { renderComposable } from '@vue/test-utils'
+### Error Types
+Hata türleri `USER_FRIENDLY_ERRORS` constant'ında tanımlanmıştır.
 
-describe('useMeeting', () => {
-  it('initializes with default state', () => {
-    const { result } = renderComposable(() => useMeeting())
-    
-    expect(result.isConnected.value).toBe(false)
-    expect(result.channelName.value).toBe('')
-  })
+### Error Recovery
+Otomatik hata kurtarma mekanizmaları:
+
+```javascript
+// Retry mechanism
+const retryOperation = async (operation, maxRetries = 3) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation()
+    } catch (error) {
+      if (i === maxRetries - 1) throw error
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+    }
+  }
+}
+```
+
+## 🚀 Performance
+
+### Memory Management
+Memory leak önleme:
+
+```javascript
+// Safe timeout creation
+const activeTimeouts = ref(new Set())
+
+const createSafeTimeout = (callback, delay) => {
+  const timeoutId = setTimeout(() => {
+    activeTimeouts.value.delete(timeoutId)
+    callback()
+  }, delay)
+  activeTimeouts.value.add(timeoutId)
+  return timeoutId
+}
+
+// Cleanup on unmount
+onUnmounted(() => {
+  activeTimeouts.value.forEach(id => clearTimeout(id))
+  activeTimeouts.value.clear()
 })
 ```
 
-## 🔒 **Security API'ları**
+### Track Cleanup
+Otomatik track temizleme:
 
-### **Input Validation**
-
-```typescript
-import { 
-  validateChannelName,
-  validateUID,
-  sanitizeInput,
-  escapeHtml
-} from 'rs-agora-module'
-
-// Channel name validation
-const isValidChannel = validateChannelName('test-channel-123')
-
-// UID validation
-const isValidUID = validateUID('user-123')
-
-// Input sanitization
-const sanitizedInput = sanitizeInput(userInput)
-
-// HTML escaping
-const escapedHtml = escapeHtml('<script>alert("xss")</script>')
-```
-
-### **Permission Handling**
-
-```typescript
-import { checkDevicePermissions } from 'rs-agora-module'
-
-const permissions = await checkDevicePermissions({
-  video: true,
-  audio: true
-})
-
-if (permissions.video && permissions.audio) {
-  // Proceed with video conference
-} else {
-  // Handle permission denial
+```javascript
+const cleanupTrack = (track) => {
+  if (track && track.stop) {
+    track.stop()
+    track.close()
+  }
 }
 ```
 
 ---
 
-> **Not**: Bu API referansı, projenin **Context Engineering** yaklaşımına uygun olarak hazırlanmıştır. Her API endpoint'i, performans ve maintainability göz önünde bulundurularak tasarlanmıştır.
+Bu API referansı, RS Agora Module'ün tüm public API'larını kapsar. Detaylı kullanım örnekleri için [examples/](../examples/) klasörüne bakın.
 

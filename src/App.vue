@@ -33,7 +33,7 @@ const tokenEndpoint = ref(null) // null = varsayılan API endpoint
 const userUid = ref(null) // null = random UID
 
 // Debug ayarları
-const debugMode = ref(true) // true = günlükleri göster, false = gizle
+const debugMode = ref(false) // true = günlükleri göster, false = gizle
 
 // Event handlers
 const handleJoined = (data) => {

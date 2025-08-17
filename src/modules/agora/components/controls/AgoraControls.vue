@@ -1,7 +1,17 @@
 <template>
   <div class="agora-controls">
-    <!-- Settings and Log Buttons (top center) -->
+    <!-- Top Buttons (top center) -->
     <div v-if="isConnected" class="top-buttons">
+      <!-- Layout Button -->
+      <button 
+        @click="props.onOpenLayoutModal"
+        class="layout-button-top"
+        title="Görünüm Seçenekleri"
+      >
+        <span class="icon">🎨</span>
+        <span class="label"></span>
+      </button>
+      
       <!-- Settings Button -->
       <button 
         @click="props.onOpenSettings"
@@ -90,6 +100,7 @@ const props = defineProps({
   onToggleScreenShare: { type: Function, default: () => {} },
   supportsScreenShare: { type: Boolean, default: false },
   settingsOpen: { type: Boolean, default: false },
+  onOpenLayoutModal: { type: Function, default: () => {} },
   // Network Quality Props
   networkQualityLevel: { type: String, default: 'Unknown' },
   networkQualityColor: { type: String, default: '#6b7280' },
@@ -459,6 +470,26 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   z-index: 10;
 }
 
+/* Layout button (top center) */
+.layout-button-top {
+  background: rgba(34, 34, 34, 0.9);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-right: 8px;
+}
+
 /* Settings button (top center) */
 .settings-button-top {
   background: rgba(34, 34, 34, 0.9);
@@ -496,6 +527,12 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.1);
 }
+.layout-button-top:hover {
+  background: rgba(60, 60, 60, 0.95);
+  box-shadow: 0 4px 12px rgba(255,193,7,0.25), 0 0 0 4px #ffc107aa;
+  transform: scale(1.1);
+}
+
 .settings-button-top:hover,
 .settings-button-top.active {
   background: rgba(60, 60, 60, 0.95);
