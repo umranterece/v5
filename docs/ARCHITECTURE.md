@@ -1,475 +1,543 @@
-# Architecture - RS Agora Module
+# 🏗️ Mimari Dokümantasyonu
 
-Bu dokümantasyon, RS Agora Module'ün mimari yapısını ve tasarım kararlarını detaylandırır.
+Modern video konferans uygulamasının mimari yapısı, grid layout sistemi ve teknik kararlar. Vue 3 Composition API, Agora SDK ve responsive tasarım prensipleri ile geliştirilmiştir.
 
-## 🏗️ Genel Mimari
+## 🎯 **Mimari Genel Bakış**
 
-### Modüler Yapı
-Proje, **barrel export pattern** kullanarak tutarlı bir modül yapısı sunar:
+### **Teknoloji Stack**
+- **Frontend Framework**: Vue 3 (Composition API)
+- **State Management**: Pinia
+- **Real-time Communication**: Agora RTC SDK
+- **Build Tool**: Vite
+- **Styling**: CSS Grid + CSS Custom Properties
+- **Type Safety**: JavaScript (TypeScript hazırlığı)
+
+### **Mimari Prensipler**
+- **Modular Design**: Her özellik ayrı modülde
+- **Composition over Inheritance**: Vue 3 Composition API
+- **Responsive First**: Mobile-first responsive tasarım
+- **Performance Optimized**: Minimal re-render ve efficient updates
+- **Accessibility**: ARIA labels ve keyboard navigation
+
+## 🏗️ **Proje Yapısı**
 
 ```
-src/modules/agora/
-├── index.js              # Ana export noktası
-├── components/           # Vue bileşenleri
-├── composables/          # Vue composables
-├── constants.js          # Sabitler ve konfigürasyon
-├── services/             # Servis katmanı
-├── store/                # Pinia store'ları
-└── utils/                # Yardımcı fonksiyonlar
+src/
+├── modules/
+│   └── agora/                    # Agora video konferans modülü
+│       ├── components/           # Vue bileşenleri
+│       │   ├── layouts/         # Layout bileşenleri
+│       │   │   ├── GridLayout.vue      # Ana grid layout
+│       │   │   ├── SpotlightLayout.vue # Spotlight layout
+│       │   │   └── PresentationLayout.vue # Presentation layout
+│       │   ├── video/           # Video bileşenleri
+│       │   │   ├── VideoItem.vue       # Tek video item
+│       │   │   └── VideoGrid.vue      # Video grid container
+│       │   ├── controls/        # Kontrol bileşenleri
+│       │   ├── forms/           # Form bileşenleri
+│       │   └── ui/              # UI bileşenleri
+│       ├── composables/         # Vue composables
+│       │   ├── useMeeting.js    # Meeting state management
+│       │   ├── useVideo.js      # Video track management
+│       │   ├── useScreenShare.js # Screen sharing logic
+│       │   └── useTheme.js      # Theme management
+│       ├── store/               # Pinia store
+│       │   ├── agora.js         # Agora state
+│       │   └── layout.js        # Layout state
+│       ├── services/            # External services
+│       │   ├── tokenService.js  # Agora token service
+│       │   └── recordingService.js # Recording service
+│       └── utils/               # Utility functions
+└── App.vue                      # Ana uygulama bileşeni
 ```
 
-### Barrel Export Pattern
-Her modül kendi `index.js` dosyasına sahiptir ve tüm public API'ları tek noktadan export eder:
+## 🎯 **Grid Layout Sistemi Mimarisi**
 
+### **Core Grid Layout Component**
+```vue
+<!-- GridLayout.vue -->
+<template>
+  <div class="grid-layout">
+    <div 
+      class="video-grid"
+      :data-count="totalVideoCount"
+      :data-columns="gridLayout.columns"
+      :data-rows="gridLayout.rows"
+      :data-orientation="windowSize.height > windowSize.width ? 'portrait' : 'landscape'"
+      :style="gridLayoutStyle"
+    >
+      <!-- Video Items -->
+    </div>
+  </div>
+</template>
+```
+
+### **Grid Layout Hesaplama Algoritması**
 ```javascript
-// src/modules/agora/index.js
-export { AgoraConference, AgoraVideo } from './components/core'
-export { AgoraControls, RecordingControls } from './components/controls'
-export * from './composables'
-export * from './services'
-export * from './store'
-export * from './constants'
-export * from './utils'
+// Ekran oranına göre optimize edilmiş grid hesaplama
+const gridLayout = computed(() => {
+  const count = totalVideoCount.value
+  const screenWidth = windowSize.value.width
+  const screenHeight = windowSize.value.height
+  const isPortrait = screenHeight > screenWidth
+  
+  // İçerik türlerini analiz et
+  const hasLocalCamera = localCameraUser.value && localCameraHasVideo.value
+  const hasLocalScreen = localScreenUser.value && localScreenHasVideo.value
+  const remoteCameraCount = remoteUsers.value.filter(u => getUserHasVideo(u)).length
+  const remoteScreenCount = remoteScreenShareUsers.value.filter(u => getUserHasVideo(u)).length
+  
+  // Akıllı grid layout hesaplama...
+})
 ```
 
-## 🎯 Core Components
-
-### AgoraConference.vue
-Ana konferans bileşeni - tüm video konferans işlemlerini koordine eder:
-
-- **JoinForm**: Kanal katılım formu
-- **AgoraVideo**: Video görüntüleme alanı
-- **AgoraControls**: Kontrol butonları
-- **Modals**: Log, Info, Settings modalları
-
-### AgoraVideo.vue
-Video görüntüleme ve layout yönetimi:
-
-- **Dynamic Layouts**: Grid, Spotlight, Presentation
-- **Layout Switching**: Modal ile layout değiştirme
-- **Settings Integration**: Video ayarları
-
-## 🔄 State Management
-
-### Pinia Store Architecture
-Merkezi state yönetimi için Pinia kullanılır:
-
-#### useAgoraStore
-```javascript
-// Video ve ekran paylaşımı client'ları
-clients: {
-  video: { client, isConnected, isInitialized },
-  screen: { client, isConnected, isInitialized }
-}
-
-// Kullanıcı yönetimi
-users: {
-  local: { video, screen },
-  remote: [] // Tüm uzak kullanıcılar
-}
-
-// Track yönetimi
-tracks: {
-  local: { video: { audio, video }, screen: { video } },
-  remote: new Map() // UID -> { audio, video, screen }
-}
-```
-
-#### useLayoutStore
-Layout yönetimi için ayrı store:
-
-```javascript
-currentLayout: 'grid' | 'spotlight' | 'presentation'
-currentLayoutInfo: { name, description, icon }
-```
-
-## 🎨 Layout System
-
-### Layout Components
-Her layout kendi bileşenine sahiptir:
-
-1. **GridLayout.vue**: Tüm katılımcıları eşit boyutta gösterir
-2. **SpotlightLayout.vue**: Ana konuşmacıyı büyük, diğerlerini sidebar'da gösterir
-3. **PresentationLayout.vue**: Sunum odaklı, ekran paylaşımı için optimize edilmiş
-
-### Layout Switching
-Layout değiştirme modal üzerinden yapılır:
-
-```javascript
-// LayoutModal.vue
-const layouts = [
-  { id: 'grid', name: 'Grid', description: 'Tüm katılımcıları eşit göster' },
-  { id: 'spotlight', name: 'Spotlight', description: 'Ana konuşmacıyı vurgula' },
-  { id: 'presentation', name: 'Sunum', description: 'Sunum odaklı görünüm' }
-]
-```
-
-## 🔌 Composable Architecture
-
-### useVideo.js
-Video client yönetimi:
-
-- **Client Initialization**: Agora client başlatma
-- **Channel Management**: Kanal katılım/ayrılma
-- **Track Management**: Video/ses track'leri
-- **Event Handling**: Agora event'leri
-
-### useScreenShare.js
-Ekran paylaşımı yönetimi:
-
-- **Dual Client System**: Ayrı Agora client
-- **Track Management**: Ekran track'leri
-- **Quality Optimization**: Ekran paylaşımı kalite ayarları
-- **Fallback Handling**: Düşük kalite fallback
-
-### useMeeting.js
-Top-level koordinasyon:
-
-- **Composable Integration**: Tüm composable'ları birleştirir
-- **State Coordination**: Store state senkronizasyonu
-- **Error Handling**: Merkezi hata yönetimi
-
-## 🎥 Video System
-
-### Dual Client Architecture
-Video ve ekran paylaşımı için ayrı client'lar:
-
-```javascript
-// Video client - normal video konferans
-const videoClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' })
-
-// Screen share client - ekran paylaşımı
-const screenClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'h264' })
-```
-
-### Track Management
-Akıllı track yönetimi:
-
-```javascript
-// Local tracks
-localTracks: {
-  video: { audio: AudioTrack, video: VideoTrack },
-  screen: { video: VideoTrack }
-}
-
-// Remote tracks
-remoteTracks: Map<UID, { audio, video, screen }>
-```
-
-## 🎛️ Control System
-
-### AgoraControls.vue
-Merkezi kontrol bileşeni:
-
-- **Camera Toggle**: Kamera açma/kapama
-- **Microphone Toggle**: Mikrofon açma/kapama
-- **Screen Share**: Ekran paylaşımı başlatma/durdurma
-- **Layout Switch**: Layout değiştirme
-- **Settings**: Video ayarları
-
-### Recording Controls
-Kayıt kontrolü (opsiyonel):
-
-```javascript
-// RecordingControls.vue
-const recordingState = {
-  isRecording: false,
-  isPaused: false,
-  duration: 0,
-  fileUrl: null
-}
-```
-
-## 🔧 Service Layer
-
-### Token Service
-Agora token yönetimi:
-
-```javascript
-// tokenService.js
-export const createToken = async (channelName, uid) => {
-  const response = await fetch(API_ENDPOINTS.CREATE_TOKEN, {
-    method: 'POST',
-    body: JSON.stringify({ channelName, uid })
-  })
-  return response.json()
-}
-```
-
-### Logger Service
-Kapsamlı logging sistemi:
-
-```javascript
-// logger.js
-export const logger = {
-  info: (category, message, data) => { /* ... */ },
-  error: (category, message, data) => { /* ... */ },
-  warn: (category, message, data) => { /* ... */ },
-  trackPerformance: (name, fn) => { /* ... */ },
-  trackUserAction: (action, details) => { /* ... */ }
-}
-```
-
-## 🚀 Performance Optimizations
-
-### Memory Leak Prevention
-Aktif timeout ve interval takibi:
-
-```javascript
-const activeTimeouts = ref(new Set())
-const activeIntervals = ref(new Set())
-
-const createSafeTimeout = (callback, delay) => {
-  const timeoutId = setTimeout(() => {
-    activeTimeouts.value.delete(timeoutId)
-    callback()
-  }, delay)
-  activeTimeouts.value.add(timeoutId)
-  return timeoutId
-}
-```
-
-### Track Cleanup
-Otomatik track temizleme:
-
-```javascript
-const cleanupTrack = (track) => {
-  if (track && track.stop) {
-    track.stop()
-    track.close()
-  }
-}
-```
-
-### Quality Optimization
-Dinamik kalite ayarları:
-
-```javascript
-// constants.js
-export const VIDEO_CONFIG = {
-  encoderConfig: IS_DEV ? '720p_1' : '1080p_1',
-  bitrateMin: IS_DEV ? 1000 : 2000,
-  bitrateMax: IS_DEV ? 2000 : 4000,
-  frameRate: IS_DEV ? 24 : 30
-}
-```
-
-## 🔄 Event System
-
-### Central Event Emitter
-Merkezi event yönetimi:
-
-```javascript
-// centralEmitter.js
-export const centralEmitter = mitt()
-
-// Event types
-export const AGORA_EVENTS = {
-  CLIENT_INITIALIZED: 'client-initialized',
-  CHANNEL_JOINED: 'channel-joined',
-  USER_JOINED: 'user-joined',
-  REMOTE_SCREEN_READY: 'remote-screen-ready'
-}
-```
-
-### Event Deduplication
-Tekrarlanan event'leri önleme:
-
-```javascript
-// eventDeduplication.js
-export const createEventDeduplicator = (timeout = 1000) => {
-  const processedEvents = new Set()
-  return (eventId, callback) => {
-    if (!processedEvents.has(eventId)) {
-      processedEvents.add(eventId)
-      callback()
-      setTimeout(() => processedEvents.delete(eventId), timeout)
-    }
-  }
-}
-```
-
-## 🎯 Error Handling
-
-### User-Friendly Errors
-Kullanıcı dostu hata mesajları:
-
-```javascript
-// constants.js
-export const USER_FRIENDLY_ERRORS = {
-  CAMERA_PERMISSION_DENIED: 'Kamera izni reddedildi. Lütfen tarayıcı ayarlarından kamera iznini verin.',
-  DEVICE_NOT_FOUND: 'Kamera veya mikrofon bulunamadı. Lütfen cihazlarınızı kontrol edin.',
-  NETWORK_ERROR: 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.'
-}
-```
-
-### Error Recovery
-Otomatik hata kurtarma:
-
-```javascript
-// Retry mechanism
-const retryOperation = async (operation, maxRetries = 3) => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await operation()
-    } catch (error) {
-      if (i === maxRetries - 1) throw error
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
-    }
-  }
-}
-```
-
-## 📱 Responsive Design
-
-### Mobile-First Approach
-Mobil öncelikli tasarım:
-
+### **Responsive Grid Düzenlemeleri**
 ```css
+/* Portrait (yükseklik > genişlik) */
+@media (orientation: portrait) {
+  .video-grid[data-count="2"] {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: repeat(2, 1fr) !important;
+  }
+}
+
+/* Landscape (genişlik > yükseklik) */
+@media (orientation: landscape) {
+  .video-grid[data-count="2"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: 1fr !important;
+  }
+}
+```
+
+## 🔄 **State Management Mimarisi**
+
+### **Pinia Store Yapısı**
+```javascript
+// store/agora.js
+export const useAgoraStore = defineStore('agora', () => {
+  // State
+  const localUser = ref(null)
+  const remoteUsers = ref(new Map())
+  const tracks = ref({
+    local: new Map(),
+    remote: new Map()
+  })
+  
+  // Actions
+  const joinChannel = async (channelName, token) => {
+    // Channel join logic
+  }
+  
+  const leaveChannel = async () => {
+    // Channel leave logic
+  }
+  
+  return {
+    localUser,
+    remoteUsers,
+    tracks,
+    joinChannel,
+    leaveChannel
+  }
+})
+```
+
+### **Layout Store**
+```javascript
+// store/layout.js
+export const useLayoutStore = defineStore('layout', () => {
+  const currentLayout = ref('grid')
+  const gridSettings = ref({
+    columns: 3,
+    rows: 2,
+    gap: '0.5rem'
+  })
+  
+  const setLayout = (layout) => {
+    currentLayout.value = layout
+  }
+  
+  return {
+    currentLayout,
+    gridSettings,
+    setLayout
+  }
+})
+```
+
+## 🎥 **Video Management Mimarisi**
+
+### **Video Track Management**
+```javascript
+// composables/useVideo.js
+export function useVideo() {
+  const localVideoTrack = ref(null)
+  const localAudioTrack = ref(null)
+  const remoteVideoTracks = ref(new Map())
+  
+  const publishLocalTracks = async () => {
+    if (localVideoTrack.value) {
+      await agoraClient.publish(localVideoTrack.value)
+    }
+    if (localAudioTrack.value) {
+      await agoraClient.publish(localAudioTrack.value)
+    }
+  }
+  
+  const subscribeToRemoteTrack = async (user, mediaType) => {
+    const track = await agoraClient.subscribe(user, mediaType)
+    remoteVideoTracks.value.set(user.uid, track)
+  }
+  
+  return {
+    localVideoTrack,
+    localAudioTrack,
+    remoteVideoTracks,
+    publishLocalTracks,
+    subscribeToRemoteTrack
+  }
+}
+```
+
+### **Screen Sharing Architecture**
+```javascript
+// composables/useScreenShare.js
+export function useScreenShare() {
+  const isScreenSharing = ref(false)
+  const screenTrack = ref(null)
+  
+  const startScreenShare = async () => {
+    try {
+      screenTrack.value = await AgoraRTC.createScreenVideoTrack()
+      await agoraClient.publish(screenTrack.value)
+      isScreenSharing.value = true
+    } catch (error) {
+      console.error('Screen share error:', error)
+    }
+  }
+  
+  const stopScreenShare = async () => {
+    if (screenTrack.value) {
+      await agoraClient.unpublish(screenTrack.value)
+      screenTrack.value.stop()
+      screenTrack.value = null
+      isScreenSharing.value = false
+    }
+  }
+  
+  return {
+    isScreenSharing,
+    screenTrack,
+    startScreenShare,
+    stopScreenShare
+  }
+}
+```
+
+## 🎨 **Theme System Architecture**
+
+### **Theme Management**
+```javascript
+// composables/useTheme.js
+export function useTheme() {
+  const currentTheme = ref('auto')
+  const availableThemes = ['light', 'dark', 'auto']
+  
+  const setTheme = (theme) => {
+    if (availableThemes.includes(theme)) {
+      currentTheme.value = theme
+      applyTheme(theme)
+    }
+  }
+  
+  const applyTheme = (theme) => {
+    const root = document.documentElement
+    if (theme === 'auto') {
+      root.removeAttribute('data-theme')
+    } else {
+      root.setAttribute('data-theme', theme)
+    }
+  }
+  
+  return {
+    currentTheme,
+    availableThemes,
+    setTheme
+  }
+}
+```
+
+### **CSS Custom Properties**
+```css
+:root {
+  /* Light Theme */
+  --rs-agora-bg-primary: #ffffff;
+  --rs-agora-bg-secondary: #f8f9fa;
+  --rs-agora-text-primary: #212529;
+  --rs-agora-border-primary: #dee2e6;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --rs-agora-bg-primary: #1a1a1a;
+  --rs-agora-bg-secondary: #2d2d2d;
+  --rs-agora-text-primary: #ffffff;
+  --rs-agora-border-primary: #404040;
+}
+```
+
+## 📱 **Responsive Design Architecture**
+
+### **Breakpoint System**
+```css
+/* Mobile First Approach */
 /* Base styles for mobile */
 .video-grid {
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 0.5rem;
+  padding: 0.5rem;
 }
 
-/* Tablet and up */
+/* Tablet */
 @media (min-width: 768px) {
   .video-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
 }
 
-/* Desktop and up */
+/* Desktop */
 @media (min-width: 1024px) {
   .video-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: 1rem;
+    padding: 1rem;
   }
 }
 ```
 
-### Touch-Friendly Controls
-Dokunmatik cihazlar için optimize edilmiş kontroller:
-
+### **Orientation-based Layouts**
 ```javascript
-// Touch event handling
-const handleTouchStart = (event) => {
-  // Touch-specific logic
-}
-
-const handleTouchEnd = (event) => {
-  // Touch-specific logic
-}
-```
-
-## 🔒 Security Considerations
-
-### Token Management
-Güvenli token yönetimi:
-
-```javascript
-// Token expiration handling
-const isTokenExpired = (token) => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return Date.now() >= payload.exp * 1000
-  } catch {
-    return true
+// Ekran oranına göre layout hesaplama
+const getOptimalLayout = (count, isPortrait) => {
+  if (count === 2) {
+    return isPortrait 
+      ? { columns: 1, rows: 2, aspectRatio: '1/2' }
+      : { columns: 2, rows: 1, aspectRatio: '2/1' }
   }
-}
-```
-
-### Permission Handling
-Cihaz izin yönetimi:
-
-```javascript
-// Device permission check
-const checkDevicePermissions = async () => {
-  const videoPermission = await navigator.permissions.query({ name: 'camera' })
-  const audioPermission = await navigator.permissions.query({ name: 'microphone' })
   
-  return {
-    camera: videoPermission.state,
-    microphone: audioPermission.state
+  if (count === 3 || count === 4) {
+    return isPortrait
+      ? { columns: 2, rows: 2, aspectRatio: '1/1' }
+      : { columns: count, rows: 1, aspectRatio: `${count}/1` }
   }
+  
+  // Diğer durumlar...
 }
 ```
 
-## 🧪 Testing Strategy
+## 🔧 **Performance Architecture**
 
-### Component Testing
-Vue bileşen testleri:
-
+### **Optimization Strategies**
 ```javascript
-// Component test example
-import { mount } from '@vue/test-utils'
-import AgoraConference from '@/components/AgoraConference.vue'
+// Lazy loading ve code splitting
+const GridLayout = defineAsyncComponent(() => 
+  import('./layouts/GridLayout.vue')
+)
 
-describe('AgoraConference', () => {
-  it('renders join form when not connected', () => {
-    const wrapper = mount(AgoraConference)
-    expect(wrapper.find('.join-form').exists()).toBe(true)
+// Debounced resize handler
+const debouncedResize = debounce(handleResize, 100)
+
+// Computed properties ile memoization
+const gridLayout = computed(() => {
+  // Grid layout hesaplama
+})
+```
+
+### **CSS Performance**
+```css
+/* Hardware acceleration */
+.video-grid {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Efficient transitions */
+.video-item {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Grid optimization */
+.video-grid {
+  grid-auto-rows: minmax(0, 1fr);
+  box-sizing: border-box;
+}
+```
+
+## 🧪 **Testing Architecture**
+
+### **Unit Testing Strategy**
+```javascript
+// Component testing
+import { mount } from '@vue/test-utils'
+import GridLayout from '@/components/layouts/GridLayout.vue'
+
+describe('GridLayout', () => {
+  it('should render correct grid for 2 users', () => {
+    const wrapper = mount(GridLayout, {
+      props: { users: mockUsers }
+    })
+    
+    expect(wrapper.find('.video-grid').attributes('data-count')).toBe('2')
   })
 })
 ```
 
-### Composable Testing
-Composable testleri:
-
+### **Integration Testing**
 ```javascript
-// Composable test example
-import { useVideo } from '@/composables/useVideo'
-import { createPinia, setActivePinia } from 'pinia'
+// Store testing
+import { setActivePinia, createPinia } from 'pinia'
+import { useAgoraStore } from '@/store/agora'
 
-describe('useVideo', () => {
+describe('Agora Store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
   
-  it('initializes with correct default state', () => {
-    const { isJoining, isLeaving } = useVideo()
-    expect(isJoining.value).toBe(false)
-    expect(isLeaving.value).toBe(false)
+  it('should join channel successfully', async () => {
+    const store = useAgoraStore()
+    await store.joinChannel('test-channel', 'token')
+    
+    expect(store.isConnected).toBe(true)
   })
 })
 ```
 
-## 🚀 Deployment
+## 🚀 **Deployment Architecture**
 
-### Build Configuration
-Vite tabanlı build sistemi:
-
+### **Build Configuration**
 ```javascript
 // vite.config.js
 export default defineConfig({
-  plugins: [vue()],
   build: {
-    target: 'es2015',
-    lib: {
-      entry: 'src/modules/agora/index.js',
-      name: 'RSAgoraModule',
-      formats: ['es', 'umd']
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'agora-sdk': ['agora-rtc-sdk-ng'],
+          'vue-vendor': ['vue', 'pinia']
+        }
+      }
     }
   }
 })
 ```
 
-### Environment Configuration
-Ortam bazlı konfigürasyon:
-
+### **Environment Configuration**
 ```javascript
 // constants.js
-export const IS_DEV = false
-export const IS_PROD = true
+export const ENV = {
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production'
+}
 
-export const API_ENDPOINTS = {
-  CREATE_TOKEN: IS_DEV 
-    ? 'https://dev-api.example.com/token'
-    : 'https://api.example.com/token'
+export const AGORA_CONFIG = {
+  appId: import.meta.env.VITE_AGORA_APP_ID,
+  token: import.meta.env.VITE_AGORA_TOKEN,
+  channel: import.meta.env.VITE_AGORA_CHANNEL
 }
 ```
 
+## 🔒 **Security Architecture**
+
+### **Token Management**
+```javascript
+// services/tokenService.js
+export class TokenService {
+  static async generateToken(channelName, uid) {
+    // Server-side token generation
+    const response = await fetch('/api/agora/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelName, uid })
+    })
+    
+    return response.json()
+  }
+}
+```
+
+### **Input Validation**
+```javascript
+// utils/validation.js
+export const validateChannelName = (channelName) => {
+  const pattern = /^[a-zA-Z0-9_-]{3,64}$/
+  return pattern.test(channelName)
+}
+
+export const sanitizeUserInput = (input) => {
+  return input.replace(/[<>]/g, '')
+}
+```
+
+## 📊 **Monitoring ve Analytics**
+
+### **Performance Monitoring**
+```javascript
+// utils/performance.js
+export const measureGridRenderTime = () => {
+  const start = performance.now()
+  
+  return () => {
+    const end = performance.now()
+    const duration = end - start
+    
+    console.log(`Grid render time: ${duration.toFixed(2)}ms`)
+    return duration
+  }
+}
+```
+
+### **Error Tracking**
+```javascript
+// utils/errorTracking.js
+export const trackError = (error, context) => {
+  console.error('Error occurred:', error)
+  
+  // Error reporting service
+  if (import.meta.env.PROD) {
+    // Sentry veya benzeri service
+  }
+}
+```
+
+## 🔮 **Gelecek Mimari Geliştirmeler**
+
+### **Planlanan Özellikler**
+- [ ] **Micro-frontend Architecture**: Modüler yapı
+- [ ] **WebRTC Fallback**: Agora SDK alternatifi
+- [ ] **Service Worker**: Offline capability
+- [ ] **WebAssembly**: Performance kritik işlemler
+- [ ] **GraphQL**: API optimization
+
+### **Scalability Improvements**
+- [ ] **Virtual Scrolling**: Büyük kullanıcı grupları
+- [ ] **Lazy Loading**: Component ve asset lazy loading
+- [ ] **Code Splitting**: Route-based code splitting
+- [ ] **Bundle Optimization**: Tree shaking ve minification
+
+## 📚 **İlgili Dokümantasyon**
+
+- [🎯 Grid Layout Rehberi](RESPONSIVE_DESIGN.md)
+- [🎥 Video Konferans Özellikleri](VIDEO_CONFERENCE.md)
+- [🖥️ Ekran Paylaşımı](SCREEN_SHARING.md)
+- [📱 UI Bileşenleri](UI_COMPONENTS.md)
+- [🚀 Performans Optimizasyonu](PERFORMANCE.md)
+- [🔧 Geliştirici Rehberi](DEVELOPMENT.md)
+
 ---
 
-Bu mimari, modern web geliştirme prensiplerine uygun olarak tasarlanmış ve production ortamında kullanıma hazırdır.
+**Son Güncelleme**: 2025-01-09  
+**Versiyon**: v5.0.0  
+**Geliştirici**: Umran Terece
