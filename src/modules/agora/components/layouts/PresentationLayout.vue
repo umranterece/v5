@@ -12,7 +12,7 @@
           :is-local="presenter.isLocal"
           :is-screen-share="isScreenShareUser(presenter.uid)"
           :is-clickable="false"
-          :logUI="logUI"
+          :logger="logger"
           :is-presenter="true"
           @video-click="handleVideoClick"
         />
@@ -71,7 +71,7 @@
             :is-local="user.isLocal"
             :is-screen-share="isScreenShareUser(user.uid)"
             :is-clickable="false"
-            :logUI="logUI"
+            :logger="logger"
             :is-small="true"
             @video-click="handleVideoClick"
           />
@@ -99,7 +99,10 @@ const props = defineProps({
   localTracks: { type: Object, default: () => ({}) },
   localVideoRef: { type: Object, default: null },
   localScreenRef: { type: Object, default: null },
-  logUI: { type: Function, default: () => {} }
+  logger: { 
+    type: Object, 
+    default: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {}, fatal: () => {} })
+  }
 })
 
 // Emits
@@ -197,13 +200,13 @@ const handleResize = () => {
   
   // Eğer desktop'tan mobil'e geçiş yapıldıysa ve sidebar kapalıysa
   if (!wasMobile && isMobile.value && isSidebarCollapsed.value) {
-    props.logUI('Desktop\'tan mobil\'e geçiş, sidebar otomatik açılıyor')
+    props.logger.info('Desktop\'tan mobil\'e geçiş, sidebar otomatik açılıyor')
     isSidebarCollapsed.value = false
   }
   
   // Eğer mobil'den desktop'a geçiş yapıldıysa
   if (wasMobile && !isMobile.value) {
-    props.logUI('Mobil\'den desktop\'a geçiş')
+    props.logger.info('Mobil\'den desktop\'a geçiş')
     // Desktop'ta sidebar durumunu koru (kullanıcı tercihi)
   }
 }
@@ -352,7 +355,7 @@ const handleVideoClick = (user) => {
 
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
-  props.logUI('Sunum modunda sidebar durumu değiştirildi', { 
+  props.logger.info('Sunum modunda sidebar durumu değiştirildi', { 
     isSidebarCollapsed: isSidebarCollapsed.value,
     participantsCount: participants.value.length
   })

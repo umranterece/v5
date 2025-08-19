@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { centralEmitter } from './centralEmitter.js'
 import { AGORA_EVENTS } from '../constants.js'
-import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 
 /**
  * Event Deduplication Utility
@@ -9,6 +9,23 @@ import { logger, LOG_CATEGORIES } from '../services/logger.js'
  * Memory leak'leri önlemek için timeout sistemi kullanır
  * @module utils/eventDeduplication
  */
+
+// Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.VIDEO, message, data)
+const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.VIDEO, message, data)
+const logWarn = (message, data) => fileLogger.log('warn', LOG_CATEGORIES.VIDEO, message, data)
+const logError = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+}
+const logFatal = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+}
 
 // Event işleme durumu - Her event'in sadece bir kez işlenmesini sağlar
 const processedEvents = ref(new Set())
@@ -48,7 +65,7 @@ export const registerEvent = (eventType, data, clientType) => {
   
   // Event zaten işlendiyse tekrar işleme
   if (processedEvents.value.has(eventKey)) {
-    logger.info(LOG_CATEGORIES.VIDEO, `Event zaten işlendi, atlanıyor: ${eventKey} (${clientType})`)
+    logInfo(`Event zaten işlendi, atlanıyor: ${eventKey} (${clientType})`)
     return false
   }
   
@@ -64,7 +81,7 @@ export const registerEvent = (eventType, data, clientType) => {
     eventTimeouts.value.delete(eventKey)
   }, 5000))
   
-  logger.info(LOG_CATEGORIES.VIDEO, `Merkezi event sistemi: ${eventType} (${clientType}) - ${eventKey}`)
+  logInfo(`Merkezi event sistemi: ${eventType} (${clientType}) - ${eventKey}`)
   
   // Event'i merkezi emitter'a gönder
   centralEmitter.emit(eventType, { ...data, clientType })
@@ -103,44 +120,44 @@ export const registerClient = (
   })
   
   // Sadece tracking için event'leri dinle (duplicate listener kurma)
-  if (client.on) {
+  if (client && typeof client.on === 'function') {
     // user-joined event'ini dinle
     client.on(AGORA_EVENTS.USER_JOINED, (user) => {
-      logger.info(LOG_CATEGORIES.VIDEO, `Merkezi takip: kullanıcı katıldı (${clientType})`, { uid: user.uid })
+      logInfo(`Merkezi takip: kullanıcı katıldı (${clientType})`, { uid: user.uid })
       registerEvent(AGORA_EVENTS.USER_JOINED, user, clientType)
       if (onUserJoined) onUserJoined(user)
     })
     
     // user-left event'ini dinle
     client.on(AGORA_EVENTS.USER_LEFT, (user) => {
-      logger.info(LOG_CATEGORIES.VIDEO, `Merkezi takip: kullanıcı ayrıldı (${clientType})`, { uid: user.uid })
+      logInfo(`Merkezi takip: kullanıcı ayrıldı (${clientType})`, { uid: user.uid })
       registerEvent(AGORA_EVENTS.USER_LEFT, user, clientType)
       if (onUserLeft) onUserLeft(user)
     })
     
     // user-published event'ini dinle
     client.on(AGORA_EVENTS.USER_PUBLISHED, (user, mediaType) => {
-      logger.info(LOG_CATEGORIES.VIDEO, `Merkezi takip: kullanıcı yayınlandı (${clientType})`, { uid: user.uid, mediaType })
+      logInfo(`Merkezi takip: kullanıcı yayınlandı (${clientType})`, { uid: user.uid, mediaType })
       registerEvent(AGORA_EVENTS.USER_PUBLISHED, { user, mediaType }, clientType)
       if (onUserPublished) onUserPublished(user, mediaType)
     })
     
     // user-unpublished event'ini dinle
     client.on(AGORA_EVENTS.USER_UNPUBLISHED, (user, mediaType) => {
-      logger.info(LOG_CATEGORIES.VIDEO, `Merkezi takip: kullanıcı yayından kaldırıldı (${clientType})`, { uid: user.uid, mediaType })
+      logInfo(`Merkezi takip: kullanıcı yayından kaldırıldı (${clientType})`, { uid: user.uid, mediaType })
       registerEvent(AGORA_EVENTS.USER_UNPUBLISHED, { user, mediaType }, clientType)
       if (onUserUnpublished) onUserUnpublished(user, mediaType)
     })
     
     // connection-state-change event'ini dinle
     client.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, (state) => {
-      logger.info(LOG_CATEGORIES.VIDEO, `Merkezi takip: bağlantı durumu değişti (${clientType})`, { state })
+      logInfo(`Merkezi takip: bağlantı durumu değişti (${clientType})`, { state })
       registerEvent(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected: state === 'CONNECTED' }, clientType)
       if (onConnectionStateChange) onConnectionStateChange(state)
     })
   }
   
-  logger.info(LOG_CATEGORIES.VIDEO, `Client merkezi takip için kaydedildi: ${clientType}`)
+  logInfo(`Client merkezi takip için kaydedildi: ${clientType}`)
 }
 
 /**
@@ -155,7 +172,7 @@ export const unregisterClient = (clientType) => {
       clientData.client.removeAllListeners()
     }
     registeredClients.value.delete(clientType)
-    logger.info(LOG_CATEGORIES.VIDEO, `Client kaldırıldı: ${clientType}`)
+    logInfo(`Client kaldırıldı: ${clientType}`)
   }
 }
 
@@ -169,7 +186,7 @@ export const cleanupCentralEvents = () => {
   registeredClients.value.clear()
   centralEmitter.all.clear()
   
-  logger.info(LOG_CATEGORIES.VIDEO, 'Merkezi event sistemi temizlendi')
+  logInfo('Merkezi event sistemi temizlendi')
 }
 
 /**

@@ -67,8 +67,7 @@
           :allUsers="allUsers || []"
           :localTracks="localTracks || {}"
           :remoteTracks="remoteTracks || new Map()"
-          :logUI="logUI"
-          :logError="logError"
+          :logger="loggers.video"
         />
       </div>
       
@@ -97,26 +96,19 @@
           :networkFrameRate="frameRate"
           :networkRtt="rtt"
           :networkPacketLoss="packetLoss"
-          :logUI="logUI"
-          :logError="logError"
-          :trackUserAction="trackUserAction"
+          :logger="loggers.ui"
           :onOpenSettings="toggleSettings"
           :onOpenLayoutModal="toggleLayoutModal"
           :onOpenInfoModal="toggleInfo"
+          :onOpenLogModal="toggleLog"
         />
       </div>
     </main>
 
-    <!-- Log Modal - Sadece debug mode açıkken göster -->
+    <!-- Log Modal -->
     <LogModal
-      v-if="debugMode"
-      :isOpen="isLogOpen"
-      :logs="logs"
-      :logStats="logStats"
-      :getFilteredLogs="getFilteredLogs"
-      :clearLogs="clearLogs"
-      :exportLogs="exportLogs"
-      @close="closeLog"
+      :isVisible="isLogOpen"
+      @close="toggleLog"
     />
 
     <!-- Info Modal -->
@@ -150,35 +142,18 @@
       :isOpen="isSettingsOpen"
       :currentCamera="selectedCameraId"
       :currentMicrophone="selectedMicId"
-      :currentSpeaker="selectedSpeakerId"
       :currentVideoQuality="selectedVideoQuality"
-      :currentAudioQuality="'medium'"
+      :currentScreenQuality="selectedScreenQuality"
+      :currentLogMethod="props.logMethod"
+      :currentLogRetention="props.logRetention"
       :isMobile="false"
       @close="toggleSettings"
       @settings-changed="handleSettingsChanged"
     />
 
-    <!-- Info Button - Sadece debug mode açıkken göster -->
-    <button 
-      v-if="debugMode"
-      class="info-float-btn" 
-      :class="{ active: isInfoOpen }"
-      @click="toggleInfo"
-      title="Toplantı Bilgileri"
-    >
-      <span>ℹ️</span>
-    </button>
 
-    <!-- Log Button - Sadece debug mode açıkken göster -->
-    <button 
-      v-if="debugMode"
-      class="log-float-btn" 
-      :class="{ active: isLogOpen }"
-      @click="toggleLog"
-      title="Log Ekranı"
-    >
-      <span>📝</span>
-    </button>
+
+
   </div>
 </template>
 
@@ -192,6 +167,49 @@ import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
 import { createToken } from '../../services/tokenService.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS } from '../../constants.js'
+import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
+import { fileLogger, localFolderLogger, STORAGE_METHODS } from '../../services/fileLogger.js'
+
+// Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+const logDebug = (message, data) => fileLogger.log('debug', 'SYSTEM', message, data)
+const logInfo = (message, data) => fileLogger.log('info', 'SYSTEM', message, data)
+const logWarn = (message, data) => fileLogger.log('warn', 'SYSTEM', message, data)
+const logError = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('error', 'SYSTEM', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('error', 'SYSTEM', errorOrMessage, context)
+}
+const logFatal = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('fatal', 'SYSTEM', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('fatal', 'SYSTEM', errorOrMessage, context)
+}
+
+// Genel amaçlı kategori logger fabrikası (tek tip, seviye bazlı API üretir)
+const createCategoryLogger = (category) => ({
+  debug: (message, data) => fileLogger.log('debug', category, message, data),
+  info: (message, data) => fileLogger.log('info', category, message, data),
+  warn: (message, data) => fileLogger.log('warn', category, message, data),
+  error: (errorOrMessage, data) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', category, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...data })
+    }
+    return fileLogger.log('error', category, errorOrMessage, data)
+  },
+  fatal: (errorOrMessage, data) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', category, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...data })
+    }
+    return fileLogger.log('fatal', category, errorOrMessage, data)
+  }
+})
+
+// Kategori bazlı logger'lar (fabrika ile üretildi)
+const userLogger = createCategoryLogger('USER')
+const videoLogger = createCategoryLogger('VIDEO')
+const uiLogger = createCategoryLogger('UI')
 
 // Random UID oluşturma fonksiyonu
 const generateRandomUID = () => {
@@ -228,6 +246,18 @@ const props = defineProps({
   debugMode: {
     type: Boolean,
     default: false
+  },
+  
+  // Log ayarları
+  logMethod: {
+    type: String,
+    default: 'localStorage',
+    validator: (value) => ['localStorage', 'localFolder'].includes(value)
+  },
+  logRetention: {
+    type: Number,
+    default: 30,
+    validator: (value) => [7, 15, 30, 60].includes(value)
   }
 })
 
@@ -240,7 +270,8 @@ const emit = defineEmits([
   'user-left',
   'connection-state-change',
   'token-requested',
-  'token-received'
+  'token-received',
+  'settings-changed'
 ])
 
 const {
@@ -275,14 +306,11 @@ const {
   qualityLevel,
   qualityColor,
   // Logger
-  logUI,
-  logError,
-  trackUserAction,
   logs,
   logStats,
-  getFilteredLogs,
-  clearLogs,
-  exportLogs
+  filteredLogs,
+  refreshLogs,
+  exportLogsToCSV
 } = useMeeting()
 
 // Layout store initialization
@@ -309,7 +337,7 @@ const loadingMessages = {
 const updateLoadingStatus = (status) => {
   loadingStatus.value = status
   loadingMessage.value = loadingMessages[status]
-  logUI('Loading status updated', { status, message: loadingMessages[status] })
+  logInfo('Loading status updated', { status, message: loadingMessages[status] })
 }
 
 // Progress bar için width hesapla
@@ -350,6 +378,28 @@ const selectedCameraId = ref('')
 const selectedMicId = ref('')
 const selectedSpeakerId = ref('')
 const selectedVideoQuality = ref('1080p_1')
+const selectedScreenQuality = ref('medium')
+
+// Device settings composable
+const {
+  currentVideoInputId,
+  currentAudioInputId,
+  currentAudioOutputId,
+  initialize: initializeDeviceSettings
+} = useDeviceSettings()
+
+// Watch device changes and update local state
+watch(currentVideoInputId, (newId) => {
+  selectedCameraId.value = newId
+})
+
+watch(currentAudioInputId, (newId) => {
+  selectedMicId.value = newId
+})
+
+watch(currentAudioOutputId, (newId) => {
+  selectedSpeakerId.value = newId
+})
 
 // Props değişikliklerini dinle
 watch(() => props.channelName, (newValue) => {
@@ -361,47 +411,66 @@ watch(() => props.channelName, (newValue) => {
 // Log toggle
 const toggleLog = () => {
   isLogOpen.value = !isLogOpen.value
-  logUI('Log modal toggled', { isOpen: isLogOpen.value })
-}
-
-// Close log modal
-const closeLog = () => {
-  isLogOpen.value = false
-  logUI('Log modal closed')
+  logInfo('Log modal toggled', { isOpen: isLogOpen.value })
 }
 
 // Info sidebar toggle
 const toggleInfo = () => {
   isInfoOpen.value = !isInfoOpen.value
-  logUI('Info sidebar toggled', { isOpen: isInfoOpen.value })
+  logInfo('Info sidebar toggled', { isOpen: isInfoOpen.value })
 }
 
 // Settings modal toggle
 const toggleSettings = () => {
   isSettingsOpen.value = !isSettingsOpen.value
-  logUI('Settings modal toggled', { isOpen: isSettingsOpen.value })
+  logInfo('Settings modal toggled', { isOpen: isSettingsOpen.value })
 }
 
 // Layout modal toggle
 const toggleLayoutModal = () => {
   isLayoutModalOpen.value = !isLayoutModalOpen.value
-  logUI('Layout modal toggled', { isOpen: isLayoutModalOpen.value })
+  logInfo('Layout modal toggled', { isOpen: isLayoutModalOpen.value })
 }
 
 // Handle settings changed
 const handleSettingsChanged = (newSettings) => {
-  logUI('Settings changed', newSettings)
-  // Burada gerekli ayarları uygulayabiliriz
+  logInfo('Settings changed', newSettings)
+  
+  // Update local state based on settings
+  if (newSettings.camera) {
+    selectedCameraId.value = newSettings.camera
+  }
+  if (newSettings.microphone) {
+    selectedMicId.value = newSettings.microphone
+  }
+  if (newSettings.videoQuality) {
+    selectedVideoQuality.value = newSettings.videoQuality
+  }
+  if (newSettings.screenQuality) {
+    selectedScreenQuality.value = newSettings.screenQuality
+  }
+  
+  // Update log settings
+  if (newSettings.logMethod) {
+    const method = newSettings.logMethod
+    const retention = newSettings.logRetention || 30
+    
+    if (method === 'localFolder') {
+      localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
+      localFolderLogger.retentionDays = retention
+      logInfo('Log method changed to local folder', { method, retention })
+    } else {
+      fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
+      fileLogger.retentionDays = retention
+      logInfo('Log method changed to localStorage', { method, retention })
+    }
+  }
+  
+  // Emit settings changed event
+  emit('settings-changed', newSettings)
 }
 
-// Auto-scroll logs to bottom
-watch(logs, () => {
-  nextTick(() => {
-    if (logsContainer.value) {
-      logsContainer.value.scrollTop = logsContainer.value.scrollHeight
-    }
-  })
-})
+
 
 
 
@@ -452,7 +521,7 @@ const handleLeave = async () => {
     await leaveChannel()
     emit('left', { channelName: channelName.value })
     channelName.value = ''
-    clearLogs() // Ayrılınca logları da temizle
+    // clearLogs() artık yok, fileLogger kullanıyoruz
   } catch (error) {
     logError(error, { context: 'handleLeave', channelName: channelName.value })
     emit('error', { error })
@@ -483,20 +552,20 @@ const handleToggleMicrophone = async (muted) => {
 const setupEventListeners = () => {
   // Merkezi event sistemi kullanılıyorsa onu dinle
   if (centralEmitter && centralEmitter.on) {
-    logUI('Central event system initialized')
+    logInfo('Central event system initialized')
     
     centralEmitter.on(AGORA_EVENTS.USER_JOINED, (data) => {
-      logUI('User joined', data)
+      userLogger.info('User joined', data)
       emit('user-joined', data)
     })
 
     centralEmitter.on(AGORA_EVENTS.USER_LEFT, (data) => {
-      logUI('User left', { uid: data.uid })
+      userLogger.info('User left', { uid: data.uid })
       emit('user-left', data)
     })
 
     centralEmitter.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, (data) => {
-      logUI('Connection state changed', data)
+      logInfo('Connection state changed', data)
       emit('connection-state-change', data)
     })
   }
@@ -504,20 +573,77 @@ const setupEventListeners = () => {
 
 const agoraVideoRef = ref(null)
 
+// Logger wrapper'ları oluştur
+const createLoggerWrappers = () => {
+  return {
+    video: {
+      debug: (message, data) => videoLogger.debug(message, data),
+      info: (message, data) => videoLogger.info(message, data),
+      warn: (message, data) => videoLogger.warn(message, data),
+      error: (error, data) => videoLogger.error(error, data),
+      fatal: (error, data) => videoLogger.fatal(error, data)
+    },
+    ui: {
+      debug: (message, data) => uiLogger.debug(message, data),
+      info: (message, data) => uiLogger.info(message, data),
+      warn: (message, data) => uiLogger.warn(message, data),
+      error: (error, data) => uiLogger.error(error, data)
+    }
+  }
+}
+
+// Logger wrapper'ları oluştur
+const loggers = createLoggerWrappers()
+
+// Log yöntemini initialize et
+const initializeLogMethod = () => {
+  try {
+    const method = props.logMethod || 'localStorage'
+    const retention = props.logRetention || 30
+    
+    if (method === 'localFolder') {
+      localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
+      localFolderLogger.retentionDays = retention
+      logInfo('Local folder logging initialized', { method, retention })
+    } else {
+      fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
+      fileLogger.retentionDays = retention
+      logInfo('LocalStorage logging initialized', { method, retention })
+    }
+  } catch (error) {
+    console.error('Log method initialization error:', error)
+    // Fallback to localStorage
+    fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
+  }
+}
+
 // Auto join if enabled
 const handleAutoJoin = async () => {
   if (props.autoJoin && channelName.value && !isConnected.value) {
-    logUI('Auto joining channel...', { channelName: channelName.value })
+    logInfo('Auto joining channel...', { channelName: channelName.value })
     await handleJoin(channelName.value)
   }
 }
 
 // Lifecycle
 onMounted(async () => {
-  logUI('AgoraConference component mounted', { 
+  // Log yöntemini initialize et
+  initializeLogMethod()
+  
+  logInfo('AgoraConference component mounted', { 
     channelName: channelName.value,
-    autoJoin: props.autoJoin
+    autoJoin: props.autoJoin,
+    logMethod: props.logMethod,
+    logRetention: props.logRetention
   })
+
+  // Initialize device settings
+  try {
+    await initializeDeviceSettings()
+    logInfo('Device settings initialized')
+  } catch (error) {
+    logError(error, { context: 'deviceSettingsInit' })
+  }
 
   setupEventListeners()
   
@@ -530,24 +656,24 @@ onMounted(async () => {
     layoutStore.switchLayoutWithSave('grid')
   }
   
-  // Auto join varsa loading devam ederken arka planda bağlantı kur
-  if (props.autoJoin && channelName.value) {
-    // Loading'i göster ama arka planda bağlantı kur
-    logUI('Auto join aktif - Loading devam ederken arka planda bağlantı kuruluyor...')
-    
-    // Arka planda auto join'i başlat
-    handleAutoJoin().then(() => {
-      logUI('Auto join tamamlandı - Loading kaldırılıyor')
-      // Kısa bir delay ile loading'i kaldır (kullanıcı "Bağlantı kuruldu!" mesajını görebilsin)
-      setTimeout(() => {
+      // Auto join varsa loading devam ederken arka planda bağlantı kur
+    if (props.autoJoin && channelName.value) {
+      // Loading'i göster ama arka planda bağlantı kur
+      logInfo('Auto join aktif - Loading devam ederken arka planda bağlantı kuruluyor...')
+      
+      // Arka planda auto join'i başlat
+      handleAutoJoin().then(() => {
+        logInfo('Auto join tamamlandı - Loading kaldırılıyor')
+        // Kısa bir delay ile loading'i kaldır (kullanıcı "Bağlantı kuruldu!" mesajını görebilsin)
+        setTimeout(() => {
+          isLoading.value = false
+        }, 800)
+      }).catch((error) => {
+        logError(error, { context: 'autoJoin' })
+        // Hata olsa bile loading'i kaldır
         isLoading.value = false
-      }, 800)
-    }).catch((error) => {
-      logError(error, { context: 'autoJoin' })
-      // Hata olsa bile loading'i kaldır
-      isLoading.value = false
-    })
-  } else {
+      })
+    } else {
     // Auto join yoksa sadece kısa loading göster
     updateLoadingStatus('initializing')
     await new Promise(resolve => setTimeout(resolve, 300))

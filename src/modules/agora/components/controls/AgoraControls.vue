@@ -31,6 +31,16 @@
         <InformationCircleIcon class="icon" />
         <span class="label"></span>
       </button>
+      
+      <!-- Log Button -->
+      <button 
+        @click="props.onOpenLogModal"
+        class="log-button-top"
+        title="Sistem Logları"
+      >
+        <DocumentTextIcon class="icon" />
+        <span class="label"></span>
+      </button>
     </div>
 
 
@@ -94,6 +104,7 @@ import {
   ViewColumnsIcon, 
   Cog6ToothIcon, 
   InformationCircleIcon,
+  DocumentTextIcon,
   VideoCameraIcon,
   MicrophoneIcon,
   ComputerDesktopIcon,
@@ -128,13 +139,22 @@ const props = defineProps({
   networkRtt: { type: Number, default: 0 },
   networkPacketLoss: { type: Number, default: 0 },
   // Logger Props
-  logUI: { type: Function, default: () => {} },
-  logError: { type: Function, default: () => {} },
-  trackUserAction: { type: Function, default: () => {} },
+  logger: {
+    type: Object,
+    default: () => ({
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      fatal: () => {}
+    })
+  },
   // Settings Props
   onOpenSettings: { type: Function, default: () => {} },
   // Info Modal Props
-  onOpenInfoModal: { type: Function, default: () => {} }
+  onOpenInfoModal: { type: Function, default: () => {} },
+  // Log Modal Props
+  onOpenLogModal: { type: Function, default: () => {} }
 })
 
 const channelInput = ref(props.channelName || 'test')
@@ -142,32 +162,32 @@ const channelInput = ref(props.channelName || 'test')
 const joinChannel = async () => {
   if (!channelInput.value.trim() || props.isJoining) return
   try {
-    props.trackUserAction('joinChannel', { channelName: channelInput.value.trim() })
+    props.logger.info('joinChannel', { channelName: channelInput.value.trim() })
     await props.onJoin(channelInput.value.trim())
   } catch (error) {
-    props.logError(error, { context: 'joinChannel', channelName: channelInput.value.trim() })
+    props.logger.error(error, { context: 'joinChannel', channelName: channelInput.value.trim() })
   }
 }
 
 const leaveChannel = async () => {
   if (props.isLeaving) return
   try {
-    props.trackUserAction('leaveChannel', { channelName: props.channelName })
+    props.logger.info('leaveChannel', { channelName: props.channelName })
     await props.onLeave()
   } catch (error) {
-    props.logError(error, { context: 'leaveChannel', channelName: props.channelName })
+    props.logger.error(error, { context: 'leaveChannel', channelName: props.channelName })
   }
 }
 
 const toggleCamera = () => {
   const newVideoOffState = !props.isLocalVideoOff
-  props.logUI('Kamera değiştir', {
+  props.logger.info('Kamera değiştir', {
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on',
     canUseCamera: props.canUseCamera
   })
   
-  props.trackUserAction('toggleCamera', { 
+  props.logger.info('toggleCamera', { 
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on'
   })
@@ -177,13 +197,13 @@ const toggleCamera = () => {
 const toggleMicrophone = () => {
   if (props.canUseMicrophone) {
     const newMutedState = !props.isLocalAudioMuted
-    props.logUI('Mikrofon değiştir', {
+    props.logger.info('Mikrofon değiştir', {
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted',
       canUseMicrophone: props.canUseMicrophone
     })
     
-    props.trackUserAction('toggleMicrophone', { 
+    props.logger.info('toggleMicrophone', { 
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted'
     })

@@ -1,108 +1,130 @@
-# 🚀 Agora Video Conference v5
-
-Modern, responsive ve yüksek performanslı video konferans uygulaması. Vue 3, Agora SDK ve gelişmiş grid layout sistemi ile geliştirildi.
-
-## ✨ Öne Çıkan Özellikler
-
-### 🎯 **Akıllı Grid Layout Sistemi**
-- **Ekran Oranına Göre Optimizasyon**: Portrait/Landscape modlarında otomatik grid düzenleme
-- **2 Kişi Eşit Bölünme**: Video item'lar mükemmel şekilde eşit boyutlarda
-- **Farklı İçerik Türleri Desteği**: Local kamera, local screen, remote camera, remote screen için optimize edilmiş layout
-- **Responsive Tasarım**: Tüm ekran boyutlarında mükemmel görünüm
-- **Real-time Adaptasyon**: Ekran boyutu değiştiğinde otomatik grid güncelleme
-
-### 🎥 **Video Konferans Özellikleri**
-- HD video kalitesi ve düşük latency
-- Ekran paylaşımı ve kayıt
-- Çoklu layout seçenekleri (Grid, Spotlight, Presentation)
-- Tema sistemi (Light/Dark mode)
-- Çoklu dil desteği
-
-### 🔧 **Teknik Özellikler**
-- Vue 3 Composition API
-- Agora RTC SDK entegrasyonu
-- Modular mimari
-- TypeScript desteği
-- Vite build sistemi
+# Agora Video Conference Module v5
 
 ## 🚀 Hızlı Başlangıç
 
 ```bash
-# Bağımlılıkları yükle
 npm install
-
-# Development server'ı başlat
 npm run dev
-
-# Production build
-npm run build
 ```
 
-## 📱 Responsive Grid Layout
+## 📁 Proje Yapısı
 
-### **2 Kişi Layout**
-- **Portrait**: 1 sütun × 2 satır (alta alta)
-- **Landscape**: 2 sütun × 1 satır (yan yana)
+```
+src/modules/agora/
+├── components/          # Vue bileşenleri
+│   ├── core/           # Ana konferans bileşenleri
+│   ├── controls/       # Kontrol bileşenleri
+│   ├── layouts/        # Layout bileşenleri
+│   └── ui/             # UI bileşenleri
+├── composables/        # Vue composables
+├── store/              # Pinia store'ları
+├── services/           # API servisleri
+├── utils/              # Yardımcı fonksiyonlar
+└── constants.js        # Sabitler ve konfigürasyon
+```
 
-### **3-4 Kişi Layout**
-- **Portrait**: 2 sütun × 2 satır
-- **Landscape**: 3-4 sütun × 1 satır
+## 🎯 Ana Özellikler
 
-### **5+ Kişi Layout**
-- Akıllı grid hesaplama ile optimize edilmiş layout
-- Ekran boyutuna göre otomatik sütun/satır ayarlama
+- **Video Konferans**: Agora SDK ile gerçek zamanlı video
+- **Ekran Paylaşımı**: Optimize edilmiş ekran paylaşımı
+- **Kayıt**: Cloud recording desteği
+- **Layout Sistemi**: Grid, Spotlight, Presentation layout'ları
+- **Tema Sistemi**: Dinamik tema değiştirme
+- **Responsive**: Mobil ve desktop uyumlu
+
+## 🔧 Kullanım
+
+```vue
+<template>
+  <AgoraConference 
+    :channelName="channelName"
+    :autoJoin="true"
+    @joined="handleJoined"
+    @error="handleError"
+  />
+</template>
+
+<script setup>
+import { AgoraConference } from './modules/agora/index.js'
+
+const channelName = ref('test-channel')
+</script>
+```
+
+## 📚 Modüller
+
+### Core Components
+- `AgoraConference`: Ana konferans bileşeni
+- `AgoraVideo`: Video yönetimi
+
+### Composables
+- `useMeeting`: Ana toplantı yönetimi
+- `useVideo`: Video işlemleri
+- `useScreenShare`: Ekran paylaşımı
+- `useRecording`: Kayıt işlemleri
+
+### Store
+- `useAgoraStore`: Ana state yönetimi
+- `useLayoutStore`: Layout state yönetimi
+
+## 🌐 API Endpoints
+
+- **Token**: `https://umranterece.com/test/agora/createToken.php`
+- **Recording**: `https://umranterece.com/test/agora/recording.php`
 
 ## 🎨 Tema Sistemi
 
-- **Light Mode**: Açık tema
-- **Dark Mode**: Koyu tema
-- **Auto Mode**: Sistem temasına göre otomatik değişim
+```javascript
+import { useTheme } from './modules/agora/composables/useTheme.js'
 
-## 📚 Dokümantasyon
-
-- [🚀 Başlangıç Rehberi](GETTING_STARTED.md)
-- [🏗️ Mimari Dokümantasyonu](ARCHITECTURE.md)
-- [🎯 Grid Layout Rehberi](RESPONSIVE_DESIGN.md)
-- [🎥 Video Konferans Özellikleri](VIDEO_CONFERENCE.md)
-- [🖥️ Ekran Paylaşımı](SCREEN_SHARING.md)
-- [📱 UI Bileşenleri](UI_COMPONENTS.md)
-- [🔧 Geliştirici Rehberi](DEVELOPMENT.md)
-- [🧪 Test Rehberi](TESTING.md)
-- [🚀 Performans Optimizasyonu](PERFORMANCE.md)
-
-## 🔧 Geliştirme
-
-```bash
-# Lint kontrolü
-npm run lint
-
-# Test çalıştırma
-npm run test
-
-# Type check
-npm run type-check
+const { initializeTheme, setTheme } = useTheme()
+setTheme('dark') // 'light' | 'dark'
 ```
 
-## 📱 Desteklenen Platformlar
+## 📱 Responsive Design
 
-- **Desktop**: Chrome, Firefox, Safari, Edge
-- **Mobile**: iOS Safari, Chrome Mobile
-- **Tablet**: iPad, Android Tablet
+- Mobile-first yaklaşım
+- Breakpoint'ler: 768px, 1024px, 1440px
+- Touch-friendly kontroller
 
-## 🤝 Katkıda Bulunma
+## 🚀 Performance
 
-Katkıda bulunmak için [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını inceleyin.
+- Lazy loading
+- Optimized video encoding
+- Network quality monitoring
+- Adaptive bitrate
 
-## 📄 Lisans
+## 🔒 Güvenlik
 
-MIT License
+- Token-based authentication
+- HTTPS only
+- Permission handling
+- Error sanitization
 
-## 🆘 Destek
+## 📝 Logging
 
-Sorunlar için [TROUBLESHOOTING.md](TROUBLESHOOTING.md) dosyasını kontrol edin veya issue açın.
+```javascript
+import { useLogger } from './modules/agora/composables/useLogger.js'
 
----
+const { logUI, logError, exportLogs } = useLogger()
+```
 
-**Geliştirici**: Umran Terece  
-**Versiyon**: v5.0.0  
-**Son Güncelleme**: 2025-01-09
+## 🧪 Development
+
+```bash
+# Debug mode
+npm run dev
+
+# Build
+npm run build
+
+# Preview
+npm run preview
+```
+
+## 📋 TODO
+
+- [ ] Screen.js store dosyası oluştur
+- [ ] Whiteboard desteği ekle
+- [ ] Chat sistemi ekle
+- [ ] File sharing ekle

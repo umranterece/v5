@@ -12,7 +12,7 @@
           :is-local="mainSpeaker.isLocal"
           :is-screen-share="mainSpeaker.isScreenShare"
           :is-clickable="true"
-          :logUI="logUI"
+          :logger="logger"
           :is-main="true"
           @video-click="handleVideoClick"
         />
@@ -70,7 +70,7 @@
             :is-local="user.isLocal"
             :is-screen-share="user.isScreenShare"
             :is-clickable="true"
-            :logUI="logUI"
+            :logger="logger"
             :is-small="true"
             @video-click="handleVideoClick"
           />
@@ -98,7 +98,10 @@ const props = defineProps({
   localTracks: { type: Object, default: () => ({}) },
   localVideoRef: { type: Object, default: null },
   localScreenRef: { type: Object, default: null },
-  logUI: { type: Function, default: () => {} }
+  logger: { 
+    type: Object, 
+    default: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {}, fatal: () => {} })
+  }
 })
 
 // Emits
@@ -207,13 +210,13 @@ const handleResize = () => {
   
   // Eğer desktop'tan mobil'e geçiş yapıldıysa ve sidebar kapalıysa
   if (!wasMobile && isMobile.value && !isSidebarOpen.value) {
-    props.logUI('Desktop\'tan mobil\'e geçiş, sidebar otomatik açılıyor')
+    props.logger.info('Desktop\'tan mobil\'e geçiş, sidebar otomatik açılıyor')
     isSidebarOpen.value = true
   }
   
   // Eğer mobil'den desktop'a geçiş yapıldıysa
   if (wasMobile && !isMobile.value) {
-    props.logUI('Mobil\'den desktop\'a geçiş')
+    props.logger.info('Mobil\'den desktop\'a geçiş')
     // Desktop'ta sidebar durumunu koru (kullanıcı tercihi)
   }
 }
@@ -223,7 +226,7 @@ watch(() => props.users, (newUsers) => {
   // Ekran paylaşımı kullanıcısı varsa otomatik olarak ana alana taşı
   const screenShareUser = newUsers.find(u => isScreenShareUser(u.uid))
   if (screenShareUser && selectedMainSpeaker.value !== screenShareUser.uid) {
-    props.logUI('Ekran paylaşımı tespit edildi, otomatik olarak ana alana taşınıyor', {
+    props.logger.info('Ekran paylaşımı tespit edildi, otomatik olarak ana alana taşınıyor', {
       screenShareUser: screenShareUser.uid,
       previousMainSpeaker: selectedMainSpeaker.value
     })
@@ -239,7 +242,7 @@ watch(() => {
   if (!isScreenSharing) {
     // Ekran paylaşımı bittiğinde, eğer ana alanda ekran paylaşımı varsa seçimi kaldır
     if (selectedMainSpeaker.value && props.users.find(u => u.uid === selectedMainSpeaker.value)?.isScreenShare) {
-      props.logUI('Ekran paylaşımı bitti, ana alan seçimi kaldırılıyor')
+      props.logger.info('Ekran paylaşımı bitti, ana alan seçimi kaldırılıyor')
       selectedMainSpeaker.value = null
     }
   }
@@ -333,7 +336,7 @@ const setVideoRef = (el, uid) => {
 }
 
 const handleVideoClick = (user) => {
-  props.logUI('Spotlight modunda video tıklandı', { 
+  props.logger.info('Spotlight modunda video tıklandı', { 
     clickedUser: user.uid, 
     isLocal: user.isLocal,
     previousMainSpeaker: selectedMainSpeaker.value
@@ -341,14 +344,14 @@ const handleVideoClick = (user) => {
   
   // Tıklanan videoyu ana alana taşı
   selectedMainSpeaker.value = user.uid
-  props.logUI('Video ana alana taşındı', { newMainSpeaker: user.uid })
+  props.logger.info('Video ana alana taşındı', { newMainSpeaker: user.uid })
   
   emit('video-click', user)
 }
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
-  props.logUI('Spotlight modunda sidebar durumu değiştirildi', { isSidebarOpen: isSidebarOpen.value })
+  props.logger.info('Spotlight modunda sidebar durumu değiştirildi', { isSidebarOpen: isSidebarOpen.value })
 }
 </script>
 

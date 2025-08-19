@@ -5,7 +5,7 @@
 
 import { ref, computed, watch, onUnmounted, readonly } from 'vue'
 import { recordingService } from '../services/recordingService.js'
-import { logger } from '../services/logger.js'
+import { fileLogger } from '../services/fileLogger.js'
 import { centralEmitter } from '../utils/centralEmitter.js'
 import { RECORDING_EVENTS } from '../constants.js'
 
@@ -80,7 +80,7 @@ export function useRecording() {
   // Recording işlemleri
   const startRecording = async (config = {}) => {
     try {
-      logger.logUI('Recording başlatma isteği gönderildi', 'RECORDING')
+              this.logInfo('Recording başlatma isteği gönderildi')
       
       // Konfigürasyonu güncelle
       const finalConfig = {
@@ -98,9 +98,7 @@ export function useRecording() {
         recordingError.value = null
         
         // Event emit - centralEmitter kullanmıyoruz
-        logger.logUI(`Recording başlatıldı: ${result.recordingId}`, 'RECORDING')
-        
-        logger.logUI(`Recording başlatıldı: ${result.recordingId}`, 'RECORDING')
+        this.logInfo(`Recording başlatıldı: ${result.recordingId}`)
         return result
       } else {
         throw new Error(result.error || 'Recording başlatılamadı')
@@ -110,7 +108,7 @@ export function useRecording() {
       recordingError.value = error.message
       recordingStatus.value = 'ERROR'
       
-      logger.logError('Recording başlatma hatası:', error, 'RECORDING')
+      this.logError(`Recording başlatma hatası: ${error.message || error}`)
       
       // Event emit
       centralEmitter.emit(RECORDING_EVENTS.RECORDING_ERROR, {
@@ -124,7 +122,7 @@ export function useRecording() {
 
   const stopRecording = async () => {
     try {
-      logger.logUI('Recording durdurma isteği gönderildi', 'RECORDING')
+      this.logInfo('Recording durdurma isteği gönderildi')
       
       const result = await recordingService.stopRecording()
       
@@ -142,7 +140,7 @@ export function useRecording() {
           timestamp: Date.now()
         })
         
-        logger.logUI(`Recording durduruldu. Dosyalar: ${result.files?.length || 0}`, 'RECORDING')
+        this.logInfo(`Recording durduruldu. Dosyalar: ${result.files?.length || 0}`)
         return result
       } else {
         throw new Error(result.error || 'Recording durdurulamadı')
@@ -151,7 +149,7 @@ export function useRecording() {
     } catch (error) {
       recordingError.value = error.message
       
-      logger.logError('Recording durdurma hatası:', error, 'RECORDING')
+      this.logError(`Recording durdurma hatası: ${error.message || error}`)
       
       // Event emit
       centralEmitter.emit(RECORDING_EVENTS.RECORDING_ERROR, {
@@ -178,7 +176,7 @@ export function useRecording() {
       }
       
     } catch (error) {
-      logger.logError('Recording durum sorgulama hatası:', error, 'RECORDING')
+      this.logError(`Recording durum sorgulama hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -189,7 +187,7 @@ export function useRecording() {
       recordingFiles.value = files
       return files
     } catch (error) {
-      logger.logError('Recording dosya listesi hatası:', error, 'RECORDING')
+      this.logError(`Recording dosya listesi hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -207,14 +205,14 @@ export function useRecording() {
         link.click()
         document.body.removeChild(link)
         
-        logger.logUI(`Dosya indirildi: ${result.fileName}`, 'RECORDING')
+        this.logInfo(`Dosya indirildi: ${result.fileName}`)
         return result
       } else {
         throw new Error(result.error || 'Dosya indirilemedi')
       }
       
     } catch (error) {
-      logger.logError('Recording dosya indirme hatası:', error, 'RECORDING')
+      this.logError(`Recording dosya indirme hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -230,7 +228,7 @@ export function useRecording() {
     recordingDuration.value = 0
     recordingStartTime.value = null
     
-    logger.logUI('Recording durumu sıfırlandı', 'RECORDING')
+    this.logInfo('Recording durumu sıfırlandı')
   }
 
   // Recording progress tracking
@@ -260,17 +258,17 @@ export function useRecording() {
 
   // Event listeners
   const handleRecordingStarted = (data) => {
-    logger.logUI('Recording başladı eventi alındı', 'RECORDING')
+    this.logInfo('Recording başladı eventi alındı')
     startProgressTracking()
   }
 
   const handleRecordingStopped = (data) => {
-    logger.logUI('Recording durdu eventi alındı', 'RECORDING')
+    this.logInfo('Recording durdu eventi alındı')
     stopProgressTracking()
   }
 
   const handleRecordingError = (data) => {
-    logger.logError('Recording hatası eventi alındı:', data.error, 'RECORDING')
+    this.logError(`Recording hatası eventi alındı: ${data.error}`)
     stopProgressTracking()
   }
 

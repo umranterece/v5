@@ -4,7 +4,12 @@ export { useMeeting } from './useMeeting.js'
 // Recording composable - Cloud recording işlemleri
 export { useRecording } from './useRecording.js'
 
-// Not: useVideo, useScreenShare, useStreamQuality, useTrackManagement, useDeviceDetection, useLogger
+// Device settings composable - Cihaz ayarları ve değişimi
+export { useDeviceSettings } from './useDeviceSettings.js'
+
+// Not: useVideo, useScreenShare, useStreamQuality, useTrackManagement, useDeviceDetection
 // composable'ları useMeeting içinde kullanılıyor ve direkt export edilmiyor.
 // Bu sayede temiz bir API sağlanıyor ve karışıklık önleniyor.
-// Logger fonksiyonları useMeeting üzerinden erişilebilir. 
+
+// File-based logger composable - Dosya tabanlı JSON log sistemi
+export { useFileLogger } from './useFileLogger.js' 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
+import { fileLogger } from '../services/index.js'
 
 /**
  * Agora Store - Video ve Ekran Paylaşımı client'larını yönetir
@@ -9,9 +10,22 @@ import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShar
  * @module store/agora
  */
 export const useAgoraStore = defineStore('agora', () => {
-  // Logger fonksiyonları - Varsayılan boş fonksiyonlar
-  const logStore = () => {}
-  const logError = () => {}
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', 'STORE', message, data)
+  const logInfo = (message, data) => fileLogger.log('info', 'STORE', message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', 'STORE', message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', 'STORE', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', 'STORE', errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', 'STORE', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', 'STORE', errorOrMessage, context)
+  }
   // Unified Client State - Birleştirilmiş client durumu
   const clients = ref({
     video: {
@@ -378,7 +392,7 @@ export const useAgoraStore = defineStore('agora', () => {
       const microphonePermission = await navigator.permissions.query({ name: 'microphone' })
       devices.value.microphonePermission = microphonePermission.state
       
-      logStore('Cihaz izinleri güncellendi', {
+      logInfo('Cihaz izinleri güncellendi', {
         camera: devices.value.cameraPermission,
         microphone: devices.value.microphonePermission
       })

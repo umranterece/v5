@@ -8,8 +8,14 @@
 // Token servisi - Agora token oluşturma işlemleri
 export { createToken } from './tokenService.js'
 
-// Logger servisi - Merkezi logging sistemi
-export { logger, logManager, LOG_LEVELS, LOG_CATEGORIES } from './logger.js'
+// File-based logger servisi - Dosya tabanlı JSON logging sistemi
+export { 
+  fileLogger, 
+  localFolderLogger,
+  STORAGE_METHODS,
+  LOG_LEVELS, 
+  LOG_CATEGORIES 
+} from './fileLogger.js'
 
 // Recording servisi - Cloud recording işlemleri
 export { recordingService } from './recordingService.js'

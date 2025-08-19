@@ -6,7 +6,7 @@ import {
   cleanupCentralEvents
 } from '../utils/index.js'
 import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_CONFIG } from '../constants.js'
-import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 import { useStreamQuality } from './useStreamQuality.js'
 
 /**
@@ -16,10 +16,22 @@ import { useStreamQuality } from './useStreamQuality.js'
  * @module composables/useTrackManagement
  */
 export function useTrackManagement() {
-  // Logger fonksiyonları - Direkt service'den al
-  const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
-  const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
-  const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.VIDEO, message, data)
+  const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.VIDEO, message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', LOG_CATEGORIES.VIDEO, message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+  }
   
   // Stream quality monitoring
   const { startMonitoring: startQualityMonitoring, stopMonitoring: stopQualityMonitoring } = useStreamQuality()
@@ -31,7 +43,7 @@ export function useTrackManagement() {
    */
   const isTrackValid = (track) => {
     if (!track) {
-      logVideo('Track null veya tanımsız')
+      logInfo('Track null veya tanımsız')
       return false
     }
     
@@ -42,7 +54,7 @@ export function useTrackManagement() {
     const hasValidReadyState = track.readyState !== 'ended' && track.readyState !== 'failed'
     
     // Detaylı log
-    logVideo('Track doğrulama detayları', {
+    logInfo('Track doğrulama detayları', {
       trackId: track.id,
       trackType: track.trackMediaType,
       hasSetEnabled,
@@ -57,7 +69,7 @@ export function useTrackManagement() {
     // Daha esnek kontrol - setEnabled opsiyonel, play zorunlu
     const isValid = hasPlay && isNotClosed && hasValidReadyState
     
-    logVideo('Track doğrulama sonucu', { isValid, trackId: track.id })
+    logInfo('Track doğrulama sonucu', { isValid, trackId: track.id })
     
     return isValid
   }
@@ -103,11 +115,11 @@ export function useTrackManagement() {
    */
   const createVideoTrack = async () => {
     try {
-      logVideo('Video track\'i oluşturuluyor (varsayılan konfigürasyon)')
+      logInfo('Video track\'i oluşturuluyor (varsayılan konfigürasyon)')
       let videoTrack = await AgoraRTC.createCameraVideoTrack(VIDEO_CONFIG)
       
       if (isTrackValid(videoTrack)) {
-        logVideo('Video track\'i başarıyla oluşturuldu (varsayılan konfigürasyon)', {
+        logInfo('Video track\'i başarıyla oluşturuldu (varsayılan konfigürasyon)', {
           trackId: videoTrack.id,
           trackEnabled: videoTrack.enabled,
           trackReadyState: videoTrack.readyState
@@ -121,18 +133,18 @@ export function useTrackManagement() {
       
       // İzin hatası kontrolü
       if (error.name === 'NotAllowedError') {
-        logVideo('Kamera izni reddedildi', { error: error.message })
+        logInfo('Kamera izni reddedildi', { error: error.message })
         return { success: false, error: new Error('Kamera izni reddedildi. Lütfen tarayıcı ayarlarından kamera iznini verin.') }
       }
       
       // Cihaz bulunamadı hatası
       if (error.name === 'NotFoundError') {
-        logVideo('Kamera cihazı bulunamadı', { error: error.message })
+        logInfo('Kamera cihazı bulunamadı', { error: error.message })
         return { success: false, error: new Error('Kamera cihazı bulunamadı. Lütfen kameranızın bağlı olduğundan emin olun.') }
       }
       
       try {
-        logVideo('Fallback konfigürasyon deneniyor (basit ayarlar)')
+        logInfo('Fallback konfigürasyon deneniyor (basit ayarlar)')
         // Fallback konfigürasyon - Daha basit ayarlarla tekrar dene
         videoTrack = await AgoraRTC.createCameraVideoTrack({
           facingMode: 'user', // Ön kamerayı kullan
@@ -142,7 +154,7 @@ export function useTrackManagement() {
         })
         
         if (isTrackValid(videoTrack)) {
-          logVideo('Video track\'i başarıyla oluşturuldu (fallback konfigürasyon)', {
+          logInfo('Video track\'i başarıyla oluşturuldu (fallback konfigürasyon)', {
             trackId: videoTrack.id,
             trackEnabled: videoTrack.enabled,
             trackReadyState: videoTrack.readyState
@@ -165,7 +177,7 @@ export function useTrackManagement() {
    */
   const createScreenTrack = async () => {
     try {
-      logVideo('Kullanıcıdan ekran seçmesi isteniyor (performans optimize edilmiş)')
+      logInfo('Kullanıcıdan ekran seçmesi isteniyor (performans optimize edilmiş)')
       
       // PERFORMANS OPTİMİZASYONU: Hızlı başlatma için optimize edilmiş konfigürasyon
       const screenTrack = await AgoraRTC.createScreenVideoTrack(SCREEN_SHARE_CONFIG.FAST_START)
@@ -182,7 +194,7 @@ export function useTrackManagement() {
               bitrateMax: 1200, // Daha düşük maksimum bitrate
               frameRate: 12     // Daha düşük frame rate
             })
-            logVideo('Ekran track encoder konfigürasyonu optimize edildi')
+            logInfo('Ekran track encoder konfigürasyonu optimize edildi')
           } catch (configError) {
             logWarn('Encoder konfigürasyonu ayarlanamadı:', configError)
           }
@@ -190,10 +202,10 @@ export function useTrackManagement() {
         
         // Track event'lerini hemen dinlemeye başla
         screenTrack.on('track-ended', () => {
-          logVideo('Ekran track\'i tarayıcı tarafından sonlandırıldı')
+          logInfo('Ekran track\'i tarayıcı tarafından sonlandırıldı')
         })
         
-        logVideo('Ekran track\'i başarıyla oluşturuldu ve optimize edildi')
+        logInfo('Ekran track\'i başarıyla oluşturuldu ve optimize edildi')
         return { success: true, track: screenTrack }
       } else {
         throw new Error('Geçersiz ekran track\'i oluşturuldu')
@@ -203,12 +215,12 @@ export function useTrackManagement() {
       
       // Kullanıcı vazgeçti mi kontrol et
       if (error.name === 'NotAllowedError' || error.message.includes('Permission denied')) {
-        logVideo('Kullanıcı ekran seçimini iptal etti veya izin reddetti')
+        logInfo('Kullanıcı ekran seçimini iptal etti veya izin reddetti')
         return { success: false, error: new Error('Kullanıcı ekran seçimini iptal etti') }
       }
       
       if (error.name === 'NotSupportedError') {
-        logVideo('Bu tarayıcıda ekran paylaşımı desteklenmiyor')
+        logInfo('Bu tarayıcıda ekran paylaşımı desteklenmiyor')
         return { success: false, error: new Error('Bu tarayıcıda ekran paylaşımı desteklenmiyor') }
       }
       
@@ -228,13 +240,13 @@ export function useTrackManagement() {
                 bitrateMax: 600,  // Çok düşük maksimum bitrate
                 frameRate: 8      // Çok düşük frame rate
               })
-              logVideo('Ekran track fallback encoder konfigürasyonu optimize edildi')
+              logInfo('Ekran track fallback encoder konfigürasyonu optimize edildi')
             } catch (configError) {
               logWarn('Fallback encoder konfigürasyonu ayarlanamadı:', configError)
             }
           }
           
-          logVideo('Ekran track\'i düşük kalite ile başarıyla oluşturuldu')
+          logInfo('Ekran track\'i düşük kalite ile başarıyla oluşturuldu')
           return { success: true, track: screenTrack }
         } else {
           throw new Error('Geçersiz ekran track\'i oluşturuldu (fallback)')
@@ -273,12 +285,12 @@ export function useTrackManagement() {
       
       // Network quality monitoring'i başlat
       startQualityMonitoring(client)
-      logVideo('Network quality monitoring başlatıldı: video')
+      logInfo('Network quality monitoring başlatıldı: video')
       
       // Client'ı merkezi sisteme kaydet
       registerClient(client, 'video')
       
-      logVideo('Video client başarıyla oluşturuldu ve kaydedildi')
+      logInfo('Video client başarıyla oluşturuldu ve kaydedildi')
       return { success: true, client }
     } catch (error) {
       logError(error, { context: 'createVideoClient' })
@@ -295,10 +307,10 @@ export function useTrackManagement() {
     try {
       const client = AgoraRTC.createClient(AGORA_CONFIG)
       
-      // Client'ı merkezi sisteme kaydet
+      // Client'ı merkezi sisteme kaydet (event handler olmadan)
       registerClient(client, 'screen')
       
-      logVideo('Ekran paylaşımı client\'ı başarıyla oluşturuldu ve kaydedildi')
+      logInfo('Ekran paylaşımı client\'ı başarıyla oluşturuldu ve kaydedildi')
       return { success: true, client }
     } catch (error) {
       logError(error, { context: 'createScreenClient' })

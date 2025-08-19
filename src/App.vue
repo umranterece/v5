@@ -6,6 +6,8 @@
       :userUid="userUid"
       :tokenEndpoint="tokenEndpoint"
       :debugMode="debugMode"
+      :logMethod="logMethod"
+      :logRetention="logRetention"
       @joined="handleJoined"
       @left="handleLeft"
       @error="handleError"
@@ -14,6 +16,7 @@
       @connection-state-change="handleConnectionStateChange"
       @token-requested="handleTokenRequested"
       @token-received="handleTokenReceived"
+      @settings-changed="handleSettingsChanged"
     />
   </div>
 </template>
@@ -27,8 +30,8 @@ import { useTheme } from './modules/agora/composables/useTheme.js'
 const { initializeTheme } = useTheme()
 
 // Kanal ayarları
-const channelName = ref('test-252')
-const autoJoin = ref(false)  // false yaparak test ediyorum
+const channelName = ref('test-2512')
+const autoJoin = ref(true)  // true yaparak test ediyorum
 
 // Token ayarları
 const tokenEndpoint = ref(null) // null = varsayılan API endpoint
@@ -37,7 +40,11 @@ const tokenEndpoint = ref(null) // null = varsayılan API endpoint
 const userUid = ref(null) // null = random UID
 
 // Debug ayarları
-const debugMode = ref(false) // true = günlükleri göster, false = gizle
+const debugMode = ref(true) // true = günlükleri göster, false = gizle
+
+// Log ayarları
+const logMethod = ref('localStorage') // 'localStorage' veya 'localFolder'
+const logRetention = ref(30) // 7, 15, 30, 60 gün
 
 // Event handlers
 const handleJoined = (data) => {
@@ -70,6 +77,21 @@ const handleTokenRequested = (data) => {
 
 const handleTokenReceived = (data) => {
   console.log('Token alındı:', data)
+}
+
+const handleSettingsChanged = (newSettings) => {
+  console.log('Ayarlar değişti:', newSettings)
+  
+  // Log ayarları güncellendiğinde local state'i güncelle
+  if (newSettings.logMethod) {
+    logMethod.value = newSettings.logMethod
+    console.log('Log yöntemi değişti:', newSettings.logMethod)
+  }
+  
+  if (newSettings.logRetention) {
+    logRetention.value = newSettings.logRetention
+    console.log('Log saklama süresi değişti:', newSettings.logRetention)
+  }
 }
 
 // Component mount olduğunda temayı başlat

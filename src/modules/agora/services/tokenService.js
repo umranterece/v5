@@ -1,4 +1,5 @@
 import { API_ENDPOINTS, DEFAULTS } from '../constants.js'
+import { fileLogger } from './index.js'
 
 /**
  * Token Servisi - Agora token oluşturma ve yönetim işlemleri
@@ -18,9 +19,22 @@ import { API_ENDPOINTS, DEFAULTS } from '../constants.js'
  * @returns {Promise<Object>} Token verileri (token, app_id, channel_name)
  */
 export const createToken = async (channelName, uid, customEndpoint = null, role = DEFAULTS.ROLE_PUBLISHER, expireTime = DEFAULTS.TOKEN_EXPIRE_TIME) => {
-  // Logger fonksiyonları - Varsayılan boş fonksiyonlar
-  const logAgora = () => {}
-  const logError = () => {}
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', 'AGORA', message, data)
+  const logInfo = (message, data) => fileLogger.log('info', 'AGORA', message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', 'AGORA', message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', 'AGORA', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', 'AGORA', errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', 'AGORA', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', 'AGORA', errorOrMessage, context)
+  }
   
   // API endpoint'i belirle - özel endpoint veya varsayılan
   const endpoint = customEndpoint || API_ENDPOINTS.CREATE_TOKEN
@@ -57,7 +71,7 @@ export const createToken = async (channelName, uid, customEndpoint = null, role 
       throw new Error(result.message || 'Token oluşturulamadı')
     }
 
-    logAgora('Token başarıyla oluşturuldu', result)
+    logInfo('Token başarıyla oluşturuldu', result)
     return result.data // Tüm veri objesini döndür (token, app_id, channel_name)
   } catch (error) {
     logError(error, { context: 'createToken', channelName, uid })

@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 import { AGORA_EVENTS } from '../constants.js'
 
 /**
@@ -9,9 +9,22 @@ import { AGORA_EVENTS } from '../constants.js'
  * @module composables/useStreamQuality
  */
 export function useStreamQuality() {
-  // Logger fonksiyonları - Direkt service'den al
-  const logQuality = (message, data) => logger.info(LOG_CATEGORIES.NETWORK, message, data)
-  const logError = (error, context) => logger.error(LOG_CATEGORIES.NETWORK, error.message || error, { error, ...context })
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.NETWORK, message, data)
+  const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.NETWORK, message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', LOG_CATEGORIES.NETWORK, message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', LOG_CATEGORIES.NETWORK, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', LOG_CATEGORIES.NETWORK, errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', LOG_CATEGORIES.NETWORK, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', LOG_CATEGORIES.NETWORK, errorOrMessage, context)
+  }
   
   // State değişkenleri
   const networkQuality = ref(0) // Ağ kalitesi (0-6 arası, 0=en kötü, 6=en iyi)
@@ -85,7 +98,7 @@ export function useStreamQuality() {
       // Transport istatistikleri (ağ kalitesi, RTT, paket kaybı)
       if (client.getTransportStats) {
         const transportStats = await client.getTransportStats()
-        logQuality('Transport statistics received', transportStats)
+        logInfo('Transport statistics received', transportStats)
         
         if (transportStats) {
           stats.rtt = transportStats.Rtt || 0
@@ -98,7 +111,7 @@ export function useStreamQuality() {
       // Local audio istatistikleri
       if (client.getLocalAudioStats) {
         const audioStats = await client.getLocalAudioStats()
-        logQuality('Local audio statistics received', audioStats)
+        logInfo('Local audio statistics received', audioStats)
         
         if (audioStats && Object.keys(audioStats).length > 0) {
           const firstAudioTrack = Object.values(audioStats)[0]
@@ -111,7 +124,7 @@ export function useStreamQuality() {
       // Local video istatistikleri
       if (client.getLocalVideoStats) {
         const videoStats = await client.getLocalVideoStats()
-        logQuality('Local video statistics received', videoStats)
+        logInfo('Local video statistics received', videoStats)
         
         if (videoStats && Object.keys(videoStats).length > 0) {
           const firstVideoTrack = Object.values(videoStats)[0]
@@ -126,7 +139,7 @@ export function useStreamQuality() {
       if (client.on && !client._networkQualityListener) {
         client._networkQualityListener = true
         client.on(AGORA_EVENTS.NETWORK_QUALITY, (stats) => {
-          logQuality('Network quality event received', stats)
+          logInfo('Network quality event received', stats)
           if (stats) {
             networkQuality.value = stats.downlinkNetworkQuality || stats.uplinkNetworkQuality || 0
           }
@@ -154,7 +167,7 @@ export function useStreamQuality() {
       qualityLevel.value = calculateQualityLevel.value
       lastUpdateTime.value = Date.now()
       
-      logQuality('Quality updated', {
+      logInfo('Quality updated', {
         networkQuality: networkQuality.value,
         bitrate: bitrate.value,
         frameRate: frameRate.value,
@@ -183,7 +196,7 @@ export function useStreamQuality() {
     rtt.value = 50
     qualityLevel.value = 'iyi'
     
-    logQuality('Quality monitoring started', { clientId: client.uid })
+    logInfo('Quality monitoring started', { clientId: client.uid })
     
     // İlk istatistikleri hemen al
     fetchRealStats(client).then(stats => {
@@ -220,7 +233,7 @@ export function useStreamQuality() {
     isMonitoring.value = false
     currentClient = null
     
-    logQuality('Quality monitoring stopped')
+    logInfo('Quality monitoring stopped')
   }
 
   /**
@@ -230,7 +243,7 @@ export function useStreamQuality() {
    */
   const optimizeScreenShareQuality = (screenTrack) => {
     if (!screenTrack || !screenTrack.setEncoderConfiguration) {
-      logQuality('Ekran track\'i optimize edilemedi - setEncoderConfiguration mevcut değil')
+      logInfo('Ekran track\'i optimize edilemedi - setEncoderConfiguration mevcut değil')
       return
     }
 
@@ -246,7 +259,7 @@ export function useStreamQuality() {
             bitrateMax: 400,
             frameRate: 5
           })
-          logQuality('Ekran paylaşımı çok düşük kalite moduna geçirildi')
+          logInfo('Ekran paylaşımı çok düşük kalite moduna geçirildi')
           break
           
         case 'orta':
@@ -256,7 +269,7 @@ export function useStreamQuality() {
             bitrateMax: 800,
             frameRate: 8
           })
-          logQuality('Ekran paylaşımı düşük kalite moduna geçirildi')
+          logInfo('Ekran paylaşımı düşük kalite moduna geçirildi')
           break
           
         case 'iyi':
@@ -266,7 +279,7 @@ export function useStreamQuality() {
             bitrateMax: 1200,
             frameRate: 12
           })
-          logQuality('Ekran paylaşımı orta kalite moduna geçirildi')
+          logInfo('Ekran paylaşımı orta kalite moduna geçirildi')
           break
           
         case 'mükemmel':
@@ -276,7 +289,7 @@ export function useStreamQuality() {
             bitrateMax: 1500,
             frameRate: 15
           })
-          logQuality('Ekran paylaşımı yüksek kalite moduna geçirildi')
+          logInfo('Ekran paylaşımı yüksek kalite moduna geçirildi')
           break
           
         default:
@@ -286,7 +299,7 @@ export function useStreamQuality() {
             bitrateMax: 1200,
             frameRate: 12
           })
-          logQuality('Ekran paylaşımı varsayılan kalite moduna geçirildi')
+          logInfo('Ekran paylaşımı varsayılan kalite moduna geçirildi')
       }
     } catch (error) {
       logError('Ekran paylaşımı kalite optimizasyonu başarısız:', error)

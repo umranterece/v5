@@ -25,13 +25,13 @@
         </div>
         <div class="user-name">{{ displayName }}</div>
         <div class="user-status">
-          <span v-if="user.isMuted" class="status-icon muted">
+          <span v-if="user.isMuted" class="status-badge muted">
             <SpeakerXMarkIcon />
           </span>
-          <span v-if="user.isVideoOff" class="status-icon video-off">
-            <VideoCameraIcon />
+          <span v-if="user.isVideoOff" class="status-badge video-off">
+            <VideoCameraSlashIcon />
           </span>
-          <span v-if="isScreenShare" class="status-icon screen-share">
+          <span v-if="isScreenShare" class="status-badge screen-share">
             <ComputerDesktopIcon />
           </span>
         </div>
@@ -41,9 +41,15 @@
       <div v-if="shouldShowVideo" class="user-info">
         <div class="user-name">{{ displayName }}</div>
         <div class="user-status">
-          <span v-if="user.isMuted" class="status-icon muted">🔇</span>
-          <span v-if="user.isVideoOff" class="status-icon video-off">📹</span>
-          <span v-if="isScreenShare" class="status-icon screen-share">🖥️</span>
+          <span v-if="user.isMuted" class="status-badge muted">
+            <SpeakerXMarkIcon />
+          </span>
+          <span v-if="user.isVideoOff" class="status-badge video-off">
+            <VideoCameraSlashIcon />
+          </span>
+          <span v-if="isScreenShare" class="status-badge screen-share">
+            <ComputerDesktopIcon />
+          </span>
         </div>
       </div>
     </div>
@@ -51,7 +57,7 @@
 </template>
 
 <script setup>
-import { SpeakerXMarkIcon, VideoCameraIcon, ComputerDesktopIcon } from '@heroicons/vue/24/outline'
+import { SpeakerXMarkIcon, VideoCameraSlashIcon, ComputerDesktopIcon } from '@heroicons/vue/24/outline'
 import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../../constants.js'
 import { getUserInitials as getUserInitialsFromUtils } from '../../utils/index.js'
@@ -65,7 +71,10 @@ const props = defineProps({
   isLocal: { type: Boolean, default: false },
   isScreenShare: { type: Boolean, default: false },
   isClickable: { type: Boolean, default: false }, // Yeni prop: sadece Spotlight modunda true
-  logUI: { type: Function, default: () => {} }
+  logger: {
+    type: Object,
+    default: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {}, fatal: () => {} })
+  }
 })
 
 const hasCalledVideoRef = ref(false)
@@ -105,7 +114,7 @@ const getUserInitials = (name) => {
 onMounted(async () => {
   // Production'da excessive logging'i azalt
   if (process.env.NODE_ENV === 'development') {
-    props.logUI('Video öğesi yüklendi', { 
+    props.logger.info('Video öğesi yüklendi', { 
       user: props.user, 
       hasVideo: props.hasVideo, 
       isLocal: props.isLocal,
@@ -127,7 +136,7 @@ onMounted(async () => {
 watch(() => props.hasVideo, async (newHasVideo) => {
   // Production'da excessive logging'i azalt
   if (process.env.NODE_ENV === 'development') {
-    props.logUI('Video öğesi video durumu değişti', { 
+    props.logger.info('Video öğesi video durumu değişti', { 
       newHasVideo, 
       user: props.user, 
       isLocal: props.isLocal,
@@ -147,7 +156,7 @@ watch(() => props.hasVideo, async (newHasVideo) => {
 })
 
 watch(() => props.user?.isVideoOff, (newVideoOff) => {
-  props.logUI('Kullanıcı video durumu değişti', {
+  props.logger.info('Kullanıcı video durumu değişti', {
     newVideoOff,
     user: props.user,
     isLocal: props.isLocal,
@@ -200,7 +209,7 @@ watch(
         console.log('🟢 [VIDEOITEM] Track başarıyla play edildi:', newTrack.id)
       } catch (e) {
         console.error('🔴 [VIDEOITEM] track.play() hatası:', e)
-        props.logUI('track.play() hatası', e)
+        props.logger.error(e, { context: 'track.play' })
       }
     } else {
       console.log('🟡 [VIDEOITEM] Track play edilemedi:', {
@@ -227,7 +236,7 @@ onBeforeUnmount(() => {
 
 // Video ref callback - optimized to prevent recursive calls
 const handleVideoRef = (el) => {
-  props.logUI('Video öğesi ref callback', { 
+  props.logger.info('Video öğesi ref callback', { 
     element: !!el, 
     user: props.user, 
     isLocal: props.isLocal, 
@@ -237,16 +246,16 @@ const handleVideoRef = (el) => {
     track: !!props.track
   })
   if (hasCalledVideoRef.value && el === null) {
-    props.logUI('videoRef çağrısı atlanıyor - zaten çağrıldı ve element null')
+    props.logger.info('videoRef çağrısı atlanıyor - zaten çağrıldı ve element null')
     return
   }
   if (props.videoRef) {
     if (typeof props.videoRef === 'function') {
-      props.logUI('videoRef fonksiyonu çağrılıyor')
+      props.logger.info('videoRef fonksiyonu çağrılıyor')
       props.videoRef(el)
       hasCalledVideoRef.value = true
     } else if (props.videoRef && typeof props.videoRef === 'object' && 'value' in props.videoRef) {
-      props.logUI('videoRef.value ayarlanıyor')
+      props.logger.info('videoRef.value ayarlanıyor')
       props.videoRef.value = el
       hasCalledVideoRef.value = true
     }
@@ -255,7 +264,7 @@ const handleVideoRef = (el) => {
     hasCalledVideoRef.value = false
   }
   if (props.isScreenShare && el) {
-    props.logUI('Ekran paylaşımı video elementi hazır, event gönderiliyor')
+    props.logger.info('Ekran paylaşımı video elementi hazır, event gönderiliyor')
   }
 }
 
@@ -266,7 +275,7 @@ const handleVideoClick = () => {
     return
   }
   
-  props.logUI('Video öğesine tıklandı', {
+  props.logger.info('Video öğesine tıklandı', {
     user: props.user,
     isLocal: props.isLocal,
     isScreenShare: props.isScreenShare,
@@ -365,33 +374,60 @@ const emit = defineEmits(['video-click'])
   justify-content: center;
 }
 
-.status-icon {
-  font-size: 1.2rem;
-  padding: 0.25rem;
+.status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--rs-agora-transparent-white-10);
   backdrop-filter: blur(10px);
+  border: 2px solid var(--rs-agora-transparent-white-20);
+  transition: all 0.2s ease;
 }
 
-.status-icon.muted {
+.status-badge.muted {
   color: var(--rs-agora-error);
   background: var(--rs-agora-transparent-error-20);
+  border-color: var(--rs-agora-transparent-error-30);
 }
 
-.status-icon.video-off {
+.status-badge.muted:hover {
+  background: var(--rs-agora-transparent-error-30);
+  border-color: var(--rs-agora-transparent-error-40);
+  transform: scale(1.1);
+}
+
+.status-badge.video-off {
   color: var(--rs-agora-warning);
   background: var(--rs-agora-transparent-warning-20);
+  border-color: var(--rs-agora-transparent-warning-30);
 }
 
-.status-icon.screen-share {
+.status-badge.video-off:hover {
+  background: var(--rs-agora-transparent-warning-30);
+  border-color: var(--rs-agora-transparent-warning-40);
+  transform: scale(1.1);
+}
+
+.status-badge.screen-share {
   color: var(--rs-agora-info);
   background: var(--rs-agora-transparent-info-20);
+  border-color: var(--rs-agora-transparent-info-30);
 }
 
-.status-icon svg {
-  width: 16px;
-  height: 16px;
+.status-badge.screen-share:hover {
+  background: var(--rs-agora-transparent-info-30);
+  border-color: var(--rs-agora-transparent-info-40);
+  transform: scale(1.1);
+}
+
+.status-badge svg {
+  width: 18px;
+  height: 18px;
   color: currentColor;
+  stroke-width: 2;
 }
 
 .user-info {
@@ -414,8 +450,14 @@ const emit = defineEmits(['video-click'])
   gap: 0.25rem;
 }
 
-.user-info .status-icon {
-  font-size: 1rem;
+.user-info .status-badge {
+  width: 28px;
+  height: 28px;
+}
+
+.user-info .status-badge svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Local video styling */
@@ -461,6 +503,16 @@ const emit = defineEmits(['video-click'])
     height: 100px;
     font-size: 2.5rem;
   }
+  
+  .status-badge {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .status-badge svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -480,8 +532,14 @@ const emit = defineEmits(['video-click'])
     font-size: 0.9rem;
   }
   
-  .status-icon {
-    font-size: 1rem;
+  .status-badge {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .status-badge svg {
+    width: 14px;
+    height: 14px;
   }
 }
 </style> 

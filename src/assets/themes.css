@@ -1468,7 +1468,7 @@
 
 /* Gradient Text - Gradyan Metin */
 .rs-agora-gradient-text-primary {
-  background: var(--rs-agora-gradient-primary);
+  background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1494,4 +1494,136 @@
   backdrop-filter: blur(20px);
   border: 1px solid var(--rs-agora-transparent-black-30);
   box-shadow: 0 8px 32px var(--rs-agora-transparent-black-30);
+}
+
+/* ===== LOGMODAL ELEGANCE THEME ===== */
+[data-theme="logmodal-elegance"] {
+  /* Primary Colors - Ana Renkler (LogModal'dan esinlenen mavi-mor) */
+  --rs-agora-primary: #667eea;
+  --rs-agora-primary-dark: #5a67d8;
+  --rs-agora-primary-light: #818cf8;
+  
+  /* Secondary Colors - İkincil Renkler (LogModal'dan esinlenen mor) */
+  --rs-agora-secondary: #764ba2;
+  --rs-agora-secondary-dark: #6b46c1;
+  --rs-agora-secondary-light: #a78bfa;
+  
+  /* Background Colors - Arka Plan Renkleri (LogModal'dan esinlenen koyu tonlar) */
+  --rs-agora-bg-primary: #1a1a2e;
+  --rs-agora-bg-secondary: #16213e;
+  --rs-agora-bg-tertiary: #0f3460;
+  --rs-agora-bg-quaternary: #0c2d4a;
+  --rs-agora-bg-accent: #667eea;
+  
+  /* Surface Colors - Yüzey Renkleri (LogModal'dan esinlenen şeffaf tonlar) */
+  --rs-agora-surface-primary: rgba(255, 255, 255, 0.05);
+  --rs-agora-surface-secondary: rgba(255, 255, 255, 0.03);
+  --rs-agora-surface-tertiary: rgba(255, 255, 255, 0.02);
+  --rs-agora-surface-accent: rgba(102, 126, 234, 0.1);
+  
+  /* Text Colors - Metin Renkleri (LogModal'dan esinlenen beyaz tonları) */
+  --rs-agora-text-primary: #ffffff;
+  --rs-agora-text-secondary: rgba(255, 255, 255, 0.9);
+  --rs-agora-text-muted: rgba(255, 255, 255, 0.7);
+  --rs-agora-text-accent: #667eea;
+  
+  /* Border Colors - Kenarlık Renkleri (LogModal'dan esinlenen şeffaf beyaz) */
+  --rs-agora-border-primary: rgba(255, 255, 255, 0.1);
+  --rs-agora-border-secondary: rgba(255, 255, 255, 0.08);
+  --rs-agora-border-accent: rgba(102, 126, 234, 0.3);
+  
+  /* Status Colors - Durum Renkleri (LogModal'dan esinlenen canlı tonlar) */
+  --rs-agora-success: #10b981;
+  --rs-agora-warning: #f59e0b;
+  --rs-agora-error: #ef4444;
+  --rs-agora-info: #3b82f6;
+  
+  /* Extended Status Colors - Genişletilmiş Durum Renkleri */
+  --rs-agora-success-light: #059669;
+  --rs-agora-warning-light: #d97706;
+  --rs-agora-error-light: #dc2626;
+  --rs-agora-info-light: #2563eb;
+  
+  /* Special Accent Color - Özel Vurgu Rengi (LogModal'dan esinlenen) */
+  --rs-agora-special-accent: #667eea;
+  --rs-agora-special-accent-dark: #5a67d8;
+  --rs-agora-special-accent-light: #818cf8;
+  
+  /* Neutral Colors - Nötr Renkler (LogModal'dan esinlenen) */
+  --rs-agora-gray-100: rgba(255, 255, 255, 0.1);
+  --rs-agora-gray-200: rgba(255, 255, 255, 0.08);
+  --rs-agora-gray-300: rgba(255, 255, 255, 0.06);
+  --rs-agora-gray-400: rgba(255, 255, 255, 0.04);
+  --rs-agora-gray-500: rgba(255, 255, 255, 0.02);
+  --rs-agora-gray-600: rgba(0, 0, 0, 0.1);
+  --rs-agora-gray-700: rgba(0, 0, 0, 0.2);
+  --rs-agora-gray-800: rgba(0, 0, 0, 0.3);
+  --rs-agora-gray-900: rgba(0, 0, 0, 0.4);
+  
+  /* Base Colors - Temel Renkler */
+  --rs-agora-white: #ffffff;
+  --rs-agora-black: #000000;
+  --rs-agora-dark-gray: #1a1a2e;
+  --rs-agora-medium-gray: #16213e;
+  
+  /* Transparency Colors - Şeffaflık Renkleri (LogModal'dan esinlenen) */
+  --rs-agora-transparent-white-01: rgba(255, 255, 255, 0.01);
+  --rs-agora-transparent-white-02: rgba(255, 255, 255, 0.02);
+  --rs-agora-transparent-white-03: rgba(255, 255, 255, 0.03);
+  --rs-agora-transparent-white-05: rgba(255, 255, 255, 0.05);
+  --rs-agora-transparent-white-08: rgba(255, 255, 255, 0.08);
+  --rs-agora-transparent-white-10: rgba(255, 255, 255, 0.1);
+  --rs-agora-transparent-white-12: rgba(255, 255, 255, 0.12);
+  --rs-agora-transparent-white-15: rgba(255, 255, 255, 0.15);
+  --rs-agora-transparent-white-18: rgba(255, 255, 255, 0.18);
+  --rs-agora-transparent-white-20: rgba(255, 255, 255, 0.2);
+  --rs-agora-transparent-white-25: rgba(255, 255, 255, 0.25);
+  --rs-agora-transparent-white-30: rgba(255, 255, 255, 0.3);
+  --rs-agora-transparent-white-40: rgba(255, 255, 255, 0.4);
+  --rs-agora-transparent-white-45: rgba(255, 255, 255, 0.45);
+  --rs-agora-transparent-white-50: rgba(255, 255, 255, 0.5);
+  --rs-agora-transparent-white-64: rgba(255, 255, 255, 0.64);
+  --rs-agora-transparent-white-70: rgba(255, 255, 255, 0.7);
+  --rs-agora-transparent-white-80: rgba(255, 255, 255, 0.8);
+  --rs-agora-transparent-white-90: rgba(255, 255, 255, 0.9);
+  --rs-agora-transparent-white-98: rgba(255, 255, 255, 0.98);
+  
+  --rs-agora-transparent-black-12: rgba(0, 0, 0, 0.12);
+  --rs-agora-transparent-black-20: rgba(0, 0, 0, 0.2);
+  --rs-agora-transparent-black-25: rgba(0, 0, 0, 0.25);
+  --rs-agora-transparent-black-29: rgba(0, 0, 0, 0.29);
+  --rs-agora-transparent-black-30: rgba(0, 0, 0, 0.3);
+  
+  /* Gradient Colors - Gradyan Renkleri (LogModal'dan esinlenen) */
+  --rs-agora-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --rs-agora-gradient-secondary: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  --rs-agora-gradient-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  --rs-agora-gradient-accent: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --rs-agora-gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --rs-agora-gradient-error: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --rs-agora-gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  
+  /* Shadow Colors - Gölge Renkleri (LogModal'dan esinlenen) */
+  --rs-agora-shadow-primary: 0 8px 25px rgba(102, 126, 234, 0.4);
+  --rs-agora-shadow-secondary: 0 8px 25px rgba(0, 0, 0, 0.3);
+  --rs-agora-shadow-surface: 0 8px 25px rgba(0, 0, 0, 0.2);
+  --rs-agora-shadow-accent: 0 4px 15px rgba(16, 185, 129, 0.3);
+  --rs-agora-shadow-warning: 0 4px 15px rgba(245, 158, 11, 0.3);
+  --rs-agora-shadow-error: 0 4px 15px rgba(239, 68, 68, 0.3);
+  --rs-agora-shadow-info: 0 4px 15px rgba(59, 130, 246, 0.3);
+  
+  /* Backdrop Filter - Arka Plan Filtresi */
+  --rs-agora-backdrop-blur: blur(20px);
+  --rs-agora-backdrop-blur-light: blur(10px);
+  
+  /* Border Radius - Kenarlık Yuvarlaklığı */
+  --rs-agora-border-radius-sm: 8px;
+  --rs-agora-border-radius-md: 12px;
+  --rs-agora-border-radius-lg: 16px;
+  --rs-agora-border-radius-xl: 20px;
+  
+  /* Transition - Geçiş Efektleri */
+  --rs-agora-transition-fast: all 0.2s ease;
+  --rs-agora-transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --rs-agora-transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }

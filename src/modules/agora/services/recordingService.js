@@ -4,7 +4,24 @@
  */
 
 import { AGORA_CONFIG, API_ENDPOINTS, DEV_CONFIG } from '../constants.js'
-import { logger } from './logger.js'
+import { fileLogger } from './fileLogger.js'
+
+// Logger helper'ları (modül seviyesi - tutarlı kullanım)
+const logDebug = (message, data) => fileLogger.log('debug', 'RECORDING', message, data)
+const logInfo = (message, data) => fileLogger.log('info', 'RECORDING', message, data)
+const logWarn = (message, data) => fileLogger.log('warn', 'RECORDING', message, data)
+const logError = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('error', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('error', 'RECORDING', errorOrMessage, context)
+}
+const logFatal = (errorOrMessage, context) => {
+  if (errorOrMessage instanceof Error) {
+    return fileLogger.log('fatal', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+  }
+  return fileLogger.log('fatal', 'RECORDING', errorOrMessage, context)
+}
 
 class RecordingService {
   constructor() {
@@ -25,7 +42,7 @@ class RecordingService {
    */
   async startRecording(config = {}) {
     try {
-      logger.logUI('Recording başlatılıyor...', 'RECORDING')
+      logInfo('Recording başlatılıyor...')
       
       this.recordingStatus = 'STARTING'
       this.error = null
@@ -54,7 +71,7 @@ class RecordingService {
         this.recordingStatus = 'RECORDING'
         this.retryCount = 0
         
-        logger.logUI(`Recording başlatıldı! ID: ${this.recordingId}`, 'RECORDING')
+        logInfo(`Recording başlatıldı! ID: ${this.recordingId}`)
         
         return {
           success: true,
@@ -85,7 +102,7 @@ class RecordingService {
         throw new Error('Aktif recording bulunamadı')
       }
 
-      logger.logUI('Recording durduruluyor...', 'RECORDING')
+      logInfo('Recording durduruluyor...')
       this.recordingStatus = 'STOPPING'
 
       const response = await this.callRecordingAPI('stop', {
@@ -97,7 +114,7 @@ class RecordingService {
         this.recordingStatus = 'IDLE'
         this.recordingFiles = response.files || []
         
-        logger.logUI(`Recording durduruldu! Dosyalar: ${this.recordingFiles.length}`, 'RECORDING')
+        logInfo(`Recording durduruldu! Dosyalar: ${this.recordingFiles.length}`)
         
         return {
           success: true,
@@ -225,7 +242,7 @@ class RecordingService {
         timestamp: Date.now()
       }
 
-      logger.logUI(`Recording API çağrısı: ${action}`, 'RECORDING')
+      logInfo(`Recording API çağrısı: ${action}`)
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -248,7 +265,7 @@ class RecordingService {
       return result
       
     } catch (error) {
-      logger.logError(`Recording API hatası (${action}):`, error, 'RECORDING')
+      logError(`Recording API hatası (${action}): ${error.message || error}`)
       throw error
     }
   }
@@ -262,12 +279,12 @@ class RecordingService {
     this.error = error
     this.recordingStatus = 'ERROR'
     
-    logger.logError(`Recording hatası (${operation}):`, error, 'RECORDING')
+    logError(`Recording hatası (${operation}): ${error.message || error}`)
     
     // Retry logic
     if (this.retryCount < this.maxRetries) {
       this.retryCount++
-      logger.logUI(`Recording retry ${this.retryCount}/${this.maxRetries}`, 'RECORDING')
+      logInfo(`Recording retry ${this.retryCount}/${this.maxRetries}`)
       
       setTimeout(() => {
         this.retryOperation(operation)
@@ -293,7 +310,7 @@ class RecordingService {
           break
       }
     } catch (error) {
-      logger.logError(`Recording retry hatası (${operation}):`, error, 'RECORDING')
+      logError(`Recording retry hatası (${operation}): ${error.message || error}`)
     }
   }
 

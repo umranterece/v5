@@ -5,26 +5,17 @@ import { useStreamQuality } from './useStreamQuality.js'
 import { useAgoraStore } from '../store/index.js'
 import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
-import { useLogger } from './useLogger.js'
+import { useFileLogger } from './useFileLogger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 import { useLayoutStore } from '../store/layout.js'
 
-const { 
-  logUI, 
-  logError, 
-  logWarn, 
-  logInfo, 
-  logDebug, 
-  logVideo, 
-  logScreen, 
-  logQuality, 
-  trackPerformance, 
-  trackUserAction,
+const {
   logs,
   logStats,
-  getFilteredLogs,
-  clearLogs,
-  exportLogs
-} = useLogger()
+  filteredLogs,
+  refreshLogs,
+  exportLogsToCSV
+} = useFileLogger()
 
 /**
  * Toplantı Composable - Video konferans işlemlerini yönetir ve tüm alt composable'ları koordine eder
@@ -33,6 +24,23 @@ const {
  * @module composables/useMeeting
  */
 export function useMeeting() {
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.SYSTEM, message, data)
+  const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.SYSTEM, message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', LOG_CATEGORIES.SYSTEM, message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', LOG_CATEGORIES.SYSTEM, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', LOG_CATEGORIES.SYSTEM, errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', LOG_CATEGORIES.SYSTEM, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', LOG_CATEGORIES.SYSTEM, errorOrMessage, context)
+  }
+  
   // Store'ları initialize et
   const agoraStore = useAgoraStore()
   const currentChannel = ref('') // Mevcut kanal adını tutar
@@ -110,7 +118,7 @@ export function useMeeting() {
    */
   const clean = async () => {
     try {
-      logUI('Kapsamlı temizlik başlatılıyor...')
+      logInfo('Kapsamlı temizlik başlatılıyor...')
       
       // Önce mevcut bağlantıları kapat
       if (isConnected.value) {
@@ -129,7 +137,7 @@ export function useMeeting() {
       // Current channel'ı sıfırla
       currentChannel.value = ''
       
-      logUI('Kapsamlı temizlik tamamlandı')
+      logInfo('Kapsamlı temizlik tamamlandı')
     } catch (error) {
       logError(error, { context: 'clean' })
       // Temizlik hatası olsa bile devam et
@@ -163,7 +171,7 @@ export function useMeeting() {
       // Layout'u kanala ilk kez katıldığında grid'e sıfırla
       const layoutStore = useLayoutStore()
       if (layoutStore.currentLayout !== 'grid') {
-        logUI('Kanala ilk kez katılındı, layout grid\'e sıfırlanıyor')
+        logInfo('Kanala ilk kez katılındı, layout grid\'e sıfırlanıyor')
         layoutStore.switchLayoutWithSave('grid')
       }
       
@@ -181,7 +189,7 @@ export function useMeeting() {
         startMonitoring(agoraStore.clients.video.client)
       }
       
-      logUI('Video kanalına başarıyla katılındı', { channelName, uid })
+      logInfo(`Video kanalına başarıyla katılındı: ${channelName}, UID: ${uid}`)
     } catch (error) {
       logError(error, { context: 'joinChannel', channelName: joinParams.channelName })
       throw error
@@ -203,7 +211,7 @@ export function useMeeting() {
       // Yayın kalitesi izlemeyi durdur
       stopMonitoring()
       
-      logUI('Her iki kanaldan da başarıyla ayrıldı')
+      logInfo('Her iki kanaldan da başarıyla ayrıldı')
     } catch (error) {
       logError(error, { context: 'leaveChannel' })
       throw error
@@ -215,23 +223,16 @@ export function useMeeting() {
    * Mikrofon track'inin durumunu ve store'daki değerleri kontrol eder
    */
   const debugMicrophoneStatus = () => {
-    logUI('=== MİKROFON DURUMU HATA AYIKLAMA ===', {
+          logInfo('=== MİKROFON DURUMU HATA AYIKLAMA ===', {
       isLocalAudioMuted: agoraStore.isLocalAudioMuted,
       hasAudioTrack: !!agoraStore.tracks.local.video.audio
     })
     
     if (agoraStore.tracks.local.video.audio) {
       const audioTrack = agoraStore.tracks.local.video.audio
-      logUI('Ses track detayları', {
-        enabled: audioTrack.enabled,
-        readyState: audioTrack.readyState,
-        muted: audioTrack.muted,
-        _closed: audioTrack._closed,
-        id: audioTrack.id,
-        kind: audioTrack.kind
-      })
+      logInfo(`Ses track detayları: enabled=${audioTrack.enabled}, readyState=${audioTrack.readyState}, muted=${audioTrack.muted}, _closed=${audioTrack._closed}, id=${audioTrack.id}, kind=${audioTrack.kind}`)
     } else {
-      logUI('Store\'da ses track\'i bulunamadı')
+      logWarn('Store\'da ses track\'i bulunamadı')
     }
   }
   
@@ -244,24 +245,12 @@ export function useMeeting() {
   }
 
   return {
-    // Logger - Logging işlemleri
-    logUI,
-    logError,
-    logWarn,
-    logInfo,
-    logDebug,
-    logVideo,
-    logScreen,
-    logQuality,
-    trackPerformance,
-    trackUserAction,
-    
     // Log yönetimi - Log management
     logs,
     logStats,
-    getFilteredLogs,
-    clearLogs,
-    exportLogs,
+    filteredLogs,
+    refreshLogs,
+    exportLogsToCSV,
     
     // State - Durum değişkenleri
     isConnected,

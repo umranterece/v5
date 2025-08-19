@@ -109,13 +109,30 @@
 <script>
 import { computed } from 'vue'
 import { useRecording } from '../../composables/useRecording.js'
-import { logger } from '../../services/logger.js'
+import { fileLogger } from '../../services/fileLogger.js'
 import { formatDuration as formatDurationFromUtils, formatFileSize as formatFileSizeFromUtils } from '../../utils/index.js'
 
 export default {
   name: 'RecordingControls',
   
   setup() {
+    // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+    const logDebug = (message, data) => fileLogger.log('debug', 'RECORDING', message, data)
+    const logInfo = (message, data) => fileLogger.log('info', 'RECORDING', message, data)
+    const logWarn = (message, data) => fileLogger.log('warn', 'RECORDING', message, data)
+    const logError = (errorOrMessage, context) => {
+      if (errorOrMessage instanceof Error) {
+        return fileLogger.log('error', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+      }
+      return fileLogger.log('error', 'RECORDING', errorOrMessage, context)
+    }
+    const logFatal = (errorOrMessage, context) => {
+      if (errorOrMessage instanceof Error) {
+        return fileLogger.log('fatal', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+      }
+      return fileLogger.log('fatal', 'RECORDING', errorOrMessage, context)
+    }
+
     const {
       isRecording,
       recordingStatus,
@@ -146,37 +163,37 @@ export default {
     // Methods
     const handleStartRecording = async () => {
       try {
-        logger.logUI('Recording başlatma butonu tıklandı', 'RECORDING')
+        logInfo('Recording başlatma butonu tıklandı')
         await startRecording()
       } catch (error) {
-        logger.error('RECORDING', 'Recording başlatma hatası:', { error })
+        logError(error, { context: 'startRecording' })
       }
     }
 
     const handleStopRecording = async () => {
       try {
-        logger.logUI('Recording durdurma butonu tıklandı', 'RECORDING')
+        logInfo('Recording durdurma butonu tıklandı')
         await stopRecording()
       } catch (error) {
-        logger.error('RECORDING', 'Recording durdurma hatası:', { error })
+        logError(error, { context: 'stopRecording' })
       }
     }
 
     const handleResetRecording = () => {
       try {
-        logger.logUI('Recording sıfırlama butonu tıklandı', 'RECORDING')
+        logInfo('Recording sıfırlama butonu tıklandı')
         resetRecording()
       } catch (error) {
-        logger.error('RECORDING', 'Recording sıfırlama hatası:', { error })
+        logError(error, { context: 'resetRecording' })
       }
     }
 
     const handleDownloadFile = async (fileId) => {
       try {
-        logger.logUI(`Dosya indirme başlatıldı: ${fileId}`, 'RECORDING')
+        logInfo(`Dosya indirme başlatıldı: ${fileId}`)
         await downloadRecordingFile(fileId)
       } catch (error) {
-        logger.error('RECORDING', 'Dosya indirme hatası:', { error })
+        logError(error, { context: 'downloadFile', fileId })
       }
     }
 

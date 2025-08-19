@@ -3,7 +3,14 @@
     <div class="info-modal" @click.stop>
       <!-- Header -->
       <div class="info-header">
-        <h3> Toplantı Bilgileri</h3>
+        <div class="header-content">
+          <div class="header-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 16H6L14 8L6 8L6 6L18 6V18L16 18L16 11L8 19L6 17L13 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+         
+        </div>
         <button @click="$emit('close')" class="close-btn">×</button>
       </div>
 
@@ -447,37 +454,70 @@ watch(() => props.isConnected, (isConnected) => {
 
 /* Modal */
 .info-modal {
-  background: rgba(30, 30, 30, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-surface-primary);
+  border: 1px solid var(--rs-agora-border-primary);
   border-radius: 20px;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: var(--rs-agora-backdrop-blur);
+  box-shadow: var(--rs-agora-shadow-secondary);
   width: 95%;
-  max-width: 800px;
+  max-width: 900px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   animation: slideIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Header */
+/* Header - Sabit */
 .info-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 25px 15px 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 30px 30px 25px;
+  background: var(--rs-agora-gradient-surface);
+  border-bottom: 1px solid var(--rs-agora-border-primary);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
   border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
 }
 
-.info-header h3 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--rs-agora-white);
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--rs-agora-gradient-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rs-agora-white);
+  box-shadow: var(--rs-agora-shadow-primary);
+}
+
+.header-text h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: var(--rs-agora-gradient-text-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-text p {
+  margin: 0;
+  color: var(--rs-agora-text-muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+
 
 .header-icon {
   margin-right: 8px;
@@ -492,29 +532,53 @@ watch(() => props.isConnected, (isConnected) => {
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
-  color: var(--rs-agora-white);
-  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-border-primary);
+  color: var(--rs-agora-text-secondary);
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  width: 40px;
-  height: 40px;
+  padding: 12px;
+  border-radius: 10px;
+  transition: var(--rs-agora-transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  font-size: 20px;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+  background: var(--rs-agora-transparent-white-10);
+  border-color: var(--rs-agora-border-secondary);
+  color: var(--rs-agora-text-primary);
+  transform: scale(1.05);
 }
 
-/* Content */
+/* Content - Scrollable */
 .info-content {
-  padding: 20px 25px 25px 25px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  margin-bottom: 0;
+}
+
+.info-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.info-content::-webkit-scrollbar-track {
+  background: var(--rs-agora-transparent-white-05);
+  border-radius: 3px;
+}
+
+.info-content::-webkit-scrollbar-thumb {
+  background: var(--rs-agora-transparent-white-20);
+  border-radius: 3px;
+}
+
+.info-content::-webkit-scrollbar-thumb:hover {
+  background: var(--rs-agora-transparent-white-30);
 }
 
 /* Info Grid */
@@ -527,12 +591,12 @@ watch(() => props.isConnected, (isConnected) => {
 
 /* Widget Styles */
 .info-widget {
-  background: linear-gradient(135deg, var(--rs-agora-transparent-white-05) 0%, var(--rs-agora-transparent-white-02) 100%);
-  border: 1px solid var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-gradient-surface);
+  border: 1px solid var(--rs-agora-border-primary);
   border-radius: 16px;
-  padding: 20px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  padding: 24px;
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  transition: var(--rs-agora-transition-normal);
   position: relative;
   overflow: hidden;
 }
@@ -543,14 +607,14 @@ watch(() => props.isConnected, (isConnected) => {
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background: var(--rs-agora-gradient-primary);
 }
 
 .info-widget:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--rs-agora-shadow-lg);
-  border-color: var(--rs-agora-transparent-white-20);
+  transform: translateY(-3px);
+  box-shadow: var(--rs-agora-shadow-surface);
+  border-color: var(--rs-agora-border-secondary);
 }
 
 /* Widget Header */
@@ -563,14 +627,16 @@ watch(() => props.isConnected, (isConnected) => {
 
 .widget-icon {
   font-size: 24px;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-gradient-primary);
   border-radius: 12px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  color: var(--rs-agora-white);
+  box-shadow: var(--rs-agora-shadow-primary);
 }
 
 .widget-icon svg {
@@ -1210,8 +1276,21 @@ watch(() => props.isConnected, (isConnected) => {
     padding: 20px 20px 25px 20px;
   }
   
-  .info-header h3 {
-    font-size: 20px;
+  .header-content {
+    gap: 12px;
+  }
+  
+  .header-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .header-text h3 {
+    font-size: 1.5rem;
+  }
+  
+  .header-text p {
+    font-size: 0.85rem;
   }
   
   .info-grid {
@@ -1220,17 +1299,17 @@ watch(() => props.isConnected, (isConnected) => {
   }
   
   .info-widget {
-    padding: 16px;
+    padding: 20px;
   }
   
   .widget-header {
     margin-bottom: 16px;
-    gap: 10px;
+    gap: 12px;
   }
   
   .widget-icon {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     font-size: 20px;
   }
   
@@ -1334,25 +1413,7 @@ watch(() => props.isConnected, (isConnected) => {
     align-self: stretch;
     text-align: center;
   }
-
 }
 
-/* Scrollbar Styling */
-.info-modal::-webkit-scrollbar {
-  width: 6px;
-}
 
-.info-modal::-webkit-scrollbar-track {
-  background: var(--rs-agora-transparent-white-05);
-  border-radius: 3px;
-}
-
-.info-modal::-webkit-scrollbar-thumb {
-  background: var(--rs-agora-transparent-white-20);
-  border-radius: 3px;
-}
-
-.info-modal::-webkit-scrollbar-thumb:hover {
-  background: var(--rs-agora-transparent-white-30);
-}
 </style>

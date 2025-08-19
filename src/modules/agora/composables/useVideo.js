@@ -3,7 +3,7 @@ import { USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplay
 import { useLayoutStore } from '../store/layout.js'
 import { useTrackManagement } from './useTrackManagement.js'
 import { centralEmitter } from '../utils/centralEmitter.js'
-import { logger, LOG_CATEGORIES } from '../services/logger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
 
 /**
@@ -13,13 +13,23 @@ import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.
  * @module composables/useVideo
  */
 export function useVideo(agoraStore) {
-  // Logger fonksiyonları - Direkt service'den al
-  const logVideo = (message, data) => logger.info(LOG_CATEGORIES.VIDEO, message, data)
-  const logVideoError = (error, context) => logger.error(LOG_CATEGORIES.VIDEO, error.message || error, { error, ...context })
-  const logError = (error, context) => logger.error(LOG_CATEGORIES.AGORA, error.message || error, { error, ...context })
-  const logWarn = (message, data) => logger.warn(LOG_CATEGORIES.AGORA, message, data)
-  const trackPerformance = (name, fn) => logger.trackPerformance(name, fn)
-  const trackUserAction = (action, details) => logger.trackUserAction(action, details)
+  // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
+  const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.VIDEO, message, data)
+  const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.VIDEO, message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', LOG_CATEGORIES.VIDEO, message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', LOG_CATEGORIES.VIDEO, errorOrMessage, context)
+  }
+  
   const client = ref(null) // Agora client referansı
   
   const isJoining = ref(false) // Kanala katılma durumu
@@ -71,7 +81,7 @@ export function useVideo(agoraStore) {
    */
   const initializeClient = async (appId) => {
     try {
-      logVideo('Video client başlatılıyor', { appId })
+      logInfo('Video client başlatılıyor', { appId })
       
       const { success, client: agoraClient, error } = createVideoClient()
       if (!success) {
@@ -82,17 +92,17 @@ export function useVideo(agoraStore) {
       agoraStore.setClient('video', agoraClient)
       
       // Event listener'ları doğrudan kur
-      logVideo('Event listener\'lar doğrudan kuruluyor')
+      logInfo('Event listener\'lar doğrudan kuruluyor')
       setupEventListeners(agoraClient)
       
-      // Merkezi event sistemine sadece tracking için kaydet (event listener kurma)
-      logVideo('Client sadece merkezi takip için kaydediliyor')
-      registerClient(agoraClient, 'video', null) // eventHandler = null
+      // Merkezi event sistemine sadece tracking için kaydet (event handler olmadan)
+      logInfo('Client sadece merkezi takip için kaydediliyor')
+      registerClient(agoraClient, 'video')
       
       agoraStore.setClientInitialized('video', true)
-      logVideo('Video client başarıyla başlatıldı')
+      logInfo('Video client başarıyla başlatıldı')
     } catch (error) {
-      logVideoError(error, { context: 'initializeClient', appId })
+      logError(error, { context: 'initializeClient', appId })
       throw error
     }
   }
@@ -111,7 +121,7 @@ export function useVideo(agoraStore) {
 
     try {
       isJoining.value = true
-      logVideo('Video kanalına katılınıyor', { channelName, uid, userName, appId })
+      logInfo('Video kanalına katılınıyor', { channelName, uid, userName, appId })
       
       if (!client.value) {
         await initializeClient(appId)
@@ -134,16 +144,16 @@ export function useVideo(agoraStore) {
         isScreenShare: false
       }
       agoraStore.setLocalUser('video', localUser)
-      logVideo('Yerel kullanıcı store\'a ayarlandı', { localUser })
+      logInfo('Yerel kullanıcı store\'a ayarlandı', { localUser })
 
       // Video kanalına katıl
       const videoChannelName = CHANNEL_NAMES.VIDEO(channelName)
-      logVideo('Kanal adıyla katılınıyor', { originalChannelName: channelName, videoChannelName, uid })
+      logInfo('Kanal adıyla katılınıyor', { originalChannelName: channelName, videoChannelName, uid })
       await client.value.join(appId, videoChannelName, token, uid)
-      logVideo('Video kanalına başarıyla katılınıyor', { videoChannelName, uid })
+      logInfo('Video kanalına başarıyla katılınıyor', { videoChannelName, uid })
       
       // Client durumunu kontrol et
-      logVideo('Katılım sonrası client durumu', { 
+      logInfo('Katılım sonrası client durumu', { 
         connectionState: client.value.connectionState,
         remoteUsersCount: client.value.remoteUsers?.length || 0,
         remoteUsers: client.value.remoteUsers?.map(u => ({ uid: u.uid, hasAudio: !!u.audioTrack, hasVideo: !!u.videoTrack })) || []
@@ -153,7 +163,7 @@ export function useVideo(agoraStore) {
       await createLocalTracks()
       
       // Track'lerin yayınlandığını kontrol et
-      logVideo('Oluşturma sonrası yayınlanan track\'ler kontrol ediliyor', {
+      logInfo('Oluşturma sonrası yayınlanan track\'ler kontrol ediliyor', {
         audioTrack: !!agoraStore.tracks.local.video.audio,
         videoTrack: !!agoraStore.tracks.local.video.video,
         audioTrackId: agoraStore.tracks.local.video.audio?.id,
@@ -161,7 +171,7 @@ export function useVideo(agoraStore) {
       })
       
       // Final client durumunu kontrol et
-      logVideo('Katılım ve track oluşturma sonrası final client durumu', {
+      logInfo('Katılım ve track oluşturma sonrası final client durumu', {
         connectionState: client.value.connectionState,
         remoteUsersCount: client.value.remoteUsers?.length || 0,
         remoteUsers: client.value.remoteUsers?.map(u => ({ 
@@ -183,12 +193,12 @@ export function useVideo(agoraStore) {
       // Bekleyen abonelik kontrolünü başlat
       startPendingCheck()
       
-      logVideo('Video kanalı katılımı tamamlandı', { channelName, uid })
+      logInfo('Video kanalı katılımı tamamlandı', { channelName, uid })
       return { success: true }
       
     } catch (error) {
       isJoining.value = false
-      logVideoError(error, { channelName, uid, userName })
+      logError(error, { channelName, uid, userName })
       throw error
     }
   }
@@ -228,7 +238,7 @@ export function useVideo(agoraStore) {
       pendingSubscriptions.value.clear()
       
     } catch (error) {
-      logVideoError(error, { context: 'leaveChannel' })
+      logError(error, { context: 'leaveChannel' })
     } finally {
       isLeaving.value = false
     }
@@ -252,14 +262,14 @@ export function useVideo(agoraStore) {
         const cameraPermissionResult = await navigator.permissions.query({ name: 'camera' })
         cameraPermission = cameraPermissionResult.state
       } catch (e) {
-        logVideo('Kamera izni kontrol edilemedi, varsayılan olarak unknown', { error: e.message })
+        logInfo('Kamera izni kontrol edilemedi, varsayılan olarak unknown', { error: e.message })
       }
       
       try {
         const microphonePermissionResult = await navigator.permissions.query({ name: 'microphone' })
         microphonePermission = microphonePermissionResult.state
       } catch (e) {
-        logVideo('Mikrofon izni kontrol edilemedi, varsayılan olarak unknown', { error: e.message })
+        logInfo('Mikrofon izni kontrol edilemedi, varsayılan olarak unknown', { error: e.message })
       }
       
       // Mikrofon durumunu kontrol et
@@ -276,12 +286,12 @@ export function useVideo(agoraStore) {
         track: null
       })
       
-      logVideo('Cihaz durumu kontrol edildi', {
+      logInfo('Cihaz durumu kontrol edildi', {
         microphone: { hasDevice: audioDevices.length > 0, count: audioDevices.length, permission: microphonePermission },
         camera: { hasDevice: videoDevices.length > 0, count: videoDevices.length, permission: cameraPermission }
       })
     } catch (error) {
-      logVideoError(error, { context: 'checkDeviceStatus' })
+      logError(error, { context: 'checkDeviceStatus' })
     }
   }
 
@@ -291,13 +301,13 @@ export function useVideo(agoraStore) {
    */
   const createLocalTracks = async () => {
     try {
-      logVideo('Yerel track\'ler oluşturuluyor...')
+      logInfo('Yerel track\'ler oluşturuluyor...')
       
       // Önce cihaz durumlarını kontrol et
       await checkDeviceStatus()
       
       // Ses track'i oluştur
-      logVideo('Ses track\'i oluşturuluyor...')
+      logInfo('Ses track\'i oluşturuluyor...')
       const audioResult = await createAudioTrack()
       if (audioResult.success) {
         agoraStore.setLocalTrack('video', 'audio', audioResult.track)
@@ -308,7 +318,7 @@ export function useVideo(agoraStore) {
           permission: 'granted',
           track: audioResult.track
         })
-        logVideo('Ses track\'i başarıyla oluşturuldu', { 
+        logInfo('Ses track\'i başarıyla oluşturuldu', { 
           trackId: audioResult.track.id,
           trackEnabled: audioResult.track.enabled,
           trackReadyState: audioResult.track.readyState,
@@ -324,11 +334,11 @@ export function useVideo(agoraStore) {
           permission: audioResult.error?.name === 'NotAllowedError' ? 'denied' : 'unknown',
           track: null
         })
-        logVideo('Ses track\'i oluşturulamadı', { error: audioResult.error })
+        logInfo('Ses track\'i oluşturulamadı', { error: audioResult.error })
       }
 
       // Video track'i oluştur
-      logVideo('Video track\'i oluşturuluyor...')
+      logInfo('Video track\'i oluşturuluyor...')
       const videoResult = await createVideoTrack()
       if (videoResult.success) {
         agoraStore.setLocalTrack('video', 'video', videoResult.track)
@@ -339,7 +349,7 @@ export function useVideo(agoraStore) {
           permission: 'granted',
           track: videoResult.track
         })
-        logVideo('Video track\'i başarıyla oluşturuldu', { 
+        logInfo('Video track\'i başarıyla oluşturuldu', { 
           trackId: videoResult.track.id,
           trackEnabled: videoResult.track.enabled,
           trackReadyState: videoResult.track.readyState,
@@ -355,14 +365,14 @@ export function useVideo(agoraStore) {
           permission: videoResult.error?.name === 'NotAllowedError' ? 'denied' : 'unknown',
           track: null
         })
-        logVideo('Video track\'i oluşturulamadı', { error: videoResult.error })
+        logInfo('Video track\'i oluşturulamadı', { error: videoResult.error })
       }
 
       // Track'leri yayınla
       const tracksToPublish = [];
       if (agoraStore.tracks.local.video.audio) {
         tracksToPublish.push(agoraStore.tracks.local.video.audio);
-        logVideo('Ses track\'i yayınlama listesine eklendi', { 
+        logInfo('Ses track\'i yayınlama listesine eklendi', { 
           trackId: agoraStore.tracks.local.video.audio.id,
           trackEnabled: agoraStore.tracks.local.video.audio.enabled,
           trackReadyState: agoraStore.tracks.local.video.audio.readyState
@@ -370,7 +380,7 @@ export function useVideo(agoraStore) {
       }
       if (agoraStore.tracks.local.video.video) {
         tracksToPublish.push(agoraStore.tracks.local.video.video);
-        logVideo('Video track\'i yayınlama listesine eklendi', { 
+        logInfo('Video track\'i yayınlama listesine eklendi', { 
           trackId: agoraStore.tracks.local.video.video.id,
           trackEnabled: agoraStore.tracks.local.video.video.enabled,
           trackReadyState: agoraStore.tracks.local.video.video.readyState
@@ -378,7 +388,7 @@ export function useVideo(agoraStore) {
       }
       
       if (tracksToPublish.length > 0) {
-        logVideo('Track\'ler kanala yayınlanıyor', { 
+        logInfo('Track\'ler kanala yayınlanıyor', { 
           trackCount: tracksToPublish.length,
           trackIds: tracksToPublish.map(t => t.id),
           clientState: client.value.connectionState,
@@ -388,7 +398,7 @@ export function useVideo(agoraStore) {
         // Her track'i ayrı ayrı yayınla ve sonuçları kontrol et
         for (const track of tracksToPublish) {
           try {
-            logVideo('Tekil track yayınlanıyor', { 
+            logInfo('Tekil track yayınlanıyor', { 
               trackId: track.id,
               trackType: track.trackMediaType || 'unknown',
               trackEnabled: track.enabled,
@@ -397,7 +407,7 @@ export function useVideo(agoraStore) {
             })
             
             await client.value.publish(track)
-            logVideo('Track başarıyla yayınlandı', { 
+            logInfo('Track başarıyla yayınlandı', { 
               trackId: track.id, 
               trackType: track.trackMediaType || 'unknown',
               clientState: client.value.connectionState,
@@ -405,7 +415,7 @@ export function useVideo(agoraStore) {
               trackReadyState: track.readyState
             })
           } catch (publishError) {
-            logVideoError(publishError, { 
+            logError(publishError, { 
               context: 'publishTrack', 
               trackId: track.id,
               trackType: track.trackMediaType || 'unknown',
@@ -415,7 +425,7 @@ export function useVideo(agoraStore) {
         }
         
         // Yayınlama sonrası client durumunu kontrol et
-        logVideo('Yayınlama sonrası client durumu', {
+        logInfo('Yayınlama sonrası client durumu', {
           connectionState: client.value.connectionState,
           remoteUsersCount: client.value.remoteUsers?.length || 0,
           remoteUsers: client.value.remoteUsers?.map(u => ({ 
@@ -425,13 +435,13 @@ export function useVideo(agoraStore) {
           })) || []
         })
         
-        logVideo('Tüm track\'lerin yayınlanması tamamlandı', { trackCount: tracksToPublish.length })
+        logInfo('Tüm track\'lerin yayınlanması tamamlandı', { trackCount: tracksToPublish.length })
       } else {
-        logVideo('Yayınlanacak track yok')
+        logInfo('Yayınlanacak track yok')
       }
 
     } catch (error) {
-      logVideoError(error, { context: 'createLocalTracks' })
+      logError(error, { context: 'createLocalTracks' })
       throw error
     }
   }
@@ -448,7 +458,7 @@ export function useVideo(agoraStore) {
     }
     
     isCameraToggling = true
-    trackUserAction('toggleCamera', { off, timestamp: Date.now() })
+    logInfo('toggleCamera', { off, timestamp: Date.now() })
     
     try {
       if (off) {
@@ -483,7 +493,7 @@ export function useVideo(agoraStore) {
         }
       }
     } catch (error) {
-      logVideoError(error, { context: 'toggleCamera', state: off ? 'off' : 'on' })
+      logError(error, { context: 'toggleCamera', state: off ? 'off' : 'on' })
       throw error
     } finally {
       cameraToggleTimeout = createSafeTimeout(() => {
@@ -498,7 +508,7 @@ export function useVideo(agoraStore) {
    */
   const toggleMicrophone = async (muted) => {
     try {
-      trackUserAction('toggleMicrophone', { muted, timestamp: Date.now() })
+      logInfo('toggleMicrophone', { muted, timestamp: Date.now() })
       
       if (muted) {
         // Mikrofonu kapat - sadece unpublish et, track'i devre dışı bırakma
@@ -537,7 +547,7 @@ export function useVideo(agoraStore) {
         }
       }
     } catch (error) {
-      logVideoError(error, { context: 'toggleMicrophone', state: muted ? 'muted' : 'unmuted' })
+      logError(error, { context: 'toggleMicrophone', state: muted ? 'muted' : 'unmuted' })
       throw error
     }
   }
@@ -549,43 +559,43 @@ export function useVideo(agoraStore) {
   const processPendingSubscriptions = async (uid, currentMediaType = null) => {
     const pending = pendingSubscriptions.value.get(uid) || []
     
-    logVideo('Bekleyen abonelikler işleniyor', { uid, pending, currentMediaType })
+    logInfo('Bekleyen abonelikler işleniyor', { uid, pending, currentMediaType })
     
     // Mevcut mediaType'ı da işle
     const allMediaTypes = currentMediaType ? [...pending, currentMediaType] : pending
     
-    logVideo('İşlenecek tüm mediaType\'lar', { uid, allMediaTypes })
+    logInfo('İşlenecek tüm mediaType\'lar', { uid, allMediaTypes })
     
     if (allMediaTypes.length === 0) {
-      logVideo('İşlenecek mediaType yok', { uid })
+      logInfo('İşlenecek mediaType yok', { uid })
       return
     }
     
     for (const mediaType of allMediaTypes) {
       try {
-        logVideo('Bekleyen abonelik işleniyor', { uid, mediaType })
+        logInfo('Bekleyen abonelik işleniyor', { uid, mediaType })
         await subscribeToUserTrack(uid, mediaType)
       } catch (error) {
-        logVideoError(error, { context: 'processPendingSubscriptions', uid, mediaType })
+        logError(error, { context: 'processPendingSubscriptions', uid, mediaType })
       }
     }
     
     pendingSubscriptions.value.delete(uid)
-    logVideo('Bekleyen abonelikler tamamlandı', { uid })
+    logInfo('Bekleyen abonelikler tamamlandı', { uid })
   }
   
   // Bekleyen abonelikleri periyodik olarak kontrol et
   const checkPendingSubscriptions = async () => {
     for (const [uid, pending] of pendingSubscriptions.value.entries()) {
       if (pending && pending.length > 0) {
-        logVideo('Periyodik kontrol: bekleyen abonelikler bulundu', { uid, pending })
+        logInfo('Periyodik kontrol: bekleyen abonelikler bulundu', { uid, pending })
         
         // Ekran paylaşımı kullanıcıları için daha agresif kontrol
         const user = agoraStore.users.remote.find(u => u.uid === uid)
         const isScreenShare = user?.isScreenShare
         
         if (isScreenShare) {
-          logVideo('Ekran paylaşımı kullanıcısı için hızlı kontrol', { uid })
+          logInfo('Ekran paylaşımı kullanıcısı için hızlı kontrol', { uid })
           // Ekran paylaşımı için hemen dene
           await processPendingSubscriptions(uid)
         } else {
@@ -606,7 +616,7 @@ export function useVideo(agoraStore) {
     }
     pendingCheckInterval = setInterval(checkPendingSubscriptions, DEV_CONFIG.PENDING_CHECK_INTERVAL)
     activeIntervals.value.add(pendingCheckInterval)
-    logVideo(`Bekleyen abonelik kontrolü başlatıldı (${DEV_CONFIG.PENDING_CHECK_INTERVAL}ms)`)
+    logInfo(`Bekleyen abonelik kontrolü başlatıldı (${DEV_CONFIG.PENDING_CHECK_INTERVAL}ms)`)
   }
   
   const stopPendingCheck = () => {
@@ -614,7 +624,7 @@ export function useVideo(agoraStore) {
       clearInterval(pendingCheckInterval)
       activeIntervals.value.delete(pendingCheckInterval)
       pendingCheckInterval = null
-      logVideo('Bekleyen abonelik kontrolü durduruldu')
+      logInfo('Bekleyen abonelik kontrolü durduruldu')
     }
   }
 
@@ -626,15 +636,15 @@ export function useVideo(agoraStore) {
    */
   const subscribeToUserTrack = async (uid, mediaType, retryCount = 0) => {
     try {
-      logVideo('Kullanıcı track\'ine abone olunuyor', { uid, mediaType, retryCount, clientType: 'video' })
+      logInfo('Kullanıcı track\'ine abone olunuyor', { uid, mediaType, retryCount, clientType: 'video' })
       
       if (!client.value) {
-        logVideo('Abonelik için client mevcut değil', { uid, mediaType })
+        logInfo('Abonelik için client mevcut değil', { uid, mediaType })
         return
       }
       
       // Client durumunu kontrol et
-      logVideo('Abonelik öncesi client durumu', { 
+      logInfo('Abonelik öncesi client durumu', { 
         connectionState: client.value.connectionState,
         remoteUsersCount: client.value.remoteUsers?.length || 0
       })
@@ -642,13 +652,13 @@ export function useVideo(agoraStore) {
       // Remote user'ı bul
       const remoteUser = client.value.remoteUsers.find(u => u.uid === uid)
       if (!remoteUser) {
-        logVideo('Client\'ta uzak kullanıcı bulunamadı', { uid, mediaType, retryCount })
+        logInfo('Client\'ta uzak kullanıcı bulunamadı', { uid, mediaType, retryCount })
         if (retryCount < DEV_CONFIG.MAX_RETRY_COUNT) {
-          logVideo('Abonelik tekrar deneniyor', { uid, mediaType, retryCount: retryCount + 1 })
+          logInfo('Abonelik tekrar deneniyor', { uid, mediaType, retryCount: retryCount + 1 })
           createSafeTimeout(() => subscribeToUserTrack(uid, mediaType, retryCount + 1), DEV_CONFIG.RETRY_DELAY)
         } else {
           // Maksimum deneme sayısına ulaşıldı, bekleyen aboneliklere ekle
-          logVideo('Maksimum deneme sayısına ulaşıldı, bekleyen aboneliklere ekleniyor', { uid, mediaType })
+          logInfo('Maksimum deneme sayısına ulaşıldı, bekleyen aboneliklere ekleniyor', { uid, mediaType })
           if (!pendingSubscriptions.value.has(uid)) {
             pendingSubscriptions.value.set(uid, [])
           }
@@ -659,7 +669,7 @@ export function useVideo(agoraStore) {
         return
       }
       
-      logVideo('Uzak kullanıcı bulundu', { 
+      logInfo('Uzak kullanıcı bulundu', { 
         uid, 
         mediaType, 
         hasAudio: !!remoteUser.audioTrack, 
@@ -670,7 +680,7 @@ export function useVideo(agoraStore) {
       })
       
       const track = await client.value.subscribe(remoteUser, mediaType)
-      logVideo('Track\'e başarıyla abone olundu', { 
+      logInfo('Track\'e başarıyla abone olundu', { 
         uid, 
         mediaType, 
         trackId: track?.id, 
@@ -682,7 +692,7 @@ export function useVideo(agoraStore) {
       
       // Track'in detaylarını logla
       if (track) {
-        logVideo('Abonelik sonrası track detayları', {
+        logInfo('Abonelik sonrası track detayları', {
           uid,
           mediaType,
           trackId: track.id,
@@ -703,7 +713,7 @@ export function useVideo(agoraStore) {
           
           // Audio track'i otomatik olarak çal
           track.play()
-          logVideo('Ses track\'i oynatılmaya başlandı', { uid, trackId: track.id })
+          logInfo('Ses track\'i oynatılmaya başlandı', { uid, trackId: track.id })
         } else {
           remoteVideoTracks.value.set(uid, track)
           
@@ -713,14 +723,14 @@ export function useVideo(agoraStore) {
           
           if (isScreenShare) {
             agoraStore.setRemoteTrack(uid, 'screen', track)
-            logVideo('Ekran paylaşımı track\'i screen olarak saklandı', { 
+            logInfo('Ekran paylaşımı track\'i screen olarak saklandı', { 
               uid, 
               trackId: track.id,
               storeTrackExists: !!agoraStore.tracks.remote.get(uid)?.screen
             })
           } else {
             agoraStore.setRemoteTrack(uid, 'video', track)
-            logVideo('Video track saklandı, container bekleniyor', { 
+            logInfo('Video track saklandı, container bekleniyor', { 
               uid, 
               trackId: track.id,
               storeTrackExists: !!agoraStore.tracks.remote.get(uid)?.video
@@ -736,21 +746,21 @@ export function useVideo(agoraStore) {
             [mediaType === 'audio' ? 'isMuted' : 'isVideoOff']: false
           }
           agoraStore.addRemoteUser(updatedUser)
-          logVideo('Track aboneliği sonrası kullanıcı store\'da güncellendi', { uid, mediaType, updates: updatedUser })
+          logInfo('Track aboneliği sonrası kullanıcı store\'da güncellendi', { uid, mediaType, updates: updatedUser })
         }
         
         if (mediaType === 'audio') {
-          logVideo('remote-audio-ready event emit ediliyor', { uid, trackId: track.id })
+          logInfo('remote-audio-ready event emit ediliyor', { uid, trackId: track.id })
           centralEmitter.emit(AGORA_EVENTS.REMOTE_AUDIO_READY, { uid, track, clientType: 'video' })
         } else if (mediaType === 'video') {
-          logVideo('remote-video-ready event emit ediliyor', { uid, trackId: track.id })
+          logInfo('remote-video-ready event emit ediliyor', { uid, trackId: track.id })
           centralEmitter.emit(AGORA_EVENTS.REMOTE_VIDEO_READY, { uid, track, clientType: 'video' })
         }
       } else {
-        logVideo('Abonelik sonrası track mevcut değil', { uid, mediaType, trackValid: isTrackValid(track) })
+        logInfo('Abonelik sonrası track mevcut değil', { uid, mediaType, trackValid: isTrackValid(track) })
       }
     } catch (error) {
-      logVideoError(error, { context: 'subscribeToUserTrack', uid, mediaType, retryCount })
+      logError(error, { context: 'subscribeToUserTrack', uid, mediaType, retryCount })
       throw error
     }
   }
@@ -762,20 +772,20 @@ export function useVideo(agoraStore) {
   const setupEventListeners = (client) => {
     if (!client) return
 
-    logVideo('Video client için event listener\'lar kuruluyor', { clientType: 'video' })
+    logInfo('Video client için event listener\'lar kuruluyor', { clientType: 'video' })
 
     // Kullanıcı katıldı
     client.on(AGORA_EVENTS.USER_JOINED, async (user) => {
-      logVideo('Kullanıcı katıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
+      logInfo('Kullanıcı katıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
-        logVideo('Yerel kullanıcı katıldı, göz ardı ediliyor', { uid: user.uid })
+        logInfo('Yerel kullanıcı katıldı, göz ardı ediliyor', { uid: user.uid })
         return;
       }
       
       // UID zaten herhangi bir remote listede varsa ekleme
       if (agoraStore.users.remote.some(u => u.uid === user.uid)) {
-        logVideo('Uzak kullanıcı zaten mevcut, tekrar eklenmiyor', { uid: user.uid })
+        logInfo('Uzak kullanıcı zaten mevcut, tekrar eklenmiyor', { uid: user.uid })
         return;
       }
       
@@ -823,7 +833,7 @@ export function useVideo(agoraStore) {
         }
       }
       
-      logVideo('Uzak kullanıcı store\'a eklendi', { user: remoteUser })
+      logInfo('Uzak kullanıcı store\'a eklendi', { user: remoteUser })
       centralEmitter.emit(AGORA_EVENTS.USER_JOINED, { ...remoteUser, clientType: 'video' })
       
       // Bekleyen abonelikleri işle
@@ -832,7 +842,7 @@ export function useVideo(agoraStore) {
       // Eğer bekleyen abonelik varsa, biraz bekleyip tekrar dene
       const pending = pendingSubscriptions.value.get(user.uid)
       if (pending && pending.length > 0) {
-        logVideo('Bekleyen abonelikler var, 1 saniye sonra tekrar deneniyor', { uid: user.uid, pending })
+        logInfo('Bekleyen abonelikler var, 1 saniye sonra tekrar deneniyor', { uid: user.uid, pending })
         createSafeTimeout(async () => {
           await processPendingSubscriptions(user.uid)
         }, 1000)
@@ -841,10 +851,10 @@ export function useVideo(agoraStore) {
 
     // Kullanıcı ayrıldı
     client.on(AGORA_EVENTS.USER_LEFT, async (user) => {
-      logVideo('Kullanıcı ayrıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
+      logInfo('Kullanıcı ayrıldı event\'i alındı', { uid: user.uid, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
-        logVideo('Yerel kullanıcı ayrıldı, göz ardı ediliyor', { uid: user.uid })
+        logInfo('Yerel kullanıcı ayrıldı, göz ardı ediliyor', { uid: user.uid })
         return
       }
       
@@ -856,7 +866,7 @@ export function useVideo(agoraStore) {
           // Eğer başka ekran paylaşımı kullanıcısı yoksa grid'e dön
           const remainingScreenUsers = agoraStore.users.remote.filter(u => u.isScreenShare)
           if (remainingScreenUsers.length === 0) {
-            logVideo('Uzak ekran paylaşımı kullanıcısı ayrıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+            logInfo('Uzak ekran paylaşımı kullanıcısı ayrıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
             layoutStore.switchLayoutWithSave('grid')
           }
         }
@@ -870,13 +880,13 @@ export function useVideo(agoraStore) {
       agoraStore.removeRemoteUser(user.uid)
       pendingSubscriptions.value.delete(user.uid)
       
-      logVideo('Uzak kullanıcı store\'dan kaldırıldı', { uid: user.uid })
+      logInfo('Uzak kullanıcı store\'dan kaldırıldı', { uid: user.uid })
       centralEmitter.emit(AGORA_EVENTS.USER_LEFT, { uid: user.uid, clientType: 'video' })
     })
 
     // Kullanıcı yayınlandı
     client.on(AGORA_EVENTS.USER_PUBLISHED, async (user, mediaType) => {
-      logVideo('Kullanıcı yayınlandı event\'i alındı', { 
+      logInfo('Kullanıcı yayınlandı event\'i alındı', { 
         uid: user.uid, 
         mediaType, 
         clientType: 'video',
@@ -886,14 +896,14 @@ export function useVideo(agoraStore) {
       })
       
       if (agoraStore.isLocalUID(user.uid)) {
-        logVideo('Yerel kullanıcı yayınlandı, göz ardı ediliyor', { uid: user.uid, mediaType })
+        logInfo('Yerel kullanıcı yayınlandı, göz ardı ediliyor', { uid: user.uid, mediaType })
         return
       }
       
       let existingUser = agoraStore.users.remote.find(u => u.uid === user.uid && !u.isScreenShare)
       
       if (!existingUser) {
-        logVideo('Kullanıcı store\'da bulunamadı, kullanıcı oluşturuluyor', { uid: user.uid, mediaType })
+        logInfo('Kullanıcı store\'da bulunamadı, kullanıcı oluşturuluyor', { uid: user.uid, mediaType })
         
         // Kullanıcıyı oluştur ve store'a ekle
         const remoteUser = {
@@ -909,7 +919,7 @@ export function useVideo(agoraStore) {
         
         agoraStore.addRemoteUser(remoteUser)
         existingUser = remoteUser
-        logVideo('Kullanıcı store\'a eklendi', { user: remoteUser })
+        logInfo('Kullanıcı store\'a eklendi', { user: remoteUser })
         
         // Track'lerin hazır olup olmadığını kontrol et
         const hasTrack = mediaType === 'audio' ? !!user.audioTrack : !!user.videoTrack
@@ -919,7 +929,7 @@ export function useVideo(agoraStore) {
           await processPendingSubscriptions(user.uid, mediaType)
         } else {
           // Track'ler henüz hazır değil, bekleyen aboneliklere ekle
-          logVideo('Track henüz hazır değil, bekleyen aboneliklere ekleniyor', { uid: user.uid, mediaType })
+          logInfo('Track henüz hazır değil, bekleyen aboneliklere ekleniyor', { uid: user.uid, mediaType })
           if (!pendingSubscriptions.value.has(user.uid)) {
             pendingSubscriptions.value.set(user.uid, [])
           }
@@ -928,13 +938,13 @@ export function useVideo(agoraStore) {
           // Basit ve etkili yaklaşım: Hızlı retry
           const remoteUser = agoraStore.users.remote.find(u => u.uid === user.uid)
           if (remoteUser?.isScreenShare) {
-            logVideo('Ekran paylaşımı için hızlı retry başlatılıyor', { uid: user.uid })
+            logInfo('Ekran paylaşımı için hızlı retry başlatılıyor', { uid: user.uid })
             
             // Layout'u presentation'a geç (eğer ekran paylaşımı varsa)
             const layoutStore = useLayoutStore()
             const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
             if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-              logVideo('Ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
+              logInfo('Ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
               layoutStore.switchLayoutWithSave('presentation')
             }
             
@@ -960,13 +970,13 @@ export function useVideo(agoraStore) {
         
         if (hasTrack) {
           try {
-            logVideo('Kullanıcı track\'ine abone olunuyor', { uid: user.uid, mediaType })
+            logInfo('Kullanıcı track\'ine abone olunuyor', { uid: user.uid, mediaType })
             await subscribeToUserTrack(user.uid, mediaType)
           } catch (error) {
-            logVideoError(error, { context: 'user-published', mediaType, uid: user.uid })
+            logError(error, { context: 'user-published', mediaType, uid: user.uid })
           }
         } else {
-          logVideo('Track henüz hazır değil, bekleyen aboneliklere ekleniyor', { uid: user.uid, mediaType })
+          logInfo('Track henüz hazır değil, bekleyen aboneliklere ekleniyor', { uid: user.uid, mediaType })
           if (!pendingSubscriptions.value.has(user.uid)) {
             pendingSubscriptions.value.set(user.uid, [])
           }
@@ -975,13 +985,13 @@ export function useVideo(agoraStore) {
           // Basit ve etkili yaklaşım: Hızlı retry (mevcut kullanıcı)
           const remoteUser = agoraStore.users.remote.find(u => u.uid === user.uid)
           if (remoteUser?.isScreenShare) {
-            logVideo('Ekran paylaşımı için hızlı retry başlatılıyor (mevcut kullanıcı)', { uid: user.uid })
+            logInfo('Ekran paylaşımı için hızlı retry başlatılıyor (mevcut kullanıcı)', { uid: user.uid })
             
             // Layout'u presentation'a geç (eğer ekran paylaşımı varsa)
             const layoutStore = useLayoutStore()
             const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
             if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-              logVideo('Mevcut ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
+              logInfo('Mevcut ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
               layoutStore.switchLayoutWithSave('presentation')
             }
             
@@ -1011,16 +1021,16 @@ export function useVideo(agoraStore) {
       if (currentUser) {
         const updatedUser = { ...currentUser, ...updates }
         agoraStore.addRemoteUser(updatedUser)
-        logVideo('Yayınlama sonrası kullanıcı store\'da güncellendi', { uid: user.uid, updates })
+        logInfo('Yayınlama sonrası kullanıcı store\'da güncellendi', { uid: user.uid, updates })
       }
     })
 
     // Kullanıcı yayından kaldırıldı
     client.on(AGORA_EVENTS.USER_UNPUBLISHED, async (user, mediaType) => {
-      logVideo('Kullanıcı yayından kaldırıldı event\'i alındı', { uid: user.uid, mediaType, clientType: 'video' })
+      logInfo('Kullanıcı yayından kaldırıldı event\'i alındı', { uid: user.uid, mediaType, clientType: 'video' })
       
       if (agoraStore.isLocalUID(user.uid)) {
-        logVideo('Yerel kullanıcı yayından kaldırıldı, göz ardı ediliyor', { uid: user.uid, mediaType })
+        logInfo('Yerel kullanıcı yayından kaldırıldı, göz ardı ediliyor', { uid: user.uid, mediaType })
         return
       }
       
@@ -1046,7 +1056,7 @@ export function useVideo(agoraStore) {
             // Eğer başka ekran paylaşımı kullanıcısı yoksa grid'e dön
             const remainingScreenUsers = agoraStore.users.remote.filter(u => u.isScreenShare)
             if (remainingScreenUsers.length === 0) {
-              logVideo('Uzak ekran paylaşımı kullanıcısı yayından kaldırıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+              logInfo('Uzak ekran paylaşımı kullanıcısı yayından kaldırıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
               layoutStore.switchLayoutWithSave('grid')
             }
           }
@@ -1063,18 +1073,18 @@ export function useVideo(agoraStore) {
       }
       
       centralEmitter.emit(AGORA_EVENTS.USER_UNPUBLISHED, { user, mediaType, clientType: 'video' })
-              logVideo('Yayından kaldırma sonrası kullanıcı store\'da güncellendi', { uid: user.uid, mediaType })
+              logInfo('Yayından kaldırma sonrası kullanıcı store\'da güncellendi', { uid: user.uid, mediaType })
     })
 
     // Bağlantı durumu
     client.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, async (curState) => {
-      logVideo('Bağlantı durumu değişti', { state: curState, clientType: 'video' })
+      logInfo('Bağlantı durumu değişti', { state: curState, clientType: 'video' })
       const connected = curState === 'CONNECTED'
       agoraStore.setClientConnected('video', connected)
       centralEmitter.emit(AGORA_EVENTS.CONNECTION_STATE_CHANGE, { connected, clientType: 'video' })
     })
     
-    logVideo('Video client için event listener kurulumu tamamlandı')
+    logInfo('Video client için event listener kurulumu tamamlandı')
   }
 
   /**
@@ -1082,7 +1092,7 @@ export function useVideo(agoraStore) {
    * Event listener'ları kaldırır ve client'ı sıfırlar
    */
   const cleanup = () => {
-    logVideo('Video composable cleanup başlatılıyor')
+    logInfo('Video composable cleanup başlatılıyor')
     
     // Bekleyen abonelik kontrolünü durdur
     stopPendingCheck()
@@ -1127,7 +1137,7 @@ export function useVideo(agoraStore) {
       cameraToggleTimeout = null
     }
     
-    logVideo('Video composable cleanup tamamlandı')
+    logInfo('Video composable cleanup tamamlandı')
   }
 
   onUnmounted(cleanup)

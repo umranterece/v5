@@ -87,6 +87,12 @@ export function useTheme() {
       name: 'Sıcak Krem',
       description: 'Sıcak krem kahve ve bej tonları',
       icon: '☕'
+    },
+    {
+      id: 'logmodal-elegance',
+      name: 'LogModal Zarafeti',
+      description: 'LogModal\'dan esinlenen zarif mavi-mor tonları',
+      icon: '✨'
     }
   ]
 

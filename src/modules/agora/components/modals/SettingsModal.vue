@@ -12,184 +12,422 @@
       <div class="settings-content">
         <!-- Camera Settings -->
         <div class="settings-section">
-          <label for="camera-select">Kamera:</label>
-          <select 
-            id="camera-select" 
-            v-model="selectedCamera" 
-            @change="handleCameraChange"
-          >
-            <option v-for="device in cameraDevices" :key="device.deviceId" :value="device.deviceId">
-              {{ device.label || `Kamera ${device.deviceId.slice(0, 8)}...` }}
-            </option>
-          </select>
+          <div class="section-header">
+            <span class="section-icon">📹</span>
+            <h3>Kamera Ayarları</h3>
+          </div>
+          
+          <div class="setting-item">
+            <label for="camera-select">Kamera Seçimi:</label>
+            <select 
+              id="camera-select" 
+              v-model="selectedCamera" 
+              @change="handleCameraChange"
+              :disabled="!canSwitchVideo"
+              class="device-select"
+            >
+              <option v-for="device in videoInputDevices" :key="device.deviceId" :value="device.deviceId">
+                {{ device.label || `Kamera ${device.deviceId.slice(0, 8)}...` }}
+              </option>
+            </select>
+            <div v-if="!canSwitchVideo" class="device-hint">
+              {{ videoInputDevices.length === 0 ? 'Kamera bulunamadı' : 'Tek kamera mevcut' }}
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <label for="video-quality-select">Video Kalitesi:</label>
+            <select 
+              id="video-quality-select" 
+              v-model="selectedVideoQuality" 
+              @change="handleVideoQualityChange"
+              class="quality-select"
+            >
+              <option value="low">Düşük (480p, 15fps)</option>
+              <option value="medium">Orta (720p, 24fps)</option>
+              <option value="high">Yüksek (720p, 30fps)</option>
+              <option value="ultra">Ultra (1080p, 30fps)</option>
+            </select>
+            <div class="quality-info">
+              {{ getVideoQualityInfo(selectedVideoQuality) }}
+            </div>
+          </div>
         </div>
 
         <!-- Microphone Settings -->
         <div class="settings-section">
-          <label for="microphone-select">Mikrofon:</label>
-          <select 
-            id="microphone-select" 
-            v-model="selectedMicrophone" 
-            @change="handleMicrophoneChange"
-          >
-            <option v-for="device in microphoneDevices" :key="device.deviceId" :value="device.deviceId">
-              {{ device.label || `Mikrofon ${device.deviceId.slice(0, 8)}...` }}
-            </option>
-          </select>
+          <div class="section-header">
+            <span class="section-icon">🎤</span>
+            <h3>Mikrofon Ayarları</h3>
+          </div>
+          
+          <div class="setting-item">
+            <label for="microphone-select">Mikrofon Seçimi:</label>
+            <select 
+              id="microphone-select" 
+              v-model="selectedMicrophone" 
+              @change="handleMicrophoneChange"
+              :disabled="!canSwitchAudio"
+              class="device-select"
+            >
+              <option v-for="device in audioInputDevices" :key="device.deviceId" :value="device.deviceId">
+                {{ device.label || `Mikrofon ${device.deviceId.slice(0, 8)}...` }}
+              </option>
+            </select>
+            <div v-if="!canSwitchAudio" class="device-hint">
+              {{ audioInputDevices.length === 0 ? 'Mikrofon bulunamadı' : 'Tek mikrofon mevcut' }}
+            </div>
+          </div>
         </div>
 
-        <!-- Speaker Settings -->
+        <!-- Screen Share Settings -->
         <div class="settings-section">
-          <label for="speaker-select">Hoparlör:</label>
-          <select 
-            id="speaker-select" 
-            v-model="selectedSpeaker" 
-            @change="handleSpeakerChange"
-          >
-            <option v-for="device in speakerDevices" :key="device.deviceId" :value="device.deviceId">
-              {{ device.label || `Hoparlör ${device.deviceId.slice(0, 8)}...` }}
-            </option>
-          </select>
+          <div class="section-header">
+            <span class="section-icon">🖥️</span>
+            <h3>Ekran Paylaşımı Ayarları</h3>
+          </div>
+          
+          <div class="setting-item">
+            <label for="screen-quality-select">Ekran Paylaşımı Kalitesi:</label>
+            <select 
+              id="screen-quality-select" 
+              v-model="selectedScreenQuality" 
+              @change="handleScreenQualityChange"
+              class="quality-select"
+            >
+              <option value="low">Düşük (480p, 10fps)</option>
+              <option value="medium">Orta (720p, 15fps)</option>
+              <option value="high">Yüksek (1080p, 30fps)</option>
+            </select>
+            <div class="quality-info">
+              {{ getScreenQualityInfo(selectedScreenQuality) }}
+            </div>
+          </div>
         </div>
 
-        <!-- Video Quality Settings (Desktop only) -->
-        <div class="settings-section" v-if="!isMobile">
-          <label for="video-quality-select">Video Kalitesi:</label>
-          <select 
-            id="video-quality-select" 
-            v-model="selectedVideoQuality" 
-            @change="handleVideoQualityChange"
-          >
-            <option value="low">Düşük (240p)</option>
-            <option value="medium">Orta (480p)</option>
-            <option value="high">Yüksek (720p)</option>
-            <option value="ultra">Ultra (1080p)</option>
-          </select>
-        </div>
-
-        <!-- Audio Quality Settings -->
+        <!-- Log Settings -->
         <div class="settings-section">
-          <label for="audio-quality-select">Ses Kalitesi:</label>
-          <select 
-            id="audio-quality-select" 
-            v-model="selectedAudioQuality" 
-            @change="handleAudioQualityChange"
-          >
-            <option value="low">Düşük (16kHz)</option>
-            <option value="medium">Orta (32kHz)</option>
-            <option value="high">Yüksek (48kHz)</option>
-          </select>
+          <div class="section-header">
+            <span class="section-icon">📝</span>
+            <h3>Log Ayarları</h3>
+          </div>
+          
+          <div class="setting-item">
+            <label for="log-method-select">Log Yöntemi:</label>
+            <select 
+              id="log-method-select" 
+              v-model="selectedLogMethod" 
+              @change="handleLogMethodChange"
+              class="device-select"
+            >
+              <option value="localStorage">LocalStorage (Tarayıcı - Test için)</option>
+              <option value="localFolder">Local Klasör (Proje klasörü)</option>
+            </select>
+            <div class="setting-info">
+              {{ getLogMethodInfo(selectedLogMethod) }}
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <label for="log-retention-select">Log Saklama Süresi:</label>
+            <select 
+              id="log-retention-select" 
+              v-model="selectedLogRetention" 
+              @change="handleLogRetentionChange"
+              class="device-select"
+            >
+              <option value="7">7 gün</option>
+              <option value="15">15 gün</option>
+              <option value="30">30 gün (varsayılan)</option>
+              <option value="60">60 gün</option>
+            </select>
+            <div class="setting-info">
+              {{ getLogRetentionInfo(selectedLogRetention) }}
+            </div>
+          </div>
         </div>
+
+        <!-- Device Status -->
+        <div class="settings-section device-status">
+          <div class="section-header">
+            <span class="section-icon">📊</span>
+            <h3>Cihaz Durumu</h3>
+          </div>
+          
+          <div class="status-grid">
+            <div class="status-item">
+              <span class="status-icon">📹</span>
+              <span class="status-label">Kamera:</span>
+              <span class="status-value" :class="{ 'status-ok': hasVideoPermission, 'status-error': !hasVideoPermission }">
+                {{ hasVideoPermission ? '✅ Çalışıyor' : '❌ İzin Yok' }}
+              </span>
+            </div>
+            <div class="status-item">
+              <span class="status-icon">🎤</span>
+              <span class="status-label">Mikrofon:</span>
+              <span class="status-value" :class="{ 'status-ok': hasAudioPermission, 'status-error': !hasAudioPermission }">
+                {{ hasAudioPermission ? '✅ Çalışıyor' : '❌ İzin Yok' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+
       </div>
 
-      <!-- Actions -->
-      <div class="settings-actions">
-        <button @click="applySettings" class="save-button">Kaydet</button>
-        <button @click="$emit('close')" class="cancel-button">İptal</button>
-      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
+import { VIDEO_CONFIG, SCREEN_SHARE_CONFIG } from '../../constants.js'
+import { fileLogger, localFolderLogger, STORAGE_METHODS } from '../../services/fileLogger.js'
 
 // Props
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
   currentCamera: { type: String, default: '' },
   currentMicrophone: { type: String, default: '' },
-  currentSpeaker: { type: String, default: '' },
   currentVideoQuality: { type: String, default: 'medium' },
-  currentAudioQuality: { type: String, default: 'medium' },
+  currentScreenQuality: { type: String, default: 'medium' },
+  currentLogMethod: { type: String, default: 'localStorage' },
+  currentLogRetention: { type: Number, default: 30 },
   isMobile: { type: Boolean, default: false }
 })
 
 // Emits
 const emit = defineEmits(['close', 'settings-changed'])
 
+// Device settings composable
+const {
+  audioInputDevices,
+  videoInputDevices,
+  currentAudioInputId,
+  currentVideoInputId,
+  hasAudioPermission,
+  hasVideoPermission,
+  canSwitchAudio,
+  canSwitchVideo,
+  initialize: initializeDeviceSettings,
+  refreshDevices: refreshDeviceList,
+  switchAudioInput,
+  switchVideoInput
+} = useDeviceSettings()
+
 // Local state
 const selectedCamera = ref('')
 const selectedMicrophone = ref('')
-const selectedSpeaker = ref('')
 const selectedVideoQuality = ref('medium')
-const selectedAudioQuality = ref('medium')
-
-// Device lists
-const cameraDevices = ref([])
-const microphoneDevices = ref([])
-const speakerDevices = ref([])
+const selectedScreenQuality = ref('medium')
+const selectedLogMethod = ref('localStorage')
+const selectedLogRetention = ref(30)
 
 // Computed
 const hasChanges = computed(() => {
   return selectedCamera.value !== props.currentCamera ||
          selectedMicrophone.value !== props.currentMicrophone ||
-         selectedSpeaker.value !== props.currentSpeaker ||
          selectedVideoQuality.value !== props.currentVideoQuality ||
-         selectedAudioQuality.value !== props.currentAudioQuality
+         selectedScreenQuality.value !== props.currentScreenQuality ||
+         selectedLogMethod.value !== props.currentLogMethod ||
+         selectedLogRetention.value !== props.currentLogRetention
 })
+
+// Quality info functions
+const getVideoQualityInfo = (quality) => {
+  const qualityMap = {
+    low: 'Düşük bant genişliği, hızlı bağlantı',
+    medium: 'Dengeli kalite ve performans',
+    high: 'Yüksek kalite, orta bant genişliği',
+    ultra: 'En yüksek kalite, yüksek bant genişliği'
+  }
+  return qualityMap[quality] || ''
+}
+
+const getScreenQualityInfo = (quality) => {
+  const qualityMap = {
+    low: 'Düşük bant genişliği, akıcı paylaşım',
+    medium: 'Dengeli kalite ve performans',
+    high: 'Yüksek kalite, detaylı paylaşım'
+  }
+  return qualityMap[quality] || ''
+}
+
+// Log settings info functions
+const getLogMethodInfo = (method) => {
+  const methodMap = {
+    localStorage: 'Loglar tarayıcının LocalStorage\'ında saklanır (test için ideal)',
+    localFolder: 'Loglar proje klasöründeki logs/ dizininde saklanır (production için ideal)'
+  }
+  return methodMap[method] || ''
+}
+
+const getLogRetentionInfo = (days) => {
+  return `${days} gün sonra eski loglar otomatik olarak silinir`
+}
 
 // Methods
 const handleOverlayClick = () => {
   emit('close')
 }
 
-const fetchDevices = async () => {
+const handleCameraChange = async () => {
   try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    
-    cameraDevices.value = devices.filter(device => device.kind === 'videoinput')
-    microphoneDevices.value = devices.filter(device => device.kind === 'audioinput')
-    speakerDevices.value = devices.filter(device => device.kind === 'audiooutput')
+    if (selectedCamera.value && selectedCamera.value !== currentVideoInputId.value) {
+      await switchVideoInput(selectedCamera.value)
+      emit('settings-changed', { camera: selectedCamera.value })
+    }
   } catch (error) {
-    console.error('Cihaz listesi alınamadı:', error)
+    console.error('Kamera değiştirme hatası:', error)
+    // Reset selection
+    selectedCamera.value = currentVideoInputId.value
   }
 }
 
-const handleCameraChange = () => {
-  // Camera change logic
-}
-
-const handleMicrophoneChange = () => {
-  // Microphone change logic
-}
-
-const handleSpeakerChange = () => {
-  // Speaker change logic
+const handleMicrophoneChange = async () => {
+  try {
+    if (selectedMicrophone.value && selectedMicrophone.value !== currentAudioInputId.value) {
+      await switchAudioInput(selectedMicrophone.value)
+      emit('settings-changed', { microphone: selectedMicrophone.value })
+    }
+  } catch (error) {
+    console.error('Mikrofon değiştirme hatası:', error)
+    // Reset selection
+    selectedMicrophone.value = currentAudioInputId.value
+  }
 }
 
 const handleVideoQualityChange = () => {
-  // Video quality change logic
+  console.log('Video quality changed to:', selectedVideoQuality.value)
+  // Video quality change logic - implement later
 }
 
-const handleAudioQualityChange = () => {
-  // Audio quality change logic
+const handleScreenQualityChange = () => {
+  console.log('Screen quality changed to:', selectedScreenQuality.value)
+  // Screen quality change logic - implement later
+}
+
+const handleLogMethodChange = () => {
+  console.log('Log method changed to:', selectedLogMethod.value)
+  
+  // Log yöntemini değiştir
+  if (selectedLogMethod.value === 'localFolder') {
+    localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
+    console.log('Switched to local folder logging')
+  } else {
+    fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
+    console.log('Switched to localStorage logging')
+  }
+}
+
+const handleLogRetentionChange = () => {
+  console.log('Log retention changed to:', selectedLogRetention.value)
+  
+  // Log retention süresini güncelle
+  const days = parseInt(selectedLogRetention.value)
+  if (selectedLogMethod.value === 'localFolder') {
+    localFolderLogger.retentionDays = days
+  } else {
+    fileLogger.retentionDays = days
+  }
+}
+
+const refreshDevices = async () => {
+  try {
+    console.log('Refreshing devices...')
+    isRefreshing.value = true
+    
+    await refreshDeviceList()
+    
+    console.log('Devices refreshed:', {
+      audio: audioInputDevices.value,
+      video: videoInputDevices.value
+    })
+    
+    // Update selections if current devices are no longer available
+    if (!videoInputDevices.value.find(d => d.deviceId === selectedCamera.value)) {
+      console.log('Camera device not found, updating selection')
+      selectedCamera.value = currentVideoInputId.value
+    }
+    if (!audioInputDevices.value.find(d => d.deviceId === selectedMicrophone.value)) {
+      console.log('Microphone device not found, updating selection')
+      selectedMicrophone.value = currentAudioInputId.value
+    }
+    
+    console.log('Selections updated:', {
+      camera: selectedCamera.value,
+      microphone: selectedMicrophone.value
+    })
+    
+  } catch (error) {
+    console.error('Cihaz yenileme hatası:', error)
+  } finally {
+    isRefreshing.value = false
+  }
 }
 
 const applySettings = () => {
   const newSettings = {
     camera: selectedCamera.value,
     microphone: selectedMicrophone.value,
-    speaker: selectedSpeaker.value,
     videoQuality: selectedVideoQuality.value,
-    audioQuality: selectedAudioQuality.value
+    screenQuality: selectedScreenQuality.value,
+    logMethod: selectedLogMethod.value,
+    logRetention: selectedLogRetention.value
   }
   
   emit('settings-changed', newSettings)
   emit('close')
 }
 
+// Watch for device changes
+watch(videoInputDevices, (newDevices) => {
+  if (newDevices.length > 0 && !selectedCamera.value) {
+    selectedCamera.value = newDevices[0].deviceId
+  }
+})
+
+watch(audioInputDevices, (newDevices) => {
+  if (newDevices.length > 0 && !selectedMicrophone.value) {
+    selectedMicrophone.value = newDevices[0].deviceId
+  }
+})
+
 // Lifecycle
-onMounted(() => {
-  // Initialize with current values
-  selectedCamera.value = props.currentCamera
-  selectedMicrophone.value = props.currentMicrophone
-  selectedSpeaker.value = props.currentSpeaker
-  selectedVideoQuality.value = props.currentVideoQuality
-  selectedAudioQuality.value = props.currentAudioQuality
-  
-  // Fetch devices
-  fetchDevices()
+onMounted(async () => {
+  try {
+    console.log('SettingsModal mounted, initializing device settings...')
+    
+    // Initialize device settings
+    await initializeDeviceSettings()
+    
+    console.log('Device settings initialized, devices:', {
+      audio: audioInputDevices.value,
+      video: videoInputDevices.value
+    })
+    
+    // Initialize with current values
+    selectedCamera.value = props.currentCamera || currentVideoInputId.value
+    selectedMicrophone.value = props.currentMicrophone || currentAudioInputId.value
+    selectedVideoQuality.value = props.currentVideoQuality
+    selectedScreenQuality.value = props.currentScreenQuality
+    selectedLogMethod.value = props.currentLogMethod
+    selectedLogRetention.value = props.currentLogRetention
+    
+    console.log('Settings initialized:', {
+      camera: selectedCamera.value,
+      microphone: selectedMicrophone.value,
+      videoQuality: selectedVideoQuality.value,
+      screenQuality: selectedScreenQuality.value,
+      logMethod: selectedLogMethod.value,
+      logRetention: selectedLogRetention.value
+    })
+    
+  } catch (error) {
+    console.error('Device settings initialization error:', error)
+  }
 })
 </script>
 
@@ -199,198 +437,354 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
+  width: 100%;
+  height: 100%;
+  background: var(--rs-agora-transparent-black-30);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.3s ease;
 }
 
 /* Modal Glass */
 .settings-modal-glass {
-  background: rgba(30, 30, 30, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--rs-agora-surface-primary);
+  backdrop-filter: var(--rs-agora-backdrop-blur);
   border-radius: 20px;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
   width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
-  animation: slideIn 0.3s ease;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: var(--rs-agora-shadow-secondary);
+  border: 1px solid var(--rs-agora-border-primary);
+  display: flex;
+  flex-direction: column;
 }
 
-/* Header */
+/* Header - Sabit */
 .settings-modal-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 25px 25px 20px 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
+  padding: 30px 30px 25px;
+  background: var(--rs-agora-gradient-surface);
+  border-bottom: 1px solid var(--rs-agora-border-primary);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  flex-shrink: 0;
 }
 
 .settings-modal-icon {
-  font-size: 28px;
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
+  background: var(--rs-agora-gradient-primary);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  backdrop-filter: blur(8px);
+  color: var(--rs-agora-white);
+  box-shadow: var(--rs-agora-shadow-primary);
+  font-size: 24px;
 }
 
-.settings-modal-glass h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--rs-agora-white);
+.settings-modal-header h2 {
+  margin: 0 0 4px 0;
   flex: 1;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: var(--rs-agora-gradient-text-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  background: var(--rs-agora-transparent-white-05);
+  border: 1px solid var(--rs-agora-border-primary);
+  color: var(--rs-agora-text-secondary);
   cursor: pointer;
-  padding: 5px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  width: 40px;
-  height: 40px;
+  padding: 12px;
+  border-radius: 10px;
+  transition: var(--rs-agora-transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  font-size: 20px;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--rs-agora-white);
+  background: var(--rs-agora-transparent-white-10);
+  border-color: var(--rs-agora-border-secondary);
+  color: var(--rs-agora-text-primary);
+  transform: scale(1.05);
 }
 
-/* Content */
+/* Content - Scrollable */
 .settings-content {
-  padding: 20px 25px;
-}
-
-.settings-section {
-  margin-bottom: 20px;
-}
-
-.settings-section:last-child {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
   margin-bottom: 0;
 }
 
-.settings-section label {
+.settings-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+  background: var(--rs-agora-transparent-white-05);
+  border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+  background: var(--rs-agora-transparent-white-20);
+  border-radius: 3px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+  background: var(--rs-agora-transparent-white-30);
+}
+
+.settings-section {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--rs-agora-surface-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--rs-agora-border-primary);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  transition: var(--rs-agora-transition-normal);
+}
+
+.settings-section:hover {
+  background: var(--rs-agora-transparent-white-08);
+  border-color: var(--rs-agora-border-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--rs-agora-shadow-surface);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rs-agora-border-primary);
+}
+
+.section-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--rs-agora-gradient-primary);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rs-agora-white);
+  flex-shrink: 0;
+}
+
+
+
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--rs-agora-text-primary);
+}
+
+.setting-item {
+  margin-bottom: 16px;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-item label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-}
-
-.settings-section select {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   color: var(--rs-agora-text-primary);
   font-size: 14px;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
 }
 
-.settings-section select:focus {
+.device-select, .quality-select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--rs-agora-border-primary);
+  border-radius: 12px;
+  background: var(--rs-agora-surface-primary);
+  color: var(--rs-agora-text-primary);
+  font-size: 14px;
+  transition: var(--rs-agora-transition-normal);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+}
+
+.device-select:focus, .quality-select:focus {
   outline: none;
   border-color: var(--rs-agora-primary);
-  box-shadow: 0 0 0 3px var(--rs-agora-transparent-primary-10);
+  background: var(--rs-agora-transparent-white-08);
+  box-shadow: 0 0 0 3px var(--rs-agora-transparent-white-10);
 }
 
-/* Actions */
-.settings-actions {
+.device-select:disabled, .quality-select:disabled {
+  background: var(--rs-agora-surface-tertiary);
+  color: var(--rs-agora-text-muted);
+  cursor: not-allowed;
+}
+
+.device-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rs-agora-text-muted);
+  font-style: italic;
+}
+
+.quality-info {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rs-agora-primary);
+  font-weight: 500;
+}
+
+.setting-info {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rs-agora-text-secondary);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Device Status */
+.status-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.status-item {
   display: flex;
-  gap: 15px;
-  padding: 20px 25px 25px 25px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--rs-agora-surface-primary);
+  border-radius: 12px;
+  border: 1px solid var(--rs-agora-border-primary);
+  backdrop-filter: var(--rs-agora-backdrop-blur-light);
+  transition: var(--rs-agora-transition-normal);
 }
 
-.save-button, .cancel-button {
+.status-item:hover {
+  background: var(--rs-agora-transparent-white-08);
+  border-color: var(--rs-agora-border-secondary);
+  transform: translateY(-1px);
+}
+
+.status-icon {
+  font-size: 18px;
+}
+
+.status-label {
+  font-weight: 500;
+  color: var(--rs-agora-text-primary);
   flex: 1;
-  padding: 12px 24px;
+}
+
+.status-value {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.status-ok {
+  background: var(--rs-agora-transparent-success-10);
+  color: var(--rs-agora-success);
+}
+
+.status-error {
+  background: var(--rs-agora-transparent-error-10);
+  color: var(--rs-agora-error);
+}
+
+/* Refresh Button */
+.refresh-button {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--rs-agora-gradient-primary);
   border: none;
   border-radius: 12px;
+  color: var(--rs-agora-white);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--rs-agora-transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: var(--rs-agora-shadow-primary);
 }
 
-.save-button {
-  background: var(--rs-agora-gradient-primary);
-  color: var(--rs-agora-white);
-}
-
-.save-button:hover {
+.refresh-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px var(--rs-agora-transparent-primary-40);
+  box-shadow: var(--rs-agora-shadow-primary);
 }
 
-.cancel-button {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.cancel-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--rs-agora-white);
+.refresh-icon {
+  font-size: 16px;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 /* Responsive */
 @media (max-width: 768px) {
   .settings-modal-glass {
-    width: 95%;
-    margin: 20px;
+    margin: 16px;
+    max-width: calc(100% - 32px);
+    max-height: 90vh;
   }
   
   .settings-modal-header {
-    padding: 20px 20px 15px 20px;
+    padding: 20px 20px 15px;
   }
   
   .settings-content {
-    padding: 20px 20px;
+    padding: 20px;
+  }
+  
+  .settings-section {
+    padding: 20px;
   }
   
   .settings-actions {
-    padding: 20px 20px 25px 20px;
+    flex-direction: column;
+    padding: 20px;
   }
   
-  .settings-modal-glass h2 {
-    font-size: 20px;
+  .save-button, .cancel-button {
+    width: 100%;
+  }
+  
+  .status-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
   }
 }
 </style>
