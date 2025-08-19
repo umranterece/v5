@@ -50,10 +50,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/agora-video-conference.git"
+    "url": "https://github.com/umranterece/v5.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/agora-video-conference/issues"
+    "url": "https://github.com/umranterece/v5/issues"
   },
-  "homepage": "https://github.com/yourusername/agora-video-conference#readme"
+  "homepage": "https://github.com/umranterece/v5#readme"
 }

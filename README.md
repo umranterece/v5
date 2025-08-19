@@ -58,8 +58,8 @@ v5/
 ### Kurulum Adımları
 ```bash
 # Repository'yi klonla
-git clone https://github.com/yourusername/agora-video-conference.git
-cd agora-video-conference/v5
+git clone https://github.com/umranterece/v5.git
+cd v5
 
 # Bağımlılıkları yükle
 npm install
@@ -212,8 +212,8 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 📞 İletişim
 
-- **Proje Linki**: [https://github.com/yourusername/agora-video-conference](https://github.com/yourusername/agora-video-conference)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/agora-video-conference/issues)
+- **Proje Linki**: [https://github.com/umranterece/v5](https://github.com/umranterece/v5)
+- **Issues**: [GitHub Issues](https://github.com/umranterece/v5/issues)
 
 ---
 
