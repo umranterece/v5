@@ -2,6 +2,9 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "env": {
+    "VERCEL_BUILD_CACHE": "false"
+  },
   "builds": [
     {
       "src": "package.json",
