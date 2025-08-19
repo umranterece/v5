@@ -6,10 +6,16 @@ import { ref, watch } from 'vue'
  */
 export function useTheme() {
   // Mevcut tema
-  const currentTheme = ref(localStorage.getItem('rs-agora-theme') || 'default')
+  const currentTheme = ref(localStorage.getItem('rs-agora-theme') || 'logmodal-elegance')
   
   // Mevcut temalar
   const availableThemes = [
+    {
+      id: 'logmodal-elegance',
+      name: 'LogModal Zarafeti',
+      description: 'LogModal\'dan esinlenen zarif mavi-mor tonları',
+      icon: '✨'
+    },
     {
       id: 'default',
       name: 'Okyanus Derinliği',
@@ -87,12 +93,6 @@ export function useTheme() {
       name: 'Sıcak Krem',
       description: 'Sıcak krem kahve ve bej tonları',
       icon: '☕'
-    },
-    {
-      id: 'logmodal-elegance',
-      name: 'LogModal Zarafeti',
-      description: 'LogModal\'dan esinlenen zarif mavi-mor tonları',
-      icon: '✨'
     }
   ]
 
@@ -143,7 +143,7 @@ export function useTheme() {
    * Varsayılan temaya dön
    */
   const resetToDefault = () => {
-    setTheme('default')
+    setTheme('logmodal-elegance')
   }
 
   /**
