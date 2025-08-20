@@ -1,7 +1,40 @@
 <template>
   <div class="advanced-whiteboard">
+    <!-- Loading State - Temiz Loading UI -->
+    <div v-if="!isReady" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h3>Whiteboard Yükleniyor...</h3>
+        <p>{{ loadingStatus }}</p>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: loadingProgress }"></div>
+          </div>
+          <div class="progress-text">{{ loadingProgressText }}</div>
+        </div>
+        
+        <!-- Loading Status -->
+        <div class="loading-status">
+          <div class="status-item" :class="{ active: loadingStep === 'container', completed: loadingStep === 'token' || loadingStep === 'room' || loadingStep === 'ready' }">
+            <span class="status-icon">📦</span>
+            <span>Container Hazırlanıyor</span>
+          </div>
+          <div class="status-item" :class="{ active: loadingStep === 'token', completed: loadingStep === 'ready' }">
+            <span class="status-icon">🔑</span>
+            <span>Token ve Room Oluşturuluyor</span>
+          </div>
+          <div class="status-item" :class="{ active: loadingStep === 'ready' }">
+            <span class="status-icon">🎨</span>
+            <span>Whiteboard Hazırlanıyor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header Info Bar -->
-    <div class="header-info-bar">
+    <div v-if="isReady" class="header-info-bar">
       <!-- Connection Status -->
       <div class="status-badge connection-status" :class="connectionStatus">
         <div class="status-dot"></div>
@@ -54,7 +87,7 @@
     </div>
 
     <!-- Professional Toolbar -->
-    <div class="whiteboard-toolbar" :class="{ 'collapsed': isToolbarCollapsed }">
+    <div v-if="isReady" class="whiteboard-toolbar" :class="{ 'collapsed': isToolbarCollapsed }">
       <!-- Left Tools - Drawing Tools -->
       <div class="toolbar-section">
         <div class="tool-group">
@@ -168,25 +201,66 @@
       <!-- Style Controls - Compact -->
       <div class="toolbar-section style-section">
         <div class="style-controls">
-          <!-- Color Picker - Compact -->
+          <!-- Color Picker - Compact with Dropdown -->
           <div class="color-control-compact">
-            <input 
-              type="color" 
-              v-model="currentColor" 
-              @input="updateColor"
-              class="color-picker-compact"
-              title="Renk Seç"
-            />
-            <div class="color-presets-compact">
+            <div class="color-picker-wrapper">
               <button 
-                v-for="color in colorPresets" 
-                :key="color"
-                @click="selectColor(color)"
-                class="color-preset-compact"
-                :style="{ backgroundColor: color }"
-                :title="color"
-                :class="{ active: currentColor === color }"
-              ></button>
+                @click="toggleColorPalette" 
+                class="color-picker-toggle"
+                :title="isColorPaletteOpen ? 'Renk Paletini Kapat' : 'Renk Paletini Aç'"
+              >
+                <div class="current-color-display" :style="{ backgroundColor: currentColor }"></div>
+                <svg 
+                  :class="{ 'rotated': isColorPaletteOpen }"
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  stroke-width="2"
+                >
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+              
+              <!-- Color Palette Dropdown -->
+              <div v-if="isColorPaletteOpen" class="color-palette-dropdown">
+                <div class="color-palette-content">
+                  <div class="color-palette-header">
+                    <span>Renk Seç</span>
+                    <button @click="toggleColorPalette" class="close-palette-btn">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <!-- Custom Color Picker -->
+                  <div class="custom-color-section">
+                    <label>Özel Renk:</label>
+                    <input 
+                      type="color" 
+                      v-model="currentColor" 
+                      @input="updateColor"
+                      class="custom-color-picker"
+                      title="Özel Renk Seç"
+                    />
+                  </div>
+                  
+                  <!-- Color Presets Grid -->
+                  <div class="color-presets-grid">
+                    <button 
+                      v-for="color in colorPresets" 
+                      :key="color"
+                      @click="selectColor(color)"
+                      class="color-preset-btn"
+                      :style="{ backgroundColor: color }"
+                      :title="color"
+                      :class="{ active: currentColor === color }"
+                    ></button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -249,15 +323,6 @@
 
     <!-- Main Canvas Area -->
     <div class="canvas-container" :class="{ fullscreen: isFullscreen }">
-      <!-- Loading State -->
-      <div v-if="!isReady" class="loading-overlay">
-        <div class="loading-content">
-          <div class="loading-spinner"></div>
-          <h3>Whiteboard Yükleniyor...</h3>
-          <p>{{ loadingStatus }}</p>
-        </div>
-      </div>
-
       <!-- Netless Container -->
       <div 
         ref="netlessContainer" 
@@ -291,6 +356,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useNetlessWhiteboard } from '../../composables/useNetlessWhiteboard.js'
 import { useAgoraStore } from '../../store/index.js'
 import { NETLESS_CONFIG } from '../../constants.js'
+import { netlessService } from '../../services/netlessService.js'
 import { 
   CursorArrowRaysIcon,
   PencilIcon,
@@ -369,11 +435,15 @@ const {
 
 // State
 const isReady = ref(false)
-const loadingStatus = ref('Başlatılıyor...')
+const loadingStatus = ref('Container hazırlanıyor...')
+const loadingStep = ref('container')
+const loadingProgress = ref('25%')
+const loadingProgressText = ref('Container hazırlanıyor...')
 const netlessContainer = ref(null)
 const isShapeMenuOpen = ref(false)
 const isDarkTheme = ref(true) // Varsayılan gece modu
 const isToolbarCollapsed = ref(false) // Toolbar'ın geniş/daraltılma durumu
+const isColorPaletteOpen = ref(false) // Renk paleti açık/kapalı durumu
 
 // Tool State
 const currentTool = ref('pencil')
@@ -522,25 +592,18 @@ const toggleTheme = async () => {
     // State'i güncelle
     isDarkTheme.value = newTheme === 'dark'
     
-    // CSS değişkenlerini güncelle
-    const root = document.documentElement
-    if (newTheme === 'dark') {
-      root.setAttribute('data-theme', 'dark')
-      root.style.setProperty('--whiteboard-bg', '#1a1a1a')
-      root.style.setProperty('--whiteboard-text', '#ffffff')
-      root.style.setProperty('--whiteboard-border', '#333333')
-      root.style.setProperty('--whiteboard-toolbar-bg', '#2d2d2d')
-      root.style.setProperty('--whiteboard-canvas-bg', '#1a1a1a')
-    } else {
-      root.removeAttribute('data-theme')
-      root.style.setProperty('--whiteboard-bg', '#f8f9fa')
-      root.style.setProperty('--whiteboard-text', '#495057')
-      root.style.setProperty('--whiteboard-border', '#e9ecef')
-      root.style.setProperty('--whiteboard-toolbar-bg', '#ffffff')
-      root.style.setProperty('--whiteboard-canvas-bg', '#ffffff')
+    // SADECE whiteboard component'inin data-whiteboard-theme attribute'unu güncelle
+    // Ana projenin data-theme attribute'unu ETKİLEME!
+    const whiteboardComponent = document.querySelector('.advanced-whiteboard')
+    if (whiteboardComponent) {
+      if (newTheme === 'dark') {
+        whiteboardComponent.setAttribute('data-whiteboard-theme', 'dark')
+      } else {
+        whiteboardComponent.removeAttribute('data-whiteboard-theme')
+      }
     }
     
-    console.log('✅ Tema başarıyla değiştirildi:', newTheme, 'isDarkTheme:', isDarkTheme.value)
+    console.log('✅ Whiteboard teması başarıyla değiştirildi:', newTheme, 'isDarkTheme:', isDarkTheme.value)
   } catch (error) {
     console.error('Tema değiştirme hatası:', error)
   }
@@ -549,6 +612,10 @@ const toggleTheme = async () => {
 const toggleToolbar = () => {
   isToolbarCollapsed.value = !isToolbarCollapsed.value
   console.log('Toolbar durumu değiştirildi:', isToolbarCollapsed.value)
+}
+
+const toggleColorPalette = () => {
+  isColorPaletteOpen.value = !isColorPaletteOpen.value
 }
 
 const getStatusText = () => {
@@ -581,31 +648,64 @@ const getToolDisplayName = (tool) => {
 // Connect to Netless
 const connectToNetless = async () => {
   try {
-    console.log('�� AdvancedWhiteboard Netless\'e bağlanıyor...')
-    loadingStatus.value = 'Room bilgileri alınıyor...'
+    console.log('🚀 AdvancedWhiteboard Netless\'e bağlanıyor...')
     
-    const whiteboardRoom = agoraStore.whiteboardRoom
-    console.log('🔍 Store\'dan alınan room bilgileri:', whiteboardRoom)
+    // 1. CONTAINER HAZIRLANIYOR (başlangıçta seçili)
+    loadingStep.value = 'container'
+    loadingProgress.value = '25%'
+    loadingProgressText.value = 'Container hazırlanıyor...'
+    loadingStatus.value = 'Container hazırlanıyor...'
     
-    if (!whiteboardRoom?.uuid || !whiteboardRoom?.token) {
-      throw new Error('Store\'da room bilgileri bulunamadı')
-    }
+    // Container hazır olduğunda kısa bir bekleme
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    loadingStatus.value = 'Netless\'e bağlanılıyor...'
-    console.log('✅ Room bilgileri mevcut, bağlantı başlatılıyor...')
+    // 2. TOKEN VE ROOM OLUŞTURULUYOR (istek gönderilirken seçili)
+    loadingStep.value = 'token'
+    loadingProgress.value = '50%'
+    loadingProgressText.value = 'Token ve Room oluşturuluyor...'
+    loadingStatus.value = 'Token ve Room oluşturuluyor...'
     
+    const userId = agoraStore.localUser?.uid || `user-${Date.now()}`
+    const roomResponse = await netlessService.createRoomWithToken({
+      roomName: `agora-whiteboard-${Date.now()}`,
+      userId,
+      role: 'writer'
+    })
+    
+    // Room bilgilerini store'a kaydet
+    agoraStore.setWhiteboardRoom({
+      uuid: roomResponse.uuid,
+      token: roomResponse.token,
+      name: roomResponse.name
+    })
+    
+    // Debug: Store'a kaydedilen bilgileri kontrol et
+    props.logger.info('Whiteboard room bilgileri store\'a kaydedildi', {
+      uuid: roomResponse.uuid,
+      hasToken: !!roomResponse.token,
+      storeRoom: agoraStore.whiteboardRoom
+    })
+    
+    // 3. WHITEBOARD HAZIRLANIYOR (istek başarılı olunca seçili)
+    loadingStep.value = 'ready'
+    loadingProgress.value = '75%'
+    loadingProgressText.value = 'Whiteboard hazırlanıyor...'
+    loadingStatus.value = 'Whiteboard hazırlanıyor...'
+    
+    // Netless'e bağlan
     const success = await joinRoom({
       container: netlessContainer.value,
-      uuid: whiteboardRoom.uuid,
-      token: whiteboardRoom.token,
-      userId: agoraStore.localUser?.uid?.toString() || `agora-user-${Date.now()}`,
+      uuid: roomResponse.uuid,
+      token: roomResponse.token,
+      userId: userId,
       userName: agoraStore.localUser?.name || 'Agora User'
     })
     
     console.log('🔗 joinRoom sonucu:', success)
     
     if (success) {
-      loadingStatus.value = 'Hazırlanıyor...'
+      loadingProgress.value = '100%'
+      loadingProgressText.value = 'Hazırlanıyor...'
       console.log('✅ Room bağlantısı başarılı, hazırlanıyor...')
       
       // Room durumunu kontrol et
@@ -628,6 +728,7 @@ const connectToNetless = async () => {
     console.error('❌ AdvancedWhiteboard başlatma hatası:', error)
     props.logger.error('Advanced whiteboard başlatma hatası', { error: error.message })
     loadingStatus.value = `Hata: ${error.message}`
+    loadingProgressText.value = 'Bağlantı hatası!'
   }
 }
 
@@ -712,18 +813,16 @@ const setupKeyboardShortcuts = () => {
 // Lifecycle
 onMounted(async () => {
   try {
-    // Varsayılan gece modunu ayarla
-    const root = document.documentElement
-    root.setAttribute('data-theme', 'dark')
-    root.style.setProperty('--whiteboard-bg', '#1a1a1a')
-    root.style.setProperty('--whiteboard-text', '#ffffff')
-    root.style.setProperty('--whiteboard-border', '#333333')
-    root.style.setProperty('--whiteboard-toolbar-bg', '#2d2d2d')
-    root.style.setProperty('--whiteboard-canvas-bg', '#1a1a1a')
+    // Varsayılan gece modunu ayarla - SADECE whiteboard component'inde!
+    // Ana projenin data-theme attribute'unu ETKİLEME!
+    const whiteboardComponent = document.querySelector('.advanced-whiteboard')
+    if (whiteboardComponent) {
+      whiteboardComponent.setAttribute('data-whiteboard-theme', 'dark')
+    }
     
-    console.log('🌙 Varsayılan gece modu ayarlandı')
+    console.log('🌙 Whiteboard varsayılan gece modu ayarlandı')
     
-    // Netless'e bağlan
+    // Loading'i başlat ve room/token işlemlerini yap
     await connectToNetless()
     
     // Keyboard shortcuts'ları ayarla
@@ -750,13 +849,22 @@ const closeShapeMenu = (event) => {
   }
 }
 
+// Close color palette when clicking outside
+const closeColorPalette = (event) => {
+  if (!event.target.closest('.color-picker-wrapper')) {
+    isColorPaletteOpen.value = false
+  }
+}
+
 // Global click listener
 onMounted(() => {
   document.addEventListener('click', closeShapeMenu)
+  document.addEventListener('click', closeColorPalette)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', closeShapeMenu)
+  document.removeEventListener('click', closeColorPalette)
 })
 </script>
 
@@ -769,8 +877,9 @@ onUnmounted(() => {
   color: var(--whiteboard-text, #495057);
 }
 
-/* CSS Variables for Theme */
-:root {
+/* CSS Variables for Theme - SADECE WHITEBOARD COMPONENT'İ İÇİN */
+.advanced-whiteboard {
+  /* Light Theme (Varsayılan) */
   --whiteboard-bg: #f8f9fa;
   --whiteboard-text: #495057;
   --whiteboard-border: #e9ecef;
@@ -779,8 +888,8 @@ onUnmounted(() => {
   --whiteboard-canvas-bg: #ffffff;
 }
 
-/* Dark Theme */
-[data-theme="dark"] {
+/* Dark Theme - SADECE WHITEBOARD COMPONENT'İ İÇİN */
+.advanced-whiteboard[data-whiteboard-theme="dark"] {
   --whiteboard-bg: #1a1a1a;
   --whiteboard-text: #ffffff;
   --whiteboard-border: #333333;
@@ -942,6 +1051,36 @@ onUnmounted(() => {
   justify-content: center;
 }
 
+/* Responsive adjustments for style section */
+@media (max-width: 1200px) {
+  .style-section {
+    max-width: 350px;
+  }
+  
+  .style-controls {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .style-section {
+    max-width: 100%;
+    order: 3; /* Mobile'da en alta taşı */
+  }
+  
+  .style-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .color-control-compact,
+  .stroke-control-compact {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Color Control - Compact */
 .color-control-compact {
   display: flex;
@@ -949,39 +1088,370 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.color-picker-compact {
+.color-picker-wrapper {
+  position: relative;
   width: 28px;
+  height: 28px;
+}
+
+.color-picker-toggle {
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.current-color-display {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.color-palette-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 12px;
+  min-width: 200px;
+  z-index: 1002;
+  margin-top: 4px;
+  transform-origin: top left;
+  animation: dropdownSlideIn 0.3s ease forwards;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dropdown arrow indicator */
+.color-palette-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  border-left: 1px solid var(--whiteboard-border, #dee2e6);
+  border-top: 1px solid var(--whiteboard-border, #dee2e6);
+  transform: rotate(45deg);
+}
+
+/* Toggle button arrow rotation */
+.color-picker-toggle svg {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  transition: transform 0.3s ease;
+}
+
+.color-picker-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .whiteboard-toolbar {
+    gap: 12px;
+    padding: 6px 12px;
+  }
+  
+  .style-section {
+    max-width: 350px;
+  }
+  
+  .style-controls {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .whiteboard-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    height: auto;
+    min-height: auto;
+  }
+  
+  .toolbar-section {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .tool-group {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .style-section {
+    max-width: 100%;
+    order: 3; /* Mobile'da en alta taşı */
+  }
+  
+  .style-controls {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .color-control-compact,
+  .stroke-control-compact {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .control-group {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .info-bar {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  /* Mobilde renk paleti ekranın tam ortasında olsun */
+  .color-palette-dropdown {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent; /* Siyahlık yok */
+    margin: 0;
+    padding: 20px;
+    border: none;
+    border-radius: 0;
+    min-width: auto;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    z-index: 10000; /* En üstte olsun */
+  }
+  
+  .color-palette-dropdown::before {
+    display: none; /* Mobile'da arrow gösterme */
+  }
+  
+  /* Mobilde palette content'i ortala */
+  .color-palette-content {
+    background: var(--whiteboard-toolbar-bg, #ffffff);
+    border: 1px solid var(--whiteboard-border, #dee2e6);
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .color-presets-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    padding: 16px 0;
+  }
+  
+  .color-preset-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .custom-color-picker {
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tool-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .color-picker-wrapper {
+    width: 32px;
+    height: 32px;
+  }
+  
+  /* Mobilde palette content'i daha büyük */
+  .color-palette-content {
+    min-width: 280px;
+    padding: 20px;
+    max-height: 85vh;
+  }
+  
+  .color-presets-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  
+  .color-preset-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .custom-color-picker {
+    height: 40px;
+  }
+  
+  .stroke-slider-compact {
+    width: 60px;
+  }
+  
+  /* Mobilde toolbar daha kompakt */
+  .whiteboard-toolbar {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .toolbar-section {
+    gap: 6px;
+  }
+  
+  .tool-group {
+    gap: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Çok küçük ekranlarda palette content'i daha da büyük */
+  .color-palette-content {
+    min-width: 260px;
+    padding: 16px;
+    max-height: 90vh;
+  }
+  
+  .color-presets-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  
+  .color-preset-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .custom-color-picker {
+    height: 44px;
+  }
+  
+  .tool-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .control-btn {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Color Palette */
+.color-palette-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--whiteboard-border, #dee2e6);
+}
+
+.color-palette-header span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--whiteboard-text, #495057);
+}
+
+.close-palette-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--whiteboard-text, #495057);
+  transition: color 0.2s;
+}
+
+.close-palette-btn:hover {
+  color: #dc3545;
+}
+
+.custom-color-section {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--whiteboard-border, #dee2e6);
+}
+
+.custom-color-section label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--whiteboard-text, #6c757d);
+}
+
+.custom-color-picker {
+  width: 100%;
   height: 28px;
   border: 2px solid var(--whiteboard-border, #dee2e6);
   border-radius: 6px;
   cursor: pointer;
   background: none;
   padding: 0;
+  box-sizing: border-box; /* Input'un border'ını dahil et */
 }
 
-.color-presets-compact {
-  display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
-  max-width: 200px;
+.color-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
+  gap: 4px;
+  padding: 8px 0;
 }
 
-.color-preset-compact {
-  width: 18px;
-  height: 18px;
+.color-preset-btn {
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--whiteboard-border, #dee2e6);
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
 }
 
-.color-preset-compact:hover {
+.color-preset-btn:hover {
   transform: scale(1.1);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.color-preset-compact.active {
+.color-preset-btn.active {
   border: 2px solid #007bff;
   box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
 }
@@ -1103,41 +1573,133 @@ onUnmounted(() => {
   transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Loading durumunda margin'i sıfırla */
+.loading-overlay ~ .canvas-container {
+  margin-top: 0;
+}
+
 /* Toolbar kapandığında canvas'ı yukarı çek */
 .whiteboard-toolbar.collapsed ~ .canvas-container {
   margin-top: 40px; /* Sadece header yüksekliği */
 }
 
+/* Loading Overlay - Orijinal Loading UI */
 .loading-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255,255,255,0.95);
+  right: 0;
+  bottom: 0;
+  background: var(--rs-agora-gradient-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .loading-content {
   text-align: center;
+  color: var(--rs-agora-text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  width: 60px;
+  height: 60px;
+  border: 4px solid var(--rs-agora-border-primary);
+  border-top: 4px solid var(--rs-agora-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
 }
 
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  max-width: 300px;
+  margin: 20px auto;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  margin-bottom: 8px;
+  background: var(--rs-agora-border-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--rs-agora-primary);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 12px;
+  color: var(--rs-agora-text-secondary);
+  font-weight: 500;
+}
+
+/* Loading Status */
+.loading-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--rs-agora-text-secondary);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+}
+
+.status-item.active {
+  opacity: 1;
+  background: var(--rs-agora-surface-accent);
+  color: var(--rs-agora-primary);
+  transform: scale(1.02);
+}
+
+.status-item.completed {
+  opacity: 0.8;
+  color: var(--rs-agora-success);
+}
+
+.status-icon {
+  font-size: 18px;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.loading-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--rs-agora-text-primary);
+}
+
+.loading-content p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--rs-agora-text-secondary);
 }
 
 .netless-container {

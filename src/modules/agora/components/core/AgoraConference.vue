@@ -101,6 +101,7 @@
           :onOpenLayoutModal="toggleLayoutModal"
           :onOpenInfoModal="toggleInfo"
           :onOpenLogModal="toggleLog"
+          :logActive="props.logActive"
         />
       </div>
     </main>
@@ -186,7 +187,7 @@ import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
 import { NotificationContainer } from '../ui/index.js'
 import { createToken } from '../../services/tokenService.js'
-import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS } from '../../constants.js'
+import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG } from '../../constants.js'
 import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
 import { fileLogger } from '../../services/fileLogger.js'
 import { notification } from '../../services/notificationService.js'
@@ -263,11 +264,7 @@ const props = defineProps({
     default: null
   },
   
-  // Debug ayarları
-  debugMode: {
-    type: Boolean,
-    default: false
-  },
+
   
   // Log ayarları
   logActive: {

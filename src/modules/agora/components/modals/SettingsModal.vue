@@ -51,13 +51,24 @@
             </select>
           </div>
 
-          <div class="setting-item">
+          <div class="setting-item refresh-section">
             <button 
               @click="refreshDevices" 
               :disabled="isRefreshing"
               class="refresh-btn"
+              :class="{ 'refreshing': isRefreshing }"
             >
-              {{ isRefreshing ? 'Yenileniyor...' : '🔄 Cihazları Yenile' }}
+              <div class="refresh-icon">
+                <svg v-if="!isRefreshing" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 4V10H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M23 20V14H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14L18.36 18.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div v-else class="spinner"></div>
+              </div>
+              <span class="refresh-text">
+                {{ isRefreshing ? 'Cihazlar Yenileniyor...' : 'Cihazları Yenile' }}
+              </span>
             </button>
           </div>
         </div>
@@ -611,39 +622,99 @@ onMounted(async () => {
   color: var(--rs-agora-error);
 }
 
-/* Refresh Button */
-.refresh-button {
+/* Refresh Button - Modern Design */
+.refresh-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rs-agora-border-primary);
+}
+
+.refresh-btn {
   width: 100%;
-  padding: 16px 20px;
-  background: var(--rs-agora-gradient-primary);
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--rs-agora-primary) 0%, var(--rs-agora-secondary) 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   color: var(--rs-agora-white);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: var(--rs-agora-transition-normal);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  box-shadow: var(--rs-agora-shadow-primary);
+  gap: 12px;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
-.refresh-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--rs-agora-shadow-primary);
+.refresh-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
 }
 
-.refresh-button:disabled {
-  opacity: 0.6;
+.refresh-btn:hover::before {
+  left: 100%;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, var(--rs-agora-secondary) 0%, var(--rs-agora-primary) 100%);
+}
+
+.refresh-btn:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.refresh-btn.refreshing {
+  background: linear-gradient(135deg, var(--rs-agora-success) 0%, var(--rs-agora-primary) 100%);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
 }
 
 .refresh-icon {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.refresh-text {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Spinner Animation */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 

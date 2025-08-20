@@ -5,7 +5,7 @@
       :autoJoin="autoJoin"
       :userUid="userUid"
       :tokenEndpoint="tokenEndpoint"
-      :debugMode="debugMode"
+
       :logActive="logActive"
       @joined="handleJoined"
       @left="handleLeft"
@@ -38,8 +38,7 @@ const tokenEndpoint = ref(null) // null = varsayılan API endpoint
 // Kullanıcı ayarları
 const userUid = ref(null) // null = random UID
 
-// Debug ayarları
-const debugMode = ref(true) // true = günlükleri göster, false = gizle
+
 
 // Log ayarları
 const logActive = ref(true) // true = loglama aktif, false = loglama pasif

@@ -34,6 +34,7 @@
       
       <!-- Log Button -->
       <button 
+        v-if="props.logActive"
         @click="props.onOpenLogModal"
         class="log-button-top"
         title="Sistem Logları"
@@ -171,7 +172,9 @@ const props = defineProps({
   // Info Modal Props
   onOpenInfoModal: { type: Function, default: () => {} },
   // Log Modal Props
-  onOpenLogModal: { type: Function, default: () => {} }
+  onOpenLogModal: { type: Function, default: () => {} },
+  // Log Active Props
+  logActive: { type: Boolean, default: true }
 })
 
 // Computed properties

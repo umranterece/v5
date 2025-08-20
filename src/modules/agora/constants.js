@@ -16,7 +16,7 @@ export const STORAGE_PROVIDER = 'azure' // 'azure' veya 'custom'
 
 // Logging Configuration
 export const LOG_CONFIG = {
-  MAX_LOGS_PER_FILE: 1000 // 1000 log sonra otomatik temizleme
+  MAX_LOGS_PER_FILE: 10000 // 1000 log sonra otomatik temizleme
 }
 
 // API Endpoints
@@ -582,7 +582,7 @@ export const NOTIFICATION_DEFAULTS = {
   AUTO_DISMISS_DELAY: 5000,     // ⏱️ 5 saniye sonra kapanır
   MAX_NOTIFICATIONS: 5,         // 📊 Maksimum 5 bildirim
   POSITION: NOTIFICATION_POSITIONS.TOP_RIGHT,
-  ANIMATION_DURATION: 300
+  ANIMATION_DURATION: 100
 }
 
 export const NOTIFICATION_CATEGORIES = {

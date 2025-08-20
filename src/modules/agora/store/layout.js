@@ -37,13 +37,7 @@ export const useLayoutStore = defineStore('layout', () => {
       category: 'professional'
     },
 
-    mobile: {
-      id: 'mobile',
-      name: 'Mobil Görünüm',
-      icon: '📱',
-      description: 'Mobil cihazlar için optimize',
-      category: 'mobile'
-    }
+
   })
 
   // Computed
