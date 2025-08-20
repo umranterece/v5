@@ -128,7 +128,23 @@
       :isLocalVideoOff="!!isLocalVideoOff"
       :isLocalAudioMuted="!!isLocalAudioMuted"
       :allUsers="allUsers || []"
+      :isRecording="isRecording"
+      :recordingStatus="recordingStatus"
+      :recordingFiles="recordingFiles"
+      :recordingError="recordingError"
+      :recordingProgress="recordingProgress"
+      :canStartRecording="canStartRecording"
+      :canStopRecording="canStopRecording"
+      :hasRecordingFiles="hasRecordingFiles"
       @close="toggleInfo"
+      @startRecording="handleStartRecording"
+      @stopRecording="handleStopRecording"
+      @resetRecording="handleResetRecording"
+      @downloadRecordingFile="handleDownloadRecordingFile"
+      @clearRecordingError="handleClearRecordingError"
+      @storageProviderChanged="handleStorageProviderChanged"
+      @recordingPerspectiveChanged="handleRecordingPerspectiveChanged"
+      @recordingQualityChanged="handleRecordingQualityChanged"
     />
 
     <!-- Layout Modal -->
@@ -151,8 +167,11 @@
       @settings-changed="handleSettingsChanged"
     />
 
-
-
+    <!-- Notification Container -->
+    <NotificationContainer 
+      position="top-right"
+      :max-visible="5"
+    />
 
   </div>
 </template>
@@ -165,10 +184,12 @@ import { AgoraVideo } from './index.js'
 import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
+import { NotificationContainer } from '../ui/index.js'
 import { createToken } from '../../services/tokenService.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS } from '../../constants.js'
 import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
-import { fileLogger, localFolderLogger, STORAGE_METHODS } from '../../services/fileLogger.js'
+import { fileLogger } from '../../services/fileLogger.js'
+import { notification } from '../../services/notificationService.js'
 
 // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
 const logDebug = (message, data) => fileLogger.log('debug', 'SYSTEM', message, data)
@@ -249,15 +270,9 @@ const props = defineProps({
   },
   
   // Log ayarları
-  logMethod: {
-    type: String,
-    default: 'localStorage',
-    validator: (value) => ['localStorage', 'localFolder'].includes(value)
-  },
-  logRetention: {
-    type: Number,
-    default: 30,
-    validator: (value) => [7, 15, 30, 60].includes(value)
+  logActive: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -310,7 +325,24 @@ const {
   logStats,
   filteredLogs,
   refreshLogs,
-  exportLogsToCSV
+  exportLogsToCSV,
+  // Recording
+  isRecording,
+  recordingStatus,
+  recordingFiles,
+  recordingError,
+  recordingProgress,
+  canStartRecording,
+  canStopRecording,
+  hasRecordingFiles,
+  handleStartRecording,
+  handleStopRecording,
+  handleResetRecording,
+  handleDownloadRecordingFile,
+  handleClearRecordingError,
+  handleStorageProviderChanged,
+  handleRecordingPerspectiveChanged,
+  handleRecordingQualityChanged
 } = useMeeting()
 
 // Layout store initialization
@@ -338,6 +370,25 @@ const updateLoadingStatus = (status) => {
   loadingStatus.value = status
   loadingMessage.value = loadingMessages[status]
   logInfo('Loading status updated', { status, message: loadingMessages[status] })
+  
+  // Connected durumunda başarı notification'ı göster
+  if (status === 'connected') {
+            notification.success(
+          '🎉 Yayına Bağlandı!',
+          `${channelName.value} kanalına başarıyla bağlandınız. İyi yayınlar!`,
+          {
+            category: 'user',
+            priority: 'normal',
+            autoDismiss: true,
+            autoDismissDelay: 4000,
+            // Duplicate prevention için unique key
+            metadata: {
+              duplicateKey: 'connection-success',
+              channelName: channelName.value
+            }
+          }
+        )
+  }
 }
 
 // Progress bar için width hesapla
@@ -451,18 +502,16 @@ const handleSettingsChanged = (newSettings) => {
   }
   
   // Update log settings
-  if (newSettings.logMethod) {
-    const method = newSettings.logMethod
-    const retention = newSettings.logRetention || 30
+  if (newSettings.logActive !== undefined) {
+    const active = newSettings.logActive
     
-    if (method === 'localFolder') {
-      localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
-      localFolderLogger.retentionDays = retention
-      logInfo('Log method changed to local folder', { method, retention })
+    // Log aktifliği güncellendi
+    if (active) {
+      fileLogger.setLogActive(true)
+      logInfo('Logging activated', { maxLogs: LOG_CONFIG.MAX_LOGS_PER_FILE })
     } else {
-      fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
-      fileLogger.retentionDays = retention
-      logInfo('Log method changed to localStorage', { method, retention })
+      fileLogger.setLogActive(false)
+      logInfo('Logging deactivated')
     }
   }
   
@@ -598,22 +647,19 @@ const loggers = createLoggerWrappers()
 // Log yöntemini initialize et
 const initializeLogMethod = () => {
   try {
-    const method = props.logMethod || 'localStorage'
-    const retention = props.logRetention || 30
+    // Log ayarları
+    const active = props.logActive ?? true
     
-    if (method === 'localFolder') {
-      localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
-      localFolderLogger.retentionDays = retention
-      logInfo('Local folder logging initialized', { method, retention })
+    if (active) {
+      fileLogger.setLogActive(true)
+      logInfo('LocalStorage logging initialized', { maxLogs: LOG_CONFIG.MAX_LOGS_PER_FILE })
     } else {
-      fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
-      fileLogger.retentionDays = retention
-      logInfo('LocalStorage logging initialized', { method, retention })
+      fileLogger.setLogActive(false)
+      logInfo('Logging disabled')
     }
   } catch (error) {
     console.error('Log method initialization error:', error)
-    // Fallback to localStorage
-    fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
+    // Artık sadece localStorage kullanılıyor, fallback gerekmiyor
   }
 }
 
@@ -632,9 +678,7 @@ onMounted(async () => {
   
   logInfo('AgoraConference component mounted', { 
     channelName: channelName.value,
-    autoJoin: props.autoJoin,
-    logMethod: props.logMethod,
-    logRetention: props.logRetention
+    autoJoin: props.autoJoin
   })
 
   // Initialize device settings

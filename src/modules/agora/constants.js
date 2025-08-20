@@ -7,14 +7,26 @@ export const IS_DEV = false
 export const IS_PROD = true
 export const IS_SSR = false
 
+// Agora App Configuration
+export const AGORA_APP_ID = 'c9fe4999e3334b54baee7f46cb7b5b6e'
+export const AGORA_APP_CERTIFICATE = 'f43b74986ac141648c13ba3ae4d83410'
+
+// Storage Provider Configuration
+export const STORAGE_PROVIDER = 'azure' // 'azure' veya 'custom'
+
+// Logging Configuration
+export const LOG_CONFIG = {
+  MAX_LOGS_PER_FILE: 1000 // 1000 log sonra otomatik temizleme
+}
+
 // API Endpoints
 export const API_ENDPOINTS = {
   CREATE_TOKEN: IS_DEV 
     ? 'https://umranterece.com/test/agora/createToken.php'  // Development
     : 'https://umranterece.com/test/agora/createToken.php',  // Production
-  RECORDING: IS_DEV
-    ? 'https://umranterece.com/test/agora/recording.php'  // Development
-    : 'https://umranterece.com/test/agora/recording.php'   // Production
+    RECORDING: IS_DEV
+    ? 'https://umranterece.com/test/agora/createRecording.php'  // Development
+    : 'https://umranterece.com/test/agora/createRecording.php'   // Production
 }
 
 // Agora Client Configuration
@@ -146,6 +158,10 @@ export const USER_ID_RANGES = {
   SCREEN_SHARE: {
     MIN: 2000,
     MAX: 3000
+  },
+  WHITEBOARD: {  // 🆕 YENİ
+    MIN: 3000,
+    MAX: 4000
   }
 }
 
@@ -155,6 +171,8 @@ export const getUserType = (uid) => {
     return 'VIDEO'
   } else if (uid >= USER_ID_RANGES.SCREEN_SHARE.MIN && uid < USER_ID_RANGES.SCREEN_SHARE.MAX) {
     return 'SCREEN_SHARE'
+  } else if (uid >= USER_ID_RANGES.WHITEBOARD.MIN && uid < USER_ID_RANGES.WHITEBOARD.MAX) {
+    return 'WHITEBOARD'  // 🆕 YENİ
   } else {
     return 'BİLİNMEYEN'
   }
@@ -168,6 +186,10 @@ export const isScreenShareUser = (uid) => {
   return uid >= USER_ID_RANGES.SCREEN_SHARE.MIN && uid < USER_ID_RANGES.SCREEN_SHARE.MAX
 }
 
+export const isWhiteboardUser = (uid) => {  // 🆕 YENİ
+  return uid >= USER_ID_RANGES.WHITEBOARD.MIN && uid < USER_ID_RANGES.WHITEBOARD.MAX
+}
+
 export const getUserDisplayName = (uid, baseName = 'User') => {
   const userType = getUserType(uid)
   
@@ -176,6 +198,8 @@ export const getUserDisplayName = (uid, baseName = 'User') => {
       return `${baseName} ${uid}`
     case 'SCREEN_SHARE':
       return `Ekran Paylaşımı ${uid} (You)`
+    case 'WHITEBOARD':           // 🆕 YENİ
+      return `Whiteboard ${uid} (You)`
     default:
       return `${baseName} ${uid}`
   }
@@ -189,6 +213,8 @@ export const getRemoteUserDisplayName = (uid, baseName = 'User') => {
       return `${baseName} ${uid}`
     case 'SCREEN_SHARE':
       return `Ekran Paylaşımı ${uid}`
+    case 'WHITEBOARD':           // 🆕 YENİ
+      return `Whiteboard ${uid}`
     default:
       return `${baseName} ${uid}`
   }
@@ -312,6 +338,14 @@ export const AGORA_EVENTS = {
   RECORDING_STATUS_CHANGED: 'recording-status-changed',
   RECORDING_FILE_READY: 'recording-file-ready',
   
+  // Netless Whiteboard Events - 🎨 NETLESS
+  NETLESS_ROOM_JOINED: 'netless-room-joined',
+  NETLESS_ROOM_LEFT: 'netless-room-left',
+  NETLESS_TOOL_CHANGED: 'netless-tool-changed',
+  NETLESS_MEMBER_JOINED: 'netless-member-joined',
+  NETLESS_MEMBER_LEFT: 'netless-member-left',
+  NETLESS_ERROR: 'netless-error',
+  
   // Setup Events
   SETUP_REMOTE_VIDEO: 'setup-remote-video',
   
@@ -328,4 +362,235 @@ export const RECORDING_EVENTS = {
   RECORDING_ERROR: 'recording-error',
   RECORDING_STATUS_CHANGED: 'recording-status-changed',
   RECORDING_FILE_READY: 'recording-file-ready'
+}
+
+// 🎥 COMPOSITE RECORDING CONFIGURATION
+export const RECORDING_CONFIG = {
+  // Storage Provider Selection (Tek ayar ile değiştirilebilir)
+  STORAGE_PROVIDER: 'azure', // 'azure' veya 'custom'
+  
+  // Azure Storage Configuration
+  AZURE: {
+    VENDOR_ID: 1, // Azure Storage vendor ID
+    REGION: 0, // Global region
+    CONTAINER: 'agora-recordings',
+    DOMAIN: 'blob.core.windows.net',
+    ACCESS_KEY: 'YOUR_AZURE_STORAGE_ACCESS_KEY_HERE',
+    SECRET_KEY: 'YOUR_AZURE_STORAGE_SECRET_KEY_HERE'
+  },
+  
+  // Custom Server Configuration
+  CUSTOM: {
+    VENDOR_ID: 99, // Custom vendor ID
+    ENDPOINT: 'https://your-server.com/api/recording',
+    API_KEY: 'your_custom_api_key',
+    FORMAT: 'webm',
+    COMPRESSION: true
+  },
+  
+  // Composite Recording Mode (Önerilen)
+  COMPOSITE: {
+    MODE: 'composite', // Tek dosyada tüm stream'ler
+    STREAM_TYPES: 2, // Audio + Video
+    CHANNEL_TYPE: 1, // Live streaming
+    MAX_IDLE_TIME: 30, // 30 saniye boşluk sonrası otomatik durdurma
+    SUBSCRIBE_AUDIO_UIDS: [], // Tüm audio'ları kaydet
+    SUBSCRIBE_VIDEO_UIDS: [], // Tüm video'ları kaydet
+    SUBSCRIBE_UID_GROUP: 0, // Tüm kullanıcıları kaydet
+    RECORDING_FILE_CONFIG: {
+      AV_FILE_TYPE: ['mp4', 'webm'], // Format seçenekleri
+      FILE_COMPRESS: true, // Sıkıştırma açık
+      FILE_MAX_SIZE_MB: 512 // Maksimum dosya boyutu
+    }
+  },
+  
+  // Whiteboard Recording Integration
+  WHITEBOARD: {
+    ENABLED: true, // Whiteboard recording açık
+    FORMAT: 'svg', // Vector format (en küçük boyut)
+    CAPTURE_MODE: 'realtime', // Gerçek zamanlı kayıt
+    INCLUDE_CURSOR: true, // Fare imleci dahil
+    INCLUDE_TOOL_CHANGES: true, // Araç değişimleri dahil
+    INCLUDE_TIMESTAMPS: true, // Zaman damgaları dahil
+    FRAME_RATE: 30 // 30 FPS whiteboard kayıt
+  },
+  
+  // Recording Perspectives
+  PERSPECTIVES: {
+    HOST: 'host', // Host/Moderatör gözünden (en kapsamlı)
+    AUDIENCE: 'audience', // Audience gözünden (sadece önemli)
+    WHITEBOARD: 'whiteboard' // Sadece whiteboard odaklı
+  },
+  
+  // Default Perspective
+  DEFAULT_PERSPECTIVE: 'host',
+  
+  // Recording Quality Settings
+  QUALITY: {
+    HIGH: {
+      RESOLUTION: '1080p',
+      BITRATE_MIN: 2000,
+      BITRATE_MAX: 4000,
+      FRAME_RATE: 30
+    },
+    MEDIUM: {
+      RESOLUTION: '720p',
+      BITRATE_MIN: 1000,
+      BITRATE_MAX: 2000,
+      FRAME_RATE: 24
+    },
+    LOW: {
+      RESOLUTION: '480p',
+      BITRATE_MIN: 500,
+      BITRATE_MAX: 1000,
+      FRAME_RATE: 15
+    }
+  },
+  
+  // Default Quality
+  DEFAULT_QUALITY: 'medium'
+}
+
+// Netless Whiteboard Events 🎨 NETLESS
+export const NETLESS_EVENTS = {
+  ROOM_JOINED: 'netless-room-joined',
+  ROOM_LEFT: 'netless-room-left',
+  ROOM_DISCONNECTED: 'netless-room-disconnected',
+  TOOL_CHANGED: 'netless-tool-changed',
+  COLOR_CHANGED: 'netless-color-changed',
+  STROKE_CHANGED: 'netless-stroke-changed',
+  DRAWING_STARTED: 'netless-drawing-started',
+  DRAWING_ENDED: 'netless-drawing-ended',
+  SCENE_CHANGED: 'netless-scene-changed',
+  MEMBER_JOINED: 'netless-member-joined',
+  MEMBER_LEFT: 'netless-member-left',
+  PHASE_CHANGED: 'netless-phase-changed',
+  ERROR_OCCURRED: 'netless-error'
+}
+
+// Netless Whiteboard Configuration 🎨 NETLESS
+export const NETLESS_CONFIG = {
+  // SDK Ayarları - Gerçek Netless credentials
+  SDK: {
+    // 🔑 Netless App Identifier
+    APP_IDENTIFIER: 'EImzMH1UEfCwKrcQj8VaJw/YY3x9tyQ5nhB2w',
+    // 🔑 Netless SDK Token (Gerçek token)
+    API_TOKEN: 'NETLESSSDK_YWs9aGJoVFd0UTliTk5VLXVGaSZub25jZT1hZGIwNDJhMC03ZDU0LTExZjAtYjAyYS1iNzEwOGZjNTVhMjcmcm9sZT0wJnNpZz1mZmI2NzU3ZGM4OGYxMTUxMDdiMWE4ZjMwMTlmNGFmOWNlYTM1Njg0NTQyNjdjZjBjM2FmNGJiZjNjMjFkMzY4',
+    // Debug: Token doğru mu?
+    DEBUG_TOKEN: true,
+    REGION: 'cn-hz', // China Hangzhou region (daha hızlı)
+    TIMEOUT: 45000, // 45 seconds
+    LOG_LEVEL: IS_DEV ? 'debug' : 'warn',
+    // Real Netless API endpoints
+    API_BASE_URL: 'https://api.netless.link/v5',
+    TOKEN_URL: 'https://api.netless.link/v5/tokens/rooms',
+    ROOM_URL: 'https://api.netless.link/v5/rooms',
+    // PHP Backend endpoints (hosting'de)
+    PHP_BACKEND_URL: 'https://umranterece.com/test/agora/createWhiteboard.php'
+  },
+  
+  // Room Ayarları
+  ROOM: {
+    DEFAULT_NAME: 'agora-whiteboard-room',
+    MODE: 'historied', // 'historied' or 'freedom'
+    LIMIT: 100, // Maximum members
+    TIMEOUT: 45000 // 45 seconds
+  },
+  
+  // Fastboard Ayarları
+  FASTBOARD: {
+    CONTAINER_ID: 'netless-whiteboard',
+    THEME: 'auto', // 'light', 'dark', 'auto'
+    LANGUAGE: 'tr-TR', // Turkish
+    HOTKEYS: {
+      UNDO: 'cmd+z',
+      REDO: 'cmd+shift+z',
+      DELETE: 'delete',
+      DUPLICATE: 'cmd+d'
+    }
+  },
+  
+  // Tool Ayarları
+  TOOLS: {
+    SELECTOR: 'selector',
+    PENCIL: 'pencil',
+    RECTANGLE: 'rectangle',
+    ELLIPSE: 'ellipse',
+    ARROW: 'arrow',
+    TEXT: 'text',
+    ERASER: 'eraser',
+    LASER_POINTER: 'laserPointer',
+    HAND: 'hand'
+  },
+  
+  // Varsayılan Ayarlar
+  DEFAULTS: {
+    TOOL: 'pencil',
+    STROKE_WIDTH: 2,
+    STROKE_COLOR: '#1e1e1e',
+    FILL: false,
+    TEXT_SIZE: 16,
+    SHAPE_TYPE: 'rectangle'
+  },
+  
+  // UI Ayarları
+  UI: {
+    TOOLBAR_POSITION: 'top',
+    SHOW_ROOM_CONTROLLER: true,
+    SHOW_REDO_UNDO: true,
+    SHOW_ZOOM_CONTROL: true,
+    SHOW_DOCS_CENTER: false,
+    SHOW_PRESETS: true
+  },
+  
+  // Performance Ayarları
+  PERFORMANCE: {
+    MAX_CONCURRENT_USERS: 50,
+    SYNC_INTERVAL: 16, // 60 FPS
+    OPTIMISTIC_DRAWING: true,
+    ENABLE_RTMP: false
+  }
+}
+
+// Notification System Constants 🔔
+export const NOTIFICATION_TYPES = {
+  SUCCESS: 'success',
+  WARNING: 'warning',
+  ERROR: 'error',
+  INFO: 'info',
+  SYSTEM: 'system'
+}
+
+export const NOTIFICATION_PRIORITIES = {
+  LOW: 'low',
+  NORMAL: 'normal',
+  HIGH: 'high',
+  CRITICAL: 'critical'
+}
+
+export const NOTIFICATION_POSITIONS = {
+  TOP_RIGHT: 'top-right',
+  TOP_LEFT: 'top-left',
+  BOTTOM_RIGHT: 'bottom-right',
+  BOTTOM_LEFT: 'bottom-left',
+  TOP_CENTER: 'top-center',
+  BOTTOM_CENTER: 'bottom-center'
+}
+
+export const NOTIFICATION_DEFAULTS = {
+  AUTO_DISMISS: true,           // ✅ Varsayılan olarak otomatik kapanma açık
+  AUTO_DISMISS_DELAY: 5000,     // ⏱️ 5 saniye sonra kapanır
+  MAX_NOTIFICATIONS: 5,         // 📊 Maksimum 5 bildirim
+  POSITION: NOTIFICATION_POSITIONS.TOP_RIGHT,
+  ANIMATION_DURATION: 300
+}
+
+export const NOTIFICATION_CATEGORIES = {
+  SYSTEM: 'system',
+  USER: 'user',
+  NETWORK: 'network',
+  DEVICE: 'device',
+  RECORDING: 'recording',
+  STORAGE: 'storage',
+  SECURITY: 'security'
 }

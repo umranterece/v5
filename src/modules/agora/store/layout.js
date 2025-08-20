@@ -29,6 +29,14 @@ export const useLayoutStore = defineStore('layout', () => {
       description: 'Sunum için optimize edilmiş görünüm',
       category: 'professional'
     },
+    whiteboard: {
+      id: 'whiteboard',
+      name: 'Whiteboard Modu',
+      icon: '🎨',
+      description: 'Çizim ve işbirliği için optimize edilmiş görünüm',
+      category: 'professional'
+    },
+
     mobile: {
       id: 'mobile',
       name: 'Mobil Görünüm',

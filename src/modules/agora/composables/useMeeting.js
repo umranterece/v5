@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { useVideo } from './useVideo.js'
 import { useScreenShare } from './useScreenShare.js'
 import { useStreamQuality } from './useStreamQuality.js'
+import { useRecording } from './useRecording.js'
 import { useAgoraStore } from '../store/index.js'
 import { DEFAULTS } from '../constants.js'
 import { createToken } from '../services/tokenService.js'
@@ -89,6 +90,25 @@ export function useMeeting() {
     isLeaving: isScreenLeaving,
     cleanup: cleanupScreen
   } = useScreenShare(agoraStore)
+
+  // Recording composable'ından tüm işlemleri al
+  const {
+    isRecording,
+    recordingStatus,
+    recordingFiles,
+    recordingError,
+    recordingProgress,
+    canStartRecording,
+    canStopRecording,
+    hasRecordingFiles,
+    startRecording,
+    stopRecording,
+    resetRecording,
+    downloadRecordingFile,
+    setStorageProvider,
+    setRecordingPerspective,
+    setRecordingQuality
+  } = useRecording()
 
   // Computed properties - Store'dan gelen değerleri reactive olarak hesapla
   const isConnected = computed(() => agoraStore.clients.video.isConnected) // Video bağlantısı durumu
@@ -244,6 +264,111 @@ export function useMeeting() {
     cleanupScreen()
   }
 
+  // Recording handler metodları
+  const handleStartRecording = async () => {
+    try {
+      logInfo('Recording başlatılıyor...')
+      
+      // Channel bilgilerini al
+      const channelName = currentChannel.value || agoraStore.currentChannel
+      if (!channelName) {
+        throw new Error('Kanal adı bulunamadı')
+      }
+      
+      // Recording başlat
+      const result = await startRecording({
+        channelName,
+        uid: localUser.value?.uid || generateVideoUID(),
+        token: agoraStore.clients.video.token,
+        // Diğer ayarlar useRecording'den gelir
+      })
+      
+      if (result.success) {
+        logInfo('Recording başarıyla başlatıldı', result)
+      } else {
+        logError('Recording başlatılamadı', result)
+      }
+      
+    } catch (error) {
+      logError('Recording başlatma hatası', { error: error.message })
+    }
+  }
+
+  const handleStopRecording = async () => {
+    try {
+      logInfo('Recording durduruluyor...')
+      
+      const result = await stopRecording()
+      
+      if (result.success) {
+        logInfo('Recording başarıyla durduruldu', result)
+      } else {
+        logError('Recording durdurulamadı', result)
+      }
+      
+    } catch (error) {
+      logError('Recording durdurma hatası', { error: error.message })
+    }
+  }
+
+  const handleResetRecording = () => {
+    try {
+      logInfo('Recording sıfırlanıyor...')
+      resetRecording()
+    } catch (error) {
+      logError('Recording sıfırlama hatası', { error: error.message })
+    }
+  }
+
+  const handleDownloadRecordingFile = async (fileId) => {
+    try {
+      logInfo('Recording dosyası indiriliyor...', { fileId })
+      
+      const result = await downloadRecordingFile(fileId)
+      
+      if (result.success) {
+        logInfo('Recording dosyası başarıyla indirildi', result)
+      } else {
+        logError('Recording dosyası indirilemedi', result)
+      }
+      
+    } catch (error) {
+      logError('Recording dosyası indirme hatası', { error: error.message })
+    }
+  }
+
+  const handleClearRecordingError = () => {
+    // Recording error'ı temizle (useRecording'de implement edilecek)
+    logInfo('Recording error temizlendi')
+  }
+
+  const handleStorageProviderChanged = (provider) => {
+    try {
+      logInfo('Storage provider değiştiriliyor', { provider })
+      setStorageProvider(provider)
+    } catch (error) {
+      logError('Storage provider değiştirme hatası', { error: error.message })
+    }
+  }
+
+  const handleRecordingPerspectiveChanged = (perspective) => {
+    try {
+      logInfo('Recording perspective değiştiriliyor', { perspective })
+      setRecordingPerspective(perspective)
+    } catch (error) {
+      logError('Recording perspective değiştirme hatası', { error: error.message })
+    }
+  }
+
+  const handleRecordingQualityChanged = (quality) => {
+    try {
+      logInfo('Recording quality değiştiriliyor', { quality })
+      setRecordingQuality(quality)
+    } catch (error) {
+      logError('Recording quality değiştirme hatası', { error: error.message })
+    }
+  }
+
   return {
     // Log yönetimi - Log management
     logs,
@@ -295,6 +420,24 @@ export function useMeeting() {
     toggleScreenShare,
     startScreenShare,
     stopScreenShare,
+    
+    // Recording Metodları - Recording işlemleri
+    isRecording,
+    recordingStatus,
+    recordingFiles,
+    recordingError,
+    recordingProgress,
+    canStartRecording,
+    canStopRecording,
+    hasRecordingFiles,
+    handleStartRecording,
+    handleStopRecording,
+    handleResetRecording,
+    handleDownloadRecordingFile,
+    handleClearRecordingError,
+    handleStorageProviderChanged,
+    handleRecordingPerspectiveChanged,
+    handleRecordingQualityChanged,
     
     // Temizlik - Cleanup işlemleri
     cleanup,

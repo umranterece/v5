@@ -60,6 +60,55 @@
       </button>
     </div>
 
+    <!-- Recording Settings -->
+    <div class="recording-settings">
+      <h4>Kayıt Ayarları</h4>
+      
+      <!-- Storage Provider Selection -->
+      <div class="setting-group">
+        <label class="setting-label">Storage Provider:</label>
+        <select 
+          v-model="storageProvider" 
+          @change="handleStorageProviderChange"
+          class="setting-select"
+          :disabled="isRecording"
+        >
+          <option value="azure">Azure Storage</option>
+          <option value="custom">Custom Server</option>
+        </select>
+      </div>
+      
+      <!-- Recording Perspective -->
+      <div class="setting-group">
+        <label class="setting-label">Kayıt Perspektifi:</label>
+        <select 
+          v-model="recordingPerspective" 
+          @change="handlePerspectiveChange"
+          class="setting-select"
+          :disabled="isRecording"
+        >
+          <option value="host">Host (Kapsamlı)</option>
+          <option value="audience">Audience (Önemli)</option>
+          <option value="whiteboard">Whiteboard (Odaklı)</option>
+        </select>
+      </div>
+      
+      <!-- Recording Quality -->
+      <div class="setting-group">
+        <label class="setting-label">Kayıt Kalitesi:</label>
+        <select 
+          v-model="recordingQuality" 
+          @change="handleQualityChange"
+          class="setting-select"
+          :disabled="isRecording"
+        >
+          <option value="high">Yüksek (1080p)</option>
+          <option value="medium">Orta (720p)</option>
+          <option value="low">Düşük (480p)</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Recording Files -->
     <div class="recording-files" v-if="hasRecordingFiles">
       <h4>Kayıt Dosyaları</h4>
@@ -146,7 +195,14 @@ export default {
       startRecording,
       stopRecording,
       resetRecording,
-      downloadRecordingFile
+      downloadRecordingFile,
+      // Storage provider ve recording ayarları
+      storageProvider,
+      recordingPerspective,
+      recordingQuality,
+      setStorageProvider,
+      setRecordingPerspective,
+      setRecordingQuality
     } = useRecording()
 
     // Computed
@@ -185,6 +241,34 @@ export default {
         resetRecording()
       } catch (error) {
         logError(error, { context: 'resetRecording' })
+      }
+    }
+
+    // Storage provider ve recording ayarları handlers
+    const handleStorageProviderChange = () => {
+      try {
+        logInfo(`Storage provider değiştiriliyor: ${storageProvider.value}`)
+        setStorageProvider(storageProvider.value)
+      } catch (error) {
+        logError(error, { context: 'setStorageProvider' })
+      }
+    }
+
+    const handlePerspectiveChange = () => {
+      try {
+        logInfo(`Recording perspective değiştiriliyor: ${recordingPerspective.value}`)
+        setRecordingPerspective(recordingPerspective.value)
+      } catch (error) {
+        logError(error, { context: 'setRecordingPerspective' })
+      }
+    }
+
+    const handleQualityChange = () => {
+      try {
+        logInfo(`Recording quality değiştiriliyor: ${recordingQuality.value}`)
+        setRecordingQuality(recordingQuality.value)
+      } catch (error) {
+        logError(error, { context: 'setRecordingQuality' })
       }
     }
 
@@ -392,6 +476,56 @@ export default {
 .icon {
   width: 16px;
   height: 16px;
+}
+
+.recording-settings {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: var(--rs-agora-shadow-sm);
+}
+
+.recording-settings h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.setting-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.setting-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setting-select:hover:not(:disabled) {
+  border-color: var(--rs-agora-info);
+  background: var(--bg-quaternary);
+}
+
+.setting-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .recording-files {

@@ -7,6 +7,9 @@ export { useRecording } from './useRecording.js'
 // Device settings composable - Cihaz ayarları ve değişimi
 export { useDeviceSettings } from './useDeviceSettings.js'
 
+// Netless Whiteboard composable - Profesyonel whiteboard işlemleri 🎨 NETLESS
+export { useNetlessWhiteboard } from './useNetlessWhiteboard.js'
+
 // Not: useVideo, useScreenShare, useStreamQuality, useTrackManagement, useDeviceDetection
 // composable'ları useMeeting içinde kullanılıyor ve direkt export edilmiyor.
 // Bu sayede temiz bir API sağlanıyor ve karışıklık önleniyor.

@@ -219,6 +219,55 @@
                   Sıfırla
                 </button>
               </div>
+
+              <!-- Recording Settings -->
+              <div class="recording-settings">
+                <h4>🎥 Kayıt Ayarları</h4>
+                
+                <!-- Storage Provider Selection -->
+                <div class="setting-group">
+                  <label class="setting-label">Storage Provider:</label>
+                  <select 
+                    v-model="storageProvider" 
+                    @change="handleStorageProviderChange"
+                    class="setting-select"
+                    :disabled="isRecording"
+                  >
+                    <option value="azure">Azure Storage</option>
+                    <option value="custom">Custom Server</option>
+                  </select>
+                </div>
+                
+                <!-- Recording Perspective -->
+                <div class="setting-group">
+                  <label class="setting-label">Kayıt Perspektifi:</label>
+                  <select 
+                    v-model="recordingPerspective" 
+                    @change="handlePerspectiveChange"
+                    class="setting-select"
+                    :disabled="isRecording"
+                  >
+                    <option value="host">Host (Kapsamlı)</option>
+                    <option value="audience">Audience (Önemli)</option>
+                    <option value="whiteboard">Whiteboard (Odaklı)</option>
+                  </select>
+                </div>
+                
+                <!-- Recording Quality -->
+                <div class="setting-group">
+                  <label class="setting-label">Kayıt Kalitesi:</label>
+                  <select 
+                    v-model="recordingQuality" 
+                    @change="handleQualityChange"
+                    class="setting-select"
+                    :disabled="isRecording"
+                  >
+                    <option value="high">Yüksek (1080p)</option>
+                    <option value="medium">Orta (720p)</option>
+                    <option value="low">Düşük (480p)</option>
+                  </select>
+                </div>
+              </div>
               
               <!-- Recording Files -->
               <div class="recording-files" v-if="hasRecordingFiles">
@@ -276,7 +325,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useStreamQuality } from '../../composables/useStreamQuality.js'
 import { watch } from 'vue'
 import { useAgoraStore } from '../../store/agora.js'
@@ -327,18 +376,33 @@ const {
   packetLoss,
   rtt,
   qualityLevel,
-  qualityColor,
   qualityPercentage,
+  qualityColor,
   isMonitoring,
   startMonitoring,
   stopMonitoring
 } = useStreamQuality()
 
+// Recording Settings State
+const storageProvider = ref('azure')
+const recordingPerspective = ref('host')
+const recordingQuality = ref('medium')
+
 // Agora Store
 const agoraStore = useAgoraStore()
 
 // Emits
-const emit = defineEmits(['close', 'startRecording', 'stopRecording', 'resetRecording', 'downloadRecordingFile', 'clearRecordingError'])
+const emit = defineEmits([
+  'close', 
+  'startRecording', 
+  'stopRecording', 
+  'resetRecording', 
+  'downloadRecordingFile', 
+  'clearRecordingError',
+  'storageProviderChanged',
+  'recordingPerspectiveChanged',
+  'recordingQualityChanged'
+])
 
 // Computed
 const recordingStatusClass = computed(() => {
@@ -396,6 +460,22 @@ const downloadRecordingFile = (fileId) => {
 
 const clearRecordingError = () => {
   emit('clearRecordingError')
+}
+
+// Recording Settings Handlers
+const handleStorageProviderChange = () => {
+  // Storage provider değişikliğini parent'a bildir
+  emit('storageProviderChanged', storageProvider.value)
+}
+
+const handlePerspectiveChange = () => {
+  // Recording perspective değişikliğini parent'a bildir
+  emit('recordingPerspectiveChanged', recordingPerspective.value)
+}
+
+const handleQualityChange = () => {
+  // Recording quality değişikliğini parent'a bildir
+  emit('recordingQualityChanged', recordingQuality.value)
 }
 
 // Start monitoring when modal opens
@@ -935,6 +1015,59 @@ watch(() => props.isConnected, (isConnected) => {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.recording-settings {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--rs-agora-surface-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--rs-agora-border-secondary);
+}
+
+.recording-settings h4 {
+  margin: 0 0 16px 0;
+  color: var(--rs-agora-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.setting-label {
+  font-size: 14px;
+  color: var(--rs-agora-text-secondary);
+  min-width: 140px;
+  font-weight: 500;
+}
+
+.setting-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--rs-agora-border-primary);
+  border-radius: 8px;
+  background: var(--rs-agora-surface-primary);
+  color: var(--rs-agora-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setting-select:hover:not(:disabled) {
+  border-color: var(--rs-agora-primary);
+  background: var(--rs-agora-surface-tertiary);
+}
+
+.setting-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .recording-btn {

@@ -1,0 +1,1457 @@
+<template>
+  <div class="advanced-whiteboard">
+    <!-- Header Info Bar -->
+    <div class="header-info-bar">
+      <!-- Connection Status -->
+      <div class="status-badge connection-status" :class="connectionStatus">
+        <div class="status-dot"></div>
+        <span class="status-text">{{ getStatusText() }}</span>
+      </div>
+      
+      <!-- Toolbar Toggle Button - Header'da -->
+      <button 
+        @click="toggleToolbar" 
+        class="toolbar-toggle-btn"
+        :title="isToolbarCollapsed ? 'Kontrolleri Aç' : 'Kontrolleri Gizle'"
+      >
+        <!-- Yukarı yönlü icon (açık durumda - gizle) -->
+        <svg 
+          v-if="!isToolbarCollapsed"
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2"
+        >
+          <path d="M6 15l6-6 6 6"/>
+        </svg>
+        
+        <!-- Aşağı yönlü icon (kapalı durumda - aç) -->
+        <svg 
+          v-else
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2"
+        >
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      
+      <!-- Member Count -->
+      <div class="status-badge member-count" v-if="memberCount > 0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="member-text">{{ memberCount }} katılımcı</span>
+      </div>
+    </div>
+
+    <!-- Professional Toolbar -->
+    <div class="whiteboard-toolbar" :class="{ 'collapsed': isToolbarCollapsed }">
+      <!-- Left Tools - Drawing Tools -->
+      <div class="toolbar-section">
+        <div class="tool-group">
+          <!-- Selector -->
+          <button 
+            @click="selectTool('selector')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'selector' }" 
+            title="Seçim Aracı (V)"
+          >
+            <CursorArrowRaysIcon class="tool-icon" />
+          </button>
+
+          <!-- Pencil -->
+          <button 
+            @click="selectTool('pencil')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'pencil' }" 
+            title="Kalem (P)"
+          >
+            <PencilIcon class="tool-icon" />
+          </button>
+
+          <!-- Text -->
+          <button 
+            @click="selectTool('text')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'text' }"
+            title="Metin (T)"
+          >
+            <DocumentTextIcon class="tool-icon" />
+          </button>
+
+          <!-- Eraser -->
+          <button 
+            @click="selectTool('eraser')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'eraser' }"
+            title="Silgi (E)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13L11 20L4 13L11 6L18 13Z"/>
+              <path d="M22 22L16 16"/>
+              <path d="M8 6L2 12L8 18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Shapes Section -->
+      <div class="toolbar-section">
+        <div class="tool-group">
+          <!-- Rectangle -->
+          <button 
+            @click="selectTool('rectangle')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'rectangle' }"
+            title="Dikdörtgen (R)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+          </button>
+
+          <!-- Circle -->
+          <button 
+            @click="selectTool('ellipse')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'ellipse' }"
+            title="Daire (C)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+          </button>
+
+          <!-- Triangle -->
+          <button 
+            @click="selectTool('triangle')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'triangle' }"
+            title="Üçgen (T)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L22 20H2L12 2Z"/>
+            </svg>
+          </button>
+
+          <!-- Line -->
+          <button 
+            @click="selectTool('line')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'line' }"
+            title="Çizgi (L)"
+          >
+            <MinusIcon class="tool-icon" />
+          </button>
+
+          <!-- Arrow -->
+          <button 
+            @click="selectTool('arrow')" 
+            class="tool-btn" 
+            :class="{ active: currentTool === 'arrow' }"
+            title="Ok (A)"
+          >
+            <ArrowLongRightIcon class="tool-icon" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Style Controls - Compact -->
+      <div class="toolbar-section style-section">
+        <div class="style-controls">
+          <!-- Color Picker - Compact -->
+          <div class="color-control-compact">
+            <input 
+              type="color" 
+              v-model="currentColor" 
+              @input="updateColor"
+              class="color-picker-compact"
+              title="Renk Seç"
+            />
+            <div class="color-presets-compact">
+              <button 
+                v-for="color in colorPresets" 
+                :key="color"
+                @click="selectColor(color)"
+                class="color-preset-compact"
+                :style="{ backgroundColor: color }"
+                :title="color"
+                :class="{ active: currentColor === color }"
+              ></button>
+            </div>
+          </div>
+
+          <!-- Stroke Width - Compact -->
+          <div class="stroke-control-compact">
+            <button 
+              @click="decreaseStrokeWidth" 
+              class="stroke-btn decrease"
+              title="Kalınlığı Azalt"
+              :disabled="currentStrokeWidth <= 1"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14"/>
+              </svg>
+            </button>
+            
+            <input type="range" min="1" max="20" v-model="currentStrokeWidth" @input="updateStrokeWidth" class="stroke-slider-compact" title="Kalınlık"/>
+            
+            <button 
+              @click="increaseStrokeWidth" 
+              class="stroke-btn increase"
+              title="Kalınlığı Artır"
+              :disabled="currentStrokeWidth >= 20"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+            
+            <span class="stroke-value-compact">{{ currentStrokeWidth }}px</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="toolbar-section">
+        <div class="control-group">
+          <!-- Undo/Redo -->
+          <button @click="undo" class="control-btn" title="Geri Al (Ctrl+Z)" :disabled="!canUndo">
+            <ArrowUturnLeftIcon class="control-icon" />
+          </button>
+          
+          <button @click="redo" class="control-btn" title="Yinele (Ctrl+Y)" :disabled="!canRedo">
+            <ArrowPathIcon class="control-icon" />
+          </button>
+
+          <!-- Clear Canvas -->
+          <button @click="clearCanvas" class="control-btn danger" title="Temizle">
+            <TrashIcon class="control-icon" />
+          </button>
+
+          <!-- Theme Toggle -->
+          <button @click="toggleTheme" class="control-btn" :title="isDarkTheme ? 'Açık Tema' : 'Koyu Tema'">
+            <SunIcon v-if="!isDarkTheme" class="control-icon" />
+            <MoonIcon v-else class="control-icon" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Canvas Area -->
+    <div class="canvas-container" :class="{ fullscreen: isFullscreen }">
+      <!-- Loading State -->
+      <div v-if="!isReady" class="loading-overlay">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <h3>Whiteboard Yükleniyor...</h3>
+          <p>{{ loadingStatus }}</p>
+        </div>
+      </div>
+
+      <!-- Netless Container -->
+      <div 
+        ref="netlessContainer" 
+        class="netless-container"
+        :class="{ 'with-toolbar': !isToolbarCollapsed }"
+      ></div>
+    </div>
+
+    <!-- Bottom Info Bar -->
+    <div class="info-bar">
+      <div class="room-info">
+        <span class="room-label">Oda:</span>
+        <span class="room-name">{{ roomInfo?.uuid || 'Yükleniyor...' }}</span>
+      </div>
+      
+      <div class="tool-info">
+        <span class="tool-label">Araç:</span>
+        <span class="tool-name">{{ getToolDisplayName(currentTool) }}</span>
+      </div>
+      
+      <div class="user-info">
+        <span class="user-label">Kullanıcı:</span>
+        <span class="user-name">{{ currentUserName }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { useNetlessWhiteboard } from '../../composables/useNetlessWhiteboard.js'
+import { useAgoraStore } from '../../store/index.js'
+import { NETLESS_CONFIG } from '../../constants.js'
+import { 
+  CursorArrowRaysIcon,
+  PencilIcon,
+  SwatchIcon,
+  DocumentTextIcon,
+  PencilSquareIcon, // Eraser yerine
+  RectangleStackIcon,
+  CircleStackIcon,
+  PlayIcon,
+  MinusIcon,
+  ArrowLongRightIcon,
+  HandRaisedIcon,
+  ArrowPathIcon,
+  ArrowUturnLeftIcon,
+  TrashIcon,
+  SunIcon,
+  MoonIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon
+} from '@heroicons/vue/24/outline'
+
+// Props
+const props = defineProps({
+  users: { type: Array, default: () => [] },
+  localTracks: { type: Object, default: () => ({}) },
+  localVideoRef: { type: Object, default: null },
+  logger: { 
+    type: Object, 
+    default: () => ({
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      fatal: () => {}
+    })
+  }
+})
+
+// Emits
+const emit = defineEmits([
+  'set-video-ref',
+  'set-local-video-ref',
+  'set-local-screen-ref',
+  'video-click'
+])
+
+// Store
+const agoraStore = useAgoraStore()
+
+// Netless Whiteboard Composable
+const {
+  fastboard,
+  room,
+  isConnecting,
+  isConnected,
+  connectionError,
+  members,
+  currentTool: netlessTool,
+  currentColor: netlessColor,
+  currentStrokeWidth: netlessStrokeWidth,
+  canDraw,
+  memberCount,
+  connectionStatus,
+  roomInfo,
+  joinRoom,
+  leaveRoom,
+  setTool,
+  setStrokeColor,
+  setStrokeWidth,
+  undo,
+  redo,
+  clearScene,
+  setTheme,
+  cleanup
+} = useNetlessWhiteboard(agoraStore)
+
+// State
+const isReady = ref(false)
+const loadingStatus = ref('Başlatılıyor...')
+const netlessContainer = ref(null)
+const isShapeMenuOpen = ref(false)
+const isDarkTheme = ref(true) // Varsayılan gece modu
+const isToolbarCollapsed = ref(false) // Toolbar'ın geniş/daraltılma durumu
+
+// Tool State
+const currentTool = ref('pencil')
+const currentColor = ref('#ff0000') // Varsayılan kırmızı
+const currentStrokeWidth = ref(2)
+
+// Color Presets
+const colorPresets = [
+  '#1e1e1e', '#ffffff', '#ff0000', '#00ff00', '#0000ff',
+  '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080',
+  '#008000', '#000080', '#800000', '#808000', '#008080'
+]
+
+// Computed
+const currentUserName = computed(() => {
+  return agoraStore.localUser?.name || 'Anonim Kullanıcı'
+})
+
+const canUndo = computed(() => {
+  return room.value && room.value.isWritable
+})
+
+const canRedo = computed(() => {
+  return room.value && room.value.isWritable
+})
+
+// Methods
+const selectTool = async (tool) => {
+  console.log('🎨 Tool seçiliyor:', tool)
+  console.log('🔍 Room durumu:', {
+    hasRoom: !!room.value,
+    isWritable: room.value?.isWritable,
+    phase: room.value?.phase
+  })
+  
+  currentTool.value = tool
+  props.logger.info('Tool seçildi', { tool })
+  
+  if (room.value && room.value.isWritable) {
+    try {
+      console.log('✅ Room yazılabilir, tool set ediliyor...')
+      await setTool(tool)
+      props.logger.info('Netless tool set edildi', { tool })
+      console.log('✅ Tool başarıyla set edildi:', tool)
+    } catch (error) {
+      console.error('❌ Tool set hatası:', error)
+      props.logger.error('Tool set hatası', { tool, error: error.message })
+    }
+  } else {
+    console.warn('⚠️ Room yazılabilir değil veya yok')
+  }
+}
+
+const updateStrokeWidth = async () => {
+  try {
+    await setStrokeWidth(currentStrokeWidth.value)
+  } catch (error) {
+    console.error('Kalınlık güncelleme hatası:', error)
+  }
+}
+
+const increaseStrokeWidth = async () => {
+  if (currentStrokeWidth.value < 20) {
+    currentStrokeWidth.value++
+    await updateStrokeWidth()
+  }
+}
+
+const decreaseStrokeWidth = async () => {
+  if (currentStrokeWidth.value > 1) {
+    currentStrokeWidth.value--
+    await updateStrokeWidth()
+  }
+}
+
+const updateColor = async (event) => {
+  const color = event.target.value
+  console.log('🎨 Renk güncelleniyor:', color)
+  
+  // RGB değerlerini hesapla
+  const rgb = [
+    parseInt(color.substr(1, 2), 16),
+    parseInt(color.substr(3, 2), 16),
+    parseInt(color.substr(5, 2), 16)
+  ]
+  console.log('🔴 RGB değerleri:', rgb)
+  
+  currentColor.value = color
+  
+  if (room.value && room.value.isWritable) {
+    try {
+      console.log('✅ Room yazılabilir, renk güncelleniyor...')
+      console.log('🔍 Room member state öncesi:', room.value.state?.memberState)
+      
+      await setStrokeColor(color)
+      
+      console.log('🔍 Room member state sonrası:', room.value.state?.memberState)
+      props.logger.info('Renk güncellendi', { color })
+      console.log('✅ Renk başarıyla güncellendi:', color)
+      
+      // Test çizimi yap
+      console.log('🧪 Test çizimi yapılıyor...')
+      
+    } catch (error) {
+      console.error('❌ Renk güncelleme hatası:', error)
+      props.logger.error('Renk güncelleme hatası', { color, error: error.message })
+    }
+  } else {
+    console.warn('⚠️ Room yazılabilir değil veya yok')
+  }
+}
+
+const selectColor = async (color) => {
+  console.log('🎨 Hazır renk seçildi:', color)
+  currentColor.value = color
+  await updateColor({ target: { value: color } })
+}
+
+const toggleShapeMenu = () => {
+  isShapeMenuOpen.value = !isShapeMenuOpen.value
+}
+
+const clearCanvas = async () => {
+  console.log('🗑️ Canvas temizleniyor...')
+  
+  if (room.value && room.value.isWritable) {
+    try {
+      console.log('✅ Room yazılabilir, canvas temizleniyor...')
+      await clearScene()
+      props.logger.info('Canvas temizlendi')
+      console.log('✅ Canvas başarıyla temizlendi')
+    } catch (error) {
+      console.error('❌ Canvas temizleme hatası:', error)
+      props.logger.error('Canvas temizleme hatası', { error: error.message })
+    }
+  } else {
+    console.warn('⚠️ Room yazılabilir değil veya yok')
+  }
+}
+
+const toggleTheme = async () => {
+  try {
+    const newTheme = isDarkTheme.value ? 'light' : 'dark'
+    await setTheme(newTheme)
+    
+    // State'i güncelle
+    isDarkTheme.value = newTheme === 'dark'
+    
+    // CSS değişkenlerini güncelle
+    const root = document.documentElement
+    if (newTheme === 'dark') {
+      root.setAttribute('data-theme', 'dark')
+      root.style.setProperty('--whiteboard-bg', '#1a1a1a')
+      root.style.setProperty('--whiteboard-text', '#ffffff')
+      root.style.setProperty('--whiteboard-border', '#333333')
+      root.style.setProperty('--whiteboard-toolbar-bg', '#2d2d2d')
+      root.style.setProperty('--whiteboard-canvas-bg', '#1a1a1a')
+    } else {
+      root.removeAttribute('data-theme')
+      root.style.setProperty('--whiteboard-bg', '#f8f9fa')
+      root.style.setProperty('--whiteboard-text', '#495057')
+      root.style.setProperty('--whiteboard-border', '#e9ecef')
+      root.style.setProperty('--whiteboard-toolbar-bg', '#ffffff')
+      root.style.setProperty('--whiteboard-canvas-bg', '#ffffff')
+    }
+    
+    console.log('✅ Tema başarıyla değiştirildi:', newTheme, 'isDarkTheme:', isDarkTheme.value)
+  } catch (error) {
+    console.error('Tema değiştirme hatası:', error)
+  }
+}
+
+const toggleToolbar = () => {
+  isToolbarCollapsed.value = !isToolbarCollapsed.value
+  console.log('Toolbar durumu değiştirildi:', isToolbarCollapsed.value)
+}
+
+const getStatusText = () => {
+  switch (connectionStatus.value) {
+    case 'connecting': return 'Bağlanıyor...'
+    case 'connected': return 'Bağlı'
+    case 'error': return 'Hata!'
+    default: return 'Bağlantı yok'
+  }
+}
+
+const getToolDisplayName = (tool) => {
+  const toolNames = {
+    selector: 'Seçim',
+    pencil: 'Kalem',
+    highlighter: 'Fosforlu',
+    rectangle: 'Dikdörtgen',
+    ellipse: 'Daire',
+    triangle: 'Üçgen',
+    line: 'Çizgi',
+    arrow: 'Ok',
+    text: 'Metin',
+    eraser: 'Silgi',
+    laserPointer: 'Lazer',
+    hand: 'El'
+  }
+  return toolNames[tool] || tool
+}
+
+// Connect to Netless
+const connectToNetless = async () => {
+  try {
+    console.log('�� AdvancedWhiteboard Netless\'e bağlanıyor...')
+    loadingStatus.value = 'Room bilgileri alınıyor...'
+    
+    const whiteboardRoom = agoraStore.whiteboardRoom
+    console.log('🔍 Store\'dan alınan room bilgileri:', whiteboardRoom)
+    
+    if (!whiteboardRoom?.uuid || !whiteboardRoom?.token) {
+      throw new Error('Store\'da room bilgileri bulunamadı')
+    }
+    
+    loadingStatus.value = 'Netless\'e bağlanılıyor...'
+    console.log('✅ Room bilgileri mevcut, bağlantı başlatılıyor...')
+    
+    const success = await joinRoom({
+      container: netlessContainer.value,
+      uuid: whiteboardRoom.uuid,
+      token: whiteboardRoom.token,
+      userId: agoraStore.localUser?.uid?.toString() || `agora-user-${Date.now()}`,
+      userName: agoraStore.localUser?.name || 'Agora User'
+    })
+    
+    console.log('🔗 joinRoom sonucu:', success)
+    
+    if (success) {
+      loadingStatus.value = 'Hazırlanıyor...'
+      console.log('✅ Room bağlantısı başarılı, hazırlanıyor...')
+      
+      // Room durumunu kontrol et
+      console.log('🔍 Room durumu:', {
+        hasRoom: !!room.value,
+        isWritable: room.value?.isWritable,
+        phase: room.value?.phase,
+        memberCount: memberCount.value
+      })
+      
+      await nextTick()
+      isReady.value = true
+      props.logger.info('Advanced whiteboard başarıyla başlatıldı')
+      console.log('🎉 AdvancedWhiteboard başarıyla başlatıldı!')
+    } else {
+      throw new Error('Room bağlantısı başarısız')
+    }
+    
+  } catch (error) {
+    console.error('❌ AdvancedWhiteboard başlatma hatası:', error)
+    props.logger.error('Advanced whiteboard başlatma hatası', { error: error.message })
+    loadingStatus.value = `Hata: ${error.message}`
+  }
+}
+
+// Keyboard shortcuts
+const setupKeyboardShortcuts = () => {
+  const handleKeyDown = (event) => {
+    // ESC: Tam ekrandan çık
+    if (event.key === 'Escape' && isToolbarCollapsed.value) {
+      event.preventDefault()
+      toggleToolbar()
+    }
+    
+    // Ctrl/Cmd + Z: Undo
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+      event.preventDefault()
+      if (canUndo.value) undo()
+    }
+    
+    // Ctrl/Cmd + Y: Redo
+    if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+      event.preventDefault()
+      if (canRedo.value) redo()
+    }
+    
+    // Ctrl/Cmd + Shift + Z: Redo (alternative)
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'Z') {
+      event.preventDefault()
+      if (canRedo.value) redo()
+    }
+    
+    // F11: Fullscreen
+    if (event.key === 'F11') {
+      event.preventDefault()
+      // Fullscreen kaldırıldı
+    }
+    
+    // Tool shortcuts
+    switch (event.key.toLowerCase()) {
+      case 'v':
+        event.preventDefault()
+        selectTool('selector')
+        break
+      case 'p':
+        event.preventDefault()
+        selectTool('pencil')
+        break
+      case 'h':
+        event.preventDefault()
+        selectTool('highlighter')
+        break
+      case 't':
+        event.preventDefault()
+        selectTool('text')
+        break
+      case 'r':
+        event.preventDefault()
+        selectTool('rectangle')
+        break
+      case 'c':
+        event.preventDefault()
+        selectTool('ellipse')
+        break
+      case 'l':
+        event.preventDefault()
+        selectTool('line')
+        break
+      case 'a':
+        event.preventDefault()
+        selectTool('arrow')
+        break
+      case 'e':
+        event.preventDefault()
+        selectTool('eraser')
+        break
+    }
+  }
+  
+  document.addEventListener('keydown', handleKeyDown)
+  return () => document.removeEventListener('keydown', handleKeyDown)
+}
+
+// Lifecycle
+onMounted(async () => {
+  try {
+    // Varsayılan gece modunu ayarla
+    const root = document.documentElement
+    root.setAttribute('data-theme', 'dark')
+    root.style.setProperty('--whiteboard-bg', '#1a1a1a')
+    root.style.setProperty('--whiteboard-text', '#ffffff')
+    root.style.setProperty('--whiteboard-border', '#333333')
+    root.style.setProperty('--whiteboard-toolbar-bg', '#2d2d2d')
+    root.style.setProperty('--whiteboard-canvas-bg', '#1a1a1a')
+    
+    console.log('🌙 Varsayılan gece modu ayarlandı')
+    
+    // Netless'e bağlan
+    await connectToNetless()
+    
+    // Keyboard shortcuts'ları ayarla
+    const cleanupShortcuts = setupKeyboardShortcuts()
+    
+    // Component unmount olduğunda cleanup yap
+    onUnmounted(() => {
+      cleanupShortcuts()
+    })
+  } catch (error) {
+    console.error('❌ Component mount hatası:', error)
+  }
+})
+
+onUnmounted(() => {
+  props.logger.info('Advanced whiteboard component unmounted')
+  cleanup()
+})
+
+// Close shape menu when clicking outside
+const closeShapeMenu = (event) => {
+  if (!event.target.closest('.tool-dropdown')) {
+    isShapeMenuOpen.value = false
+  }
+}
+
+// Global click listener
+onMounted(() => {
+  document.addEventListener('click', closeShapeMenu)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeShapeMenu)
+})
+</script>
+
+<style scoped>
+.advanced-whiteboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--whiteboard-bg, #f8f9fa);
+  color: var(--whiteboard-text, #495057);
+}
+
+/* CSS Variables for Theme */
+:root {
+  --whiteboard-bg: #f8f9fa;
+  --whiteboard-text: #495057;
+  --whiteboard-border: #e9ecef;
+  --whiteboard-toolbar-bg: #ffffff;
+  --whiteboard-toolbar-border: #dee2e6;
+  --whiteboard-canvas-bg: #ffffff;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --whiteboard-bg: #1a1a1a;
+  --whiteboard-text: #ffffff;
+  --whiteboard-border: #333333;
+  --whiteboard-toolbar-bg: #2d2d2d;
+  --whiteboard-toolbar-border: #404040;
+  --whiteboard-canvas-bg: #1a1a1a;
+}
+
+/* Toolbar Styles */
+.whiteboard-toolbar {
+  position: fixed;
+  top: 40px; /* Header yüksekliği kadar margin */
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  border-bottom: 1px solid var(--whiteboard-border, #e9ecef);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
+  gap: 16px;
+  height: 56px;
+  min-height: 56px;
+  transition: height 0.3s ease;
+}
+
+.whiteboard-toolbar.collapsed {
+  height: 0; /* Toolbar'ı tamamen gizle */
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+}
+
+.whiteboard-toolbar.collapsed .toolbar-section {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toolbar açılırken güzel efekt */
+.whiteboard-toolbar:not(.collapsed) .toolbar-section {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toggle button hover efekti */
+.toolbar-toggle-btn:hover {
+  background: var(--whiteboard-bg, #f8f9fa);
+  border-color: var(--whiteboard-border, #adb5bd);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toolbar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 6px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  color: var(--whiteboard-text, #495057);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 8px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  color: var(--whiteboard-text, #495057);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative; /* Shortcut için relative */
+}
+
+.tool-btn:hover {
+  background: var(--whiteboard-bg, #f8f9fa);
+  border-color: var(--whiteboard-border, #adb5bd);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tool-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+}
+
+/* Shape Menu */
+.shape-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px 0;
+  min-width: 150px;
+  z-index: 1001;
+}
+
+.shape-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.shape-option:hover {
+  background: #f8f9fa;
+}
+
+/* Style Section - Compact */
+.style-section {
+  flex: 1;
+  justify-content: center;
+  max-width: 400px;
+}
+
+.style-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Color Control - Compact */
+.color-control-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-picker-compact {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+.color-presets-compact {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  max-width: 200px;
+}
+
+.color-preset-compact {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.color-preset-compact:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.color-preset-compact.active {
+  border: 2px solid #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
+}
+
+/* Stroke Control - Compact */
+.stroke-control-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stroke-slider-compact {
+  width: 60px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--whiteboard-border, #dee2e6);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.stroke-slider-compact::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.stroke-value-compact {
+  font-size: 11px;
+  color: var(--whiteboard-text, #6c757d);
+  min-width: 25px;
+  font-weight: 500;
+}
+
+/* Stroke Control Buttons */
+.stroke-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 4px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  color: var(--whiteboard-text, #495057);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.stroke-btn:hover:not(:disabled) {
+  background: var(--whiteboard-bg, #f8f9fa);
+  border-color: var(--whiteboard-border, #adb5bd);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stroke-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.stroke-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--whiteboard-bg, #f8f9fa);
+}
+
+/* Control Group */
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--whiteboard-border, #dee2e6);
+  border-radius: 6px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  color: var(--whiteboard-text, #495057);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: var(--whiteboard-bg, #f8f9fa);
+  border-color: var(--whiteboard-border, #adb5bd);
+  transform: translateY(-1px);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-btn.danger:hover {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+/* Canvas Container */
+.canvas-container {
+  flex: 1;
+  position: relative;
+  margin-top: 96px; /* Header (40px) + Toolbar (56px) */
+  background: var(--whiteboard-canvas-bg, #ffffff);
+  transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toolbar kapandığında canvas'ı yukarı çek */
+.whiteboard-toolbar.collapsed ~ .canvas-container {
+  margin-top: 40px; /* Sadece header yüksekliği */
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.netless-container {
+  width: 100%;
+  height: 100%;
+  background: var(--whiteboard-canvas-bg, #ffffff);
+}
+
+.netless-container.with-toolbar {
+  height: calc(100% - 56px);
+}
+
+/* Netless SDK Generated Elements - Full Screen Support */
+.netless-container :deep(.netless-window-manager-wrapper) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Header Info Bar */
+.header-info-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--whiteboard-border, #e9ecef);
+  display: flex;
+  align-items: center; /* Dikey olarak ortala */
+  justify-content: flex-start; /* Sola yasla */
+  padding: 0 20px;
+  z-index: 2000;
+  pointer-events: none; /* Canvas ile etkileşimi engelle */
+}
+
+/* Header'da toggle button'ı ortala */
+.header-info-bar .toolbar-toggle-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto; /* Button'a tıklanabilir yap */
+}
+
+/* Header'da badge'leri daha iyi ortalayacak */
+.header-info-bar .status-badge {
+  margin: 0 10px; /* Badge'ler arasında boşluk */
+  pointer-events: auto; /* Badge'lere tıklanabilir yap */
+  align-self: center; /* Dikey olarak ortala */
+}
+
+/* Connection status'u sola, member count'u sağa yasla */
+.header-info-bar .connection-status {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.header-info-bar .member-count {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Status Badges */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s;
+  pointer-events: auto; /* Badge'lere tıklanabilir yap */
+  border: 1px solid transparent;
+}
+
+.status-badge.connection-status {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.status-badge.connection-status.connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.status-badge.connection-status.connecting {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.connection-status.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.status-badge.member-count {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border-color: rgba(107, 114, 128, 0.2);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.status-text {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.member-text {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Fullscreen'de header'ı gizle */
+.canvas-container.fullscreen ~ .header-info-bar {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Fullscreen'de toolbar'ı gizle */
+.canvas-container.fullscreen ~ .whiteboard-toolbar {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Connection Status */
+.connection-status {
+  position: absolute;
+  
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  border: 1px solid var(--whiteboard-border, #e9ecef);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 12px;
+  color: var(--whiteboard-text, #6c757d);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6c757d;
+}
+
+.connection-status.connecting .status-dot {
+  background: #ffc107;
+}
+
+.connection-status.connected .status-dot {
+  background: #28a745;
+}
+
+.connection-status.error .status-dot {
+  background: #dc3545;
+}
+
+/* Member Count */
+.member-count {
+  position: absolute;
+
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+/* Info Bar */
+.info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--whiteboard-toolbar-bg, #ffffff);
+  border-top: 1px solid var(--whiteboard-border, #e9ecef);
+  font-size: 12px;
+  color: var(--whiteboard-text, #6c757d);
+}
+
+.room-info, .tool-info, .user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.room-label, .tool-label, .user-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 11px;
+}
+
+.room-name, .tool-name, .user-name {
+  color: var(--whiteboard-text, #495057);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .whiteboard-toolbar {
+    gap: 12px;
+    padding: 6px 12px;
+  }
+  
+  .style-section {
+    max-width: 300px;
+  }
+  
+  .color-presets-compact {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .whiteboard-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    height: auto;
+    min-height: auto;
+  }
+  
+  .toolbar-section {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .tool-group {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .style-section {
+    max-width: 100%;
+  }
+  
+  .style-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .control-group {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .info-bar {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tool-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .control-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .color-picker-compact {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .color-preset-compact {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .stroke-slider-compact {
+    width: 50px;
+  }
+}
+
+/* Tool Icons */
+.tool-icon {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+}
+
+.control-icon {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+</style>

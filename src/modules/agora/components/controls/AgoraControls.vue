@@ -82,6 +82,16 @@
         <span class="label">{{ props.isScreenSharing ? 'Paylaşımı Durdur' : 'Ekranı Paylaş' }}</span>
       </button>
 
+      <!-- Whiteboard Toggle - 🆕 YENİ -->
+      <button
+        @click="toggleWhiteboard"
+        :class="['control-button', { active: isWhiteboardActive }]"
+        :title="isWhiteboardActive ? 'Whiteboard\'ı Kapat' : 'Whiteboard\'ı Aç'"
+      >
+        <PencilIcon class="icon" />
+        <span class="label">{{ isWhiteboardActive ? 'Whiteboard Kapat' : 'Whiteboard Aç' }}</span>
+      </button>
+
       <!-- Leave Button -->
       <button 
         @click="leaveChannel"
@@ -100,6 +110,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useAgoraStore } from '../../store/index.js'
+import { useLayoutStore } from '../../store/layout.js'
 import { 
   ViewColumnsIcon, 
   Cog6ToothIcon, 
@@ -108,8 +120,13 @@ import {
   VideoCameraIcon,
   MicrophoneIcon,
   ComputerDesktopIcon,
-  PhoneIcon
+  PhoneIcon,
+  PencilIcon
 } from '@heroicons/vue/24/outline'
+
+// Store
+const agoraStore = useAgoraStore()
+const layoutStore = useLayoutStore()
 
 // Props
 const props = defineProps({
@@ -156,6 +173,9 @@ const props = defineProps({
   // Log Modal Props
   onOpenLogModal: { type: Function, default: () => {} }
 })
+
+// Computed properties
+const isWhiteboardActive = computed(() => agoraStore.isWhiteboardActive)
 
 const channelInput = ref(props.channelName || 'test')
 
@@ -208,6 +228,29 @@ const toggleMicrophone = () => {
       newState: newMutedState ? 'muted' : 'unmuted'
     })
     props.onToggleMicrophone(newMutedState)
+  }
+}
+
+// Whiteboard toggle function - 🆕 YENİ
+const toggleWhiteboard = () => {
+  const newWhiteboardState = !isWhiteboardActive.value
+  props.logger.info('Whiteboard değiştir', {
+    currentState: isWhiteboardActive.value ? 'active' : 'inactive',
+    newState: newWhiteboardState ? 'active' : 'inactive'
+  })
+  
+  // Store'a bildir
+  agoraStore.setWhiteboardActive(newWhiteboardState)
+  
+  // Layout'u otomatik değiştir
+  if (newWhiteboardState) {
+    // Whiteboard açılıyorsa WhiteboardLayout'a geç
+    layoutStore.switchLayoutWithSave('whiteboard')
+    props.logger.info('Layout WhiteboardLayout\'a değiştirildi')
+  } else {
+    // Whiteboard kapanıyorsa Grid Layout'a geri dön
+    layoutStore.switchLayoutWithSave('grid')
+    props.logger.info('Layout Grid Layout\'a geri döndürüldü')
   }
 }
 

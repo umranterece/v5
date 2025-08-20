@@ -1,11 +1,12 @@
 /**
- * File-based JSON Logger Service
- * Tüm logları günlük JSON dosyalarına kaydeder
- * Desteklenen storage yöntemleri: localStorage (varsayılan), localFolder
+ * LocalStorage-based JSON Logger Service
+ * Tüm logları localStorage'da JSON formatında saklar
+ * Browser ortamında çalışır
  */
 
-import { IS_DEV } from '../constants.js'
+import { IS_DEV, LOG_CONFIG } from '../constants.js'
 import { generateSessionId } from '../utils/index.js'
+import { notification } from './notificationService.js'
 
 // Log seviyeleri
 export const LOG_LEVELS = {
@@ -30,30 +31,43 @@ export const LOG_CATEGORIES = {
   SYSTEM: 'system'
 }
 
-// Storage yöntemleri
-export const STORAGE_METHODS = {
-  LOCAL_STORAGE: 'localStorage',
-  LOCAL_FOLDER: 'localFolder'
-}
-
 class FileLogger {
-  constructor(storageMethod = STORAGE_METHODS.LOCAL_STORAGE) {
+  constructor() {
     this.sessionId = null // Lazy initialization
     this.logQueue = []
     this.isProcessing = false
-    this.maxFileSize = 10 * 1024 * 1024 // 10MB
-    this.maxLogsPerFile = 10000
-    this.retentionDays = 30
-    this.storageMethod = storageMethod
-    this.localFolderPath = './logs' // Proje klasöründe logs dizini
+    this.maxLogsPerFile = LOG_CONFIG.MAX_LOGS_PER_FILE
+    
+    // localStorage'dan log aktiflik durumunu oku
+    try {
+      const savedLogActive = localStorage.getItem('agora_logging_active')
+      this.logActive = savedLogActive ? savedLogActive === 'true' : true
+    } catch (error) {
+      this.logActive = true // Varsayılan olarak aktif
+    }
     
     this.init()
   }
 
-  init() {
-    // Log dizinini oluştur
-    this.ensureLogDirectory()
+  // Log aktifliğini ayarla
+  setLogActive(active) {
+    this.logActive = active
     
+    // localStorage'a kaydet
+    try {
+      localStorage.setItem('agora_logging_active', active.toString())
+    } catch (error) {
+      console.error('Log aktiflik durumu kaydedilemedi:', error)
+    }
+    
+    if (!active) {
+      // Log aktif değilse queue'yu temizle
+      this.logQueue = []
+      this.isProcessing = false
+    }
+  }
+
+  init() {
     // Eski logları temizle
     this.cleanupOldLogs()
     
@@ -63,53 +77,8 @@ class FileLogger {
 
   // Log dizinini oluştur
   ensureLogDirectory() {
-    try {
-      if (this.storageMethod === STORAGE_METHODS.LOCAL_FOLDER) {
-        // Local klasör sistemi
-        this.storageType = 'localFolder'
-        this.createLocalFolder()
-      } else {
-        // Varsayılan: LocalStorage
-        if (typeof window !== 'undefined') {
-          this.storageType = 'localStorage'
-        } else {
-          this.storageType = 'localStorage'
-        }
-      }
-    } catch (error) {
-      console.error('Storage type belirlenemedi:', error)
-      this.storageType = 'localStorage'
-    }
-  }
-
-  // Local klasör oluştur
-  createLocalFolder() {
-    try {
-      // Node.js fs modülü ile klasör oluştur
-      if (typeof window === 'undefined') {
-        const fs = require('fs')
-        const path = require('path')
-        
-        if (!fs.existsSync(this.localFolderPath)) {
-          fs.mkdirSync(this.localFolderPath, { recursive: true })
-        }
-      }
-    } catch (error) {
-      console.error('Local klasör oluşturma hatası:', error)
-      // Fallback: LocalStorage
-      this.storageType = 'localStorage'
-    }
-  }
-
-  // Storage yöntemini değiştir
-  setStorageMethod(method) {
-    this.storageMethod = method
-    this.ensureLogDirectory()
-  }
-
-  // Mevcut storage yöntemini al
-  getStorageMethod() {
-    return this.storageMethod
+    // Browser ortamında sadece localStorage kullanılıyor
+    this.storageType = 'localStorage'
   }
 
   // Session ID'yi lazy olarak al
@@ -127,6 +96,12 @@ class FileLogger {
 
   // Log ekleme
   log(level, category, message, data = {}) {
+    // Log aktif değilse hiçbir şey yapma
+    if (!this.logActive) {
+      return
+    }
+    
+    
     const logEntry = {
       id: Date.now() + Math.random(),
       timestamp: new Date().toISOString(),
@@ -199,11 +174,9 @@ class FileLogger {
       const currentDate = new Date().toISOString().split('T')[0]
       const fileName = `agora-logs-${currentDate}.json`
       
-      if (this.storageType === 'localStorage') {
-        await this.saveToLocalStorage(fileName, logEntry)
-      } else if (this.storageType === 'localFolder') {
-        await this.saveToLocalFolder(fileName, logEntry)
-      }
+      // Sadece localStorage kullanılıyor
+      await this.saveToLocalStorage(fileName, logEntry)
+      
     } catch (error) {
       console.error('Log kaydetme hatası:', error)
     }
@@ -217,135 +190,65 @@ class FileLogger {
       
       // Dosya boyutu kontrolü
       if (existingLogs.length > this.maxLogsPerFile) {
-        existingLogs.splice(0, existingLogs.length - this.maxLogsPerFile)
+        const removedCount = existingLogs.length - this.maxLogsPerFile
+        existingLogs.splice(0, removedCount)
+        
+        // Log limit aşıldığında notification gönder
+        notification.warning(
+          'Log Limit Aşıldı!',
+          `Maksimum ${this.maxLogsPerFile} log limiti aşıldı. ${removedCount} eski log temizlendi.`,
+          {
+            category: 'storage',
+            priority: 'high',
+            // Duplicate prevention için unique key
+            metadata: {
+              duplicateKey: 'log-limit-warning',
+              timestamp: Date.now()
+            },
+            actions: [
+              {
+                label: 'Log İstatistiklerini Gör',
+                action: () => this.showLogStats()
+              }
+            ]
+          }
+        )
+        
+        logInfo('Max logs per file exceeded, old ones removed', { 
+          removed: removedCount, 
+          remaining: this.maxLogsPerFile,
+          limit: this.maxLogsPerFile
+        })
       }
       
       // LocalStorage'a kaydet
       const key = `agora_logs_${fileName}`
-      localStorage.setItem(key, JSON.stringify(existingLogs))
+      
+      try {
+        localStorage.setItem(key, JSON.stringify(existingLogs))
+      } catch (quotaError) {
+        if (quotaError.name === 'QuotaExceededError') {
+          // Quota hatası - notification gönder
+          this.handleQuotaError(fileName, existingLogs.length)
+          
+          // Eski logları temizle ve tekrar dene
+          this.cleanupOldLogsForQuota()
+          
+          try {
+            localStorage.setItem(key, JSON.stringify(existingLogs))
+          } catch (retryError) {
+            console.error('Retry after quota cleanup failed:', retryError)
+          }
+        } else {
+          throw quotaError
+        }
+      }
       
       // Metadata güncelle
       this.updateLogMetadata(fileName, existingLogs.length)
       
     } catch (error) {
-      console.error('LocalStorage kaydetme hatası:', error)
-    }
-  }
-
-  // Local klasöre kaydetme
-  async saveToLocalFolder(fileName, logEntry) {
-    try {
-      if (typeof window === 'undefined') {
-        // Node.js ortamında
-        const fs = require('fs')
-        const path = require('path')
-        
-        const filePath = path.join(this.localFolderPath, fileName)
-        const existingLogs = this.getLogsFromLocalFolder(fileName)
-        existingLogs.push(logEntry)
-        
-        // Dosya boyutu kontrolü
-        if (existingLogs.length > this.maxLogsPerFile) {
-          existingLogs.splice(0, existingLogs.length - this.maxLogsPerFile)
-        }
-        
-        // Dosyaya yaz
-        fs.writeFileSync(filePath, JSON.stringify(existingLogs, null, 2))
-        
-        // Metadata güncelle
-        this.updateLocalFolderMetadata(fileName, existingLogs.length)
-      } else {
-        // Browser ortamında - fallback to localStorage
-        await this.saveToLocalStorage(fileName, logEntry)
-      }
-    } catch (error) {
-      console.error('Local klasör kaydetme hatası:', error)
-      // Fallback: LocalStorage
-      await this.saveToLocalStorage(fileName, logEntry)
-    }
-  }
-
-  // Local klasörden logları getir
-  getLogsFromLocalFolder(fileName) {
-    try {
-      if (typeof window === 'undefined') {
-        const fs = require('fs')
-        const path = require('path')
-        
-        const filePath = path.join(this.localFolderPath, fileName)
-        
-        if (fs.existsSync(filePath)) {
-          const data = fs.readFileSync(filePath, 'utf8')
-          return JSON.parse(data)
-        }
-      }
-      return []
-    } catch (error) {
-      console.error('Local klasörden log okuma hatası:', error)
-      return []
-    }
-  }
-
-  // Local klasör metadata güncelle
-  updateLocalFolderMetadata(fileName, logCount) {
-    try {
-      if (typeof window === 'undefined') {
-        const fs = require('fs')
-        const path = require('path')
-        
-        const metadataPath = path.join(this.localFolderPath, 'metadata.json')
-        const metadata = this.getLocalFolderMetadata()
-        
-        metadata[fileName] = {
-          lastUpdated: new Date().toISOString(),
-          logCount,
-          fileSize: this.getLocalFolderFileSize(fileName)
-        }
-        
-        fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2))
-      }
-    } catch (error) {
-      console.error('Local klasör metadata güncelleme hatası:', error)
-    }
-  }
-
-  // Local klasör metadata getir
-  getLocalFolderMetadata() {
-    try {
-      if (typeof window === 'undefined') {
-        const fs = require('fs')
-        const path = require('path')
-        
-        const metadataPath = path.join(this.localFolderPath, 'metadata.json')
-        
-        if (fs.existsSync(metadataPath)) {
-          const data = fs.readFileSync(metadataPath, 'utf8')
-          return JSON.parse(data)
-        }
-      }
-      return {}
-    } catch (error) {
-      return {}
-    }
-  }
-
-  // Local klasör dosya boyutu
-  getLocalFolderFileSize(fileName) {
-    try {
-      if (typeof window === 'undefined') {
-        const fs = require('fs')
-        const path = require('path')
-        
-        const filePath = path.join(this.localFolderPath, fileName)
-        
-        if (fs.existsSync(filePath)) {
-          const stats = fs.statSync(filePath)
-          return stats.size
-        }
-      }
-      return 0
-    } catch (error) {
-      return 0
+      //console.error('LocalStorage kaydetme hatası:', error)
     }
   }
 
@@ -379,12 +282,8 @@ class FileLogger {
   // Log metadata getir
   getLogMetadata() {
     try {
-      if (this.storageType === 'localFolder') {
-        return this.getLocalFolderMetadata()
-      } else {
-        const data = localStorage.getItem('agora_logs_metadata')
-        return data ? JSON.parse(data) : {}
-      }
+      const data = localStorage.getItem('agora_logs_metadata')
+      return data ? JSON.parse(data) : {}
     } catch (error) {
       return {}
     }
@@ -413,11 +312,7 @@ class FileLogger {
   getLogsByDate(date) {
     const fileName = `agora-logs-${date}.json`
     
-    if (this.storageType === 'localFolder') {
-      return this.getLogsFromLocalFolder(fileName)
-    } else {
-      return this.getLogsFromStorage(fileName)
-    }
+    return this.getLogsFromStorage(fileName)
   }
 
   // Belirli tarih aralığındaki logları getir
@@ -441,11 +336,7 @@ class FileLogger {
     try {
       let logs
       
-      if (this.storageType === 'localFolder') {
-        logs = this.getLogsFromLocalFolder(fileName)
-      } else {
-        logs = this.getLogsFromStorage(fileName)
-      }
+      logs = this.getLogsFromStorage(fileName)
       
       const data = {
         fileName,
@@ -477,30 +368,14 @@ class FileLogger {
   // Log dosyasını sil
   deleteLogFile(fileName) {
     try {
-      if (this.storageType === 'localFolder') {
-        if (typeof window === 'undefined') {
-          const fs = require('fs')
-          const path = require('path')
-          
-          const filePath = path.join(this.localFolderPath, fileName)
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath)
-          }
-        }
-      } else {
-        const key = `agora_logs_${fileName}`
-        localStorage.removeItem(key)
-      }
+      const key = `agora_logs_${fileName}`
+      localStorage.removeItem(key)
       
       // Metadata'dan da sil
       const metadata = this.getLogMetadata()
       delete metadata[fileName]
       
-      if (this.storageType === 'localFolder') {
-        this.updateLocalFolderMetadata(fileName, 0)
-      } else {
-        localStorage.setItem('agora_logs_metadata', JSON.stringify(metadata))
-      }
+      localStorage.setItem('agora_logs_metadata', JSON.stringify(metadata))
       
       return true
     } catch (error) {
@@ -524,21 +399,14 @@ class FileLogger {
     }
   }
 
-  // Eski logları temizle
+  // Eski logları temizle (sadece log sayısı kontrolü)
   cleanupOldLogs() {
     try {
-      const metadata = this.getLogMetadata()
-      const cutoffDate = new Date()
-      cutoffDate.setDate(cutoffDate.getDate() - this.retentionDays)
-      
-      Object.keys(metadata).forEach(fileName => {
-        const fileDate = fileName.replace('agora-logs-', '').replace('.json', '')
-        if (new Date(fileDate) < cutoffDate) {
-          this.deleteLogFile(fileName)
-        }
-      })
+      // Sadece log sayısı kontrolü yap, tarih kontrolü yok
+      // Bu metod artık sadece init'te çağrılıyor
+      console.log('Log cleanup initialized - max logs per file:', this.maxLogsPerFile)
     } catch (error) {
-      console.error('Eski log temizleme hatası:', error)
+      console.error('Log cleanup initialization error:', error)
     }
   }
 
@@ -566,7 +434,7 @@ class FileLogger {
         totalSize: this.formatFileSize(totalSize),
         oldestFile: this.getOldestFile(metadata),
         newestFile: this.getNewestFile(metadata),
-        storageMethod: this.storageMethod
+        storageMethod: 'localStorage'
       }
     } catch (error) {
       console.error('Log istatistikleri alınamadı:', error)
@@ -576,7 +444,7 @@ class FileLogger {
         totalSize: '0 B',
         oldestFile: null,
         newestFile: null,
-        storageMethod: this.storageMethod
+        storageMethod: 'localStorage'
       }
     }
   }
@@ -623,13 +491,151 @@ class FileLogger {
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
+
+  /**
+   * Quota hatası için notification gönder
+   * @param {string} fileName - Dosya adı
+   * @param {number} logCount - Log sayısı
+   */
+  handleQuotaError(fileName, logCount) {
+    try {
+      // Direkt notification kullan
+      notification.warning(
+        'Storage Quota Aşıldı',
+        `Log dosyası ${fileName} için storage alanı yetersiz. Eski loglar temizleniyor...`,
+        {
+          category: 'storage',
+          priority: 'high',
+          // Duplicate prevention için unique key
+          metadata: {
+            duplicateKey: 'storage-quota-warning',
+            timestamp: Date.now()
+          },
+          actions: [
+            {
+              label: 'Tüm Logları Temizle',
+              action: () => this.clearAllLogs()
+            }
+          ]
+        }
+      )
+    } catch (error) {
+      console.error('Quota error handling hatası:', error)
+      // Fallback: console warning
+      console.warn('Storage quota aşıldı, eski loglar temizleniyor...')
+    }
+  }
+
+  /**
+   * Quota için eski logları temizle
+   */
+  cleanupOldLogsForQuota() {
+    try {
+      // En eski logları bul ve temizle
+      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('agora_logs_'))
+      
+      if (allKeys.length > 0) {
+        // Tarihe göre sırala (en eski önce)
+        allKeys.sort((a, b) => {
+          const dateA = this.extractDateFromKey(a)
+          const dateB = this.extractDateFromKey(b)
+          return dateA - dateB
+        })
+        
+        // En eski 3 dosyayı kaldır
+        const toRemove = allKeys.slice(0, Math.min(3, allKeys.length))
+        toRemove.forEach(key => {
+          localStorage.removeItem(key)
+          console.log(`Quota için eski log dosyası kaldırıldı: ${key}`)
+        })
+      }
+    } catch (error) {
+      console.error('Quota cleanup hatası:', error)
+    }
+  }
+
+  /**
+   * Log key'inden tarih çıkar
+   * @param {string} key - LocalStorage key
+   * @returns {number} Timestamp
+   */
+  extractDateFromKey(key) {
+    try {
+      const match = key.match(/agora_logs_.*?(\d{4}-\d{2}-\d{2})\.json/)
+      if (match) {
+        return new Date(match[1]).getTime()
+      }
+      return 0
+    } catch (error) {
+      return 0
+    }
+  }
+
+  /**
+   * Log istatistiklerini göster
+   */
+  showLogStats() {
+    try {
+      const stats = this.getLogStats()
+      
+      notification.info(
+        'Log İstatistikleri',
+        `Toplam: ${stats.totalFiles} dosya, ${stats.totalLogs} log, ${stats.totalSize}`,
+        {
+          category: 'storage',
+          priority: 'normal',
+          autoDismiss: true,
+          actions: [
+            {
+              label: 'Tüm Logları Temizle',
+              action: () => this.clearAllLogs()
+            }
+          ]
+        }
+      )
+    } catch (error) {
+      console.error('Log istatistikleri gösterilemedi:', error)
+    }
+  }
+
+  /**
+   * Tüm logları temizle
+   */
+  clearAllLogs() {
+    try {
+      const allKeys = Object.keys(localStorage).filter(key => key.startsWith('agora_logs_'))
+      allKeys.forEach(key => localStorage.removeItem(key))
+      
+      console.log('Tüm loglar temizlendi')
+      
+      // Başarı notification'ı gönder
+      notification.success(
+        'Loglar Temizlendi',
+        'Tüm log dosyaları başarıyla temizlendi',
+        {
+          category: 'storage',
+          priority: 'normal',
+          autoDismiss: true
+        }
+      )
+    } catch (error) {
+      console.error('Log temizleme hatası:', error)
+      
+      // Hata notification'ı gönder
+      notification.error(
+        'Log Temizleme Hatası',
+        'Loglar temizlenirken hata oluştu',
+        {
+          category: 'storage',
+          priority: 'high'
+        }
+      )
+    }
+  }
 }
 
 // Varsayılan fileLogger instance'ı (LocalStorage ile)
-export const fileLogger = new FileLogger(STORAGE_METHODS.LOCAL_STORAGE)
-
-// Local klasör ile fileLogger instance'ı
-export const localFolderLogger = new FileLogger(STORAGE_METHODS.LOCAL_FOLDER)
+export const fileLogger = new FileLogger()
 
 // Logger helper fonksiyonları
 export const logger = {

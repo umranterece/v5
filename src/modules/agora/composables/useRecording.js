@@ -1,15 +1,33 @@
 /**
  * Recording Composable
- * Cloud recording işlemlerini yönetir
+ * Composite recording işlemlerini yönetir
+ * Azure Storage ve Custom Server desteği
  */
 
 import { ref, computed, watch, onUnmounted, readonly } from 'vue'
 import { recordingService } from '../services/recordingService.js'
 import { fileLogger } from '../services/fileLogger.js'
 import { centralEmitter } from '../utils/centralEmitter.js'
-import { RECORDING_EVENTS } from '../constants.js'
+import { RECORDING_EVENTS, RECORDING_CONFIG } from '../constants.js'
 
 export function useRecording() {
+  // Logger fonksiyonları - FileLogger'dan al
+  const logDebug = (message, data) => fileLogger.log('debug', 'RECORDING', message, data)
+  const logInfo = (message, data) => fileLogger.log('info', 'RECORDING', message, data)
+  const logWarn = (message, data) => fileLogger.log('warn', 'RECORDING', message, data)
+  const logError = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('error', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('error', 'RECORDING', errorOrMessage, context)
+  }
+  const logFatal = (errorOrMessage, context) => {
+    if (errorOrMessage instanceof Error) {
+      return fileLogger.log('fatal', 'RECORDING', errorOrMessage.message || errorOrMessage, { error: errorOrMessage, ...context })
+    }
+    return fileLogger.log('fatal', 'RECORDING', errorOrMessage, context)
+  }
+
   // Reactive state
   const isRecording = ref(false)
   const recordingStatus = ref('IDLE')
@@ -20,28 +38,43 @@ export function useRecording() {
   const recordingDuration = ref(0)
   const recordingStartTime = ref(null)
   
+  // Storage provider ve recording ayarları
+  const storageProvider = ref(RECORDING_CONFIG.STORAGE_PROVIDER)
+  const recordingPerspective = ref(RECORDING_CONFIG.DEFAULT_PERSPECTIVE)
+  const recordingQuality = ref(RECORDING_CONFIG.DEFAULT_QUALITY)
+  
   // Recording konfigürasyonu
   const recordingConfig = ref({
-    maxIdleTime: 30,
-    streamTypes: 2, // Audio + Video
-    channelType: 1, // Live streaming
-    subscribeAudioUids: [],
-    subscribeVideoUids: [],
-    subscribeUidGroup: 0,
-    // Ek ayarlar
-    recordingFileConfig: {
-      avFileType: ['hls', 'mp4'], // HLS ve MP4 formatları
-      fileCompress: false, // Sıkıştırma kapalı
-      fileMaxSizeMB: 512 // Maksimum dosya boyutu
-    },
-    storageConfig: {
-      vendor: 0, // Agora Cloud Storage
-      region: 0, // Global
-      bucket: 'agora-recording-bucket',
-      accessKey: '',
-      secretKey: ''
-    }
+    ...RECORDING_CONFIG.COMPOSITE,
+    perspective: recordingPerspective.value,
+    quality: recordingQuality.value,
+    storageProvider: storageProvider.value
   })
+
+  // Storage provider ve recording ayarlarını değiştir
+  const setStorageProvider = (provider) => {
+    if (recordingService.setStorageProvider(provider)) {
+      storageProvider.value = provider
+      recordingConfig.value.storageProvider = provider
+      logInfo(`Storage provider değiştirildi: ${provider}`)
+    }
+  }
+
+  const setRecordingPerspective = (perspective) => {
+    if (recordingService.setRecordingPerspective(perspective)) {
+      recordingPerspective.value = perspective
+      recordingConfig.value.perspective = perspective
+      logInfo(`Recording perspective değiştirildi: ${perspective}`)
+    }
+  }
+
+  const setRecordingQuality = (quality) => {
+    if (recordingService.setRecordingQuality(quality)) {
+      recordingQuality.value = quality
+      recordingConfig.value.quality = quality
+      logInfo(`Recording quality değiştirildi: ${quality}`)
+    }
+  }
 
   // Computed properties
   const canStartRecording = computed(() => {
@@ -80,7 +113,7 @@ export function useRecording() {
   // Recording işlemleri
   const startRecording = async (config = {}) => {
     try {
-              this.logInfo('Recording başlatma isteği gönderildi')
+      logInfo('Recording başlatma isteği gönderildi')
       
       // Konfigürasyonu güncelle
       const finalConfig = {
@@ -98,7 +131,7 @@ export function useRecording() {
         recordingError.value = null
         
         // Event emit - centralEmitter kullanmıyoruz
-        this.logInfo(`Recording başlatıldı: ${result.recordingId}`)
+        logInfo(`Recording başlatıldı: ${result.recordingId}`)
         return result
       } else {
         throw new Error(result.error || 'Recording başlatılamadı')
@@ -108,7 +141,7 @@ export function useRecording() {
       recordingError.value = error.message
       recordingStatus.value = 'ERROR'
       
-      this.logError(`Recording başlatma hatası: ${error.message || error}`)
+      logError(`Recording başlatma hatası: ${error.message || error}`)
       
       // Event emit
       centralEmitter.emit(RECORDING_EVENTS.RECORDING_ERROR, {
@@ -122,7 +155,7 @@ export function useRecording() {
 
   const stopRecording = async () => {
     try {
-      this.logInfo('Recording durdurma isteği gönderildi')
+      logInfo('Recording durdurma isteği gönderildi')
       
       const result = await recordingService.stopRecording()
       
@@ -140,7 +173,7 @@ export function useRecording() {
           timestamp: Date.now()
         })
         
-        this.logInfo(`Recording durduruldu. Dosyalar: ${result.files?.length || 0}`)
+        logInfo(`Recording durduruldu. Dosyalar: ${result.files?.length || 0}`)
         return result
       } else {
         throw new Error(result.error || 'Recording durdurulamadı')
@@ -149,7 +182,7 @@ export function useRecording() {
     } catch (error) {
       recordingError.value = error.message
       
-      this.logError(`Recording durdurma hatası: ${error.message || error}`)
+      logError(`Recording durdurma hatası: ${error.message || error}`)
       
       // Event emit
       centralEmitter.emit(RECORDING_EVENTS.RECORDING_ERROR, {
@@ -176,7 +209,7 @@ export function useRecording() {
       }
       
     } catch (error) {
-      this.logError(`Recording durum sorgulama hatası: ${error.message || error}`)
+      logError(`Recording durum sorgulama hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -187,7 +220,7 @@ export function useRecording() {
       recordingFiles.value = files
       return files
     } catch (error) {
-      this.logError(`Recording dosya listesi hatası: ${error.message || error}`)
+      logError(`Recording dosya listesi hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -205,14 +238,14 @@ export function useRecording() {
         link.click()
         document.body.removeChild(link)
         
-        this.logInfo(`Dosya indirildi: ${result.fileName}`)
+        logInfo(`Dosya indirildi: ${result.fileName}`)
         return result
       } else {
         throw new Error(result.error || 'Dosya indirilemedi')
       }
       
     } catch (error) {
-      this.logError(`Recording dosya indirme hatası: ${error.message || error}`)
+      logError(`Recording dosya indirme hatası: ${error.message || error}`)
       throw error
     }
   }
@@ -228,7 +261,7 @@ export function useRecording() {
     recordingDuration.value = 0
     recordingStartTime.value = null
     
-    this.logInfo('Recording durumu sıfırlandı')
+          logInfo('Recording durumu sıfırlandı')
   }
 
   // Recording progress tracking
@@ -258,17 +291,17 @@ export function useRecording() {
 
   // Event listeners
   const handleRecordingStarted = (data) => {
-    this.logInfo('Recording başladı eventi alındı')
+            logInfo('Recording başladı eventi alındı')
     startProgressTracking()
   }
 
   const handleRecordingStopped = (data) => {
-    this.logInfo('Recording durdu eventi alındı')
+            logInfo('Recording durdu eventi alındı')
     stopProgressTracking()
   }
 
   const handleRecordingError = (data) => {
-    this.logError(`Recording hatası eventi alındı: ${data.error}`)
+            logError(`Recording hatası eventi alındı: ${data.error}`)
     stopProgressTracking()
   }
 
@@ -305,6 +338,11 @@ export function useRecording() {
     recordingDuration: readonly(recordingDuration),
     recordingConfig,
     
+    // Storage provider ve recording ayarları
+    storageProvider: readonly(storageProvider),
+    recordingPerspective: readonly(recordingPerspective),
+    recordingQuality: readonly(recordingQuality),
+    
     // Computed
     canStartRecording,
     canStopRecording,
@@ -318,6 +356,11 @@ export function useRecording() {
     getRecordingStatus,
     listRecordingFiles,
     downloadRecordingFile,
-    resetRecording
+    resetRecording,
+    
+    // Storage provider ve recording ayarları
+    setStorageProvider,
+    setRecordingPerspective,
+    setRecordingQuality
   }
 } 

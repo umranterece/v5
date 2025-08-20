@@ -15,6 +15,10 @@
           </div>
           <div class="header-text">
             <h2>Sistem Logları</h2>
+            <div class="logging-status" :class="{ 'active': isLoggingActive, 'inactive': !isLoggingActive }">
+              <span class="status-dot"></span>
+              {{ isLoggingActive ? 'Loglama Aktif' : 'Loglama Pasif' }}
+            </div>
           </div>
         </div>
         <div class="header-actions">
@@ -129,6 +133,7 @@
             <option value="video">Video</option>
             <option value="audio">Audio</option>
             <option value="screen">Screen</option>
+            <option value="whiteboard">Whiteboard</option>
             <option value="network">Network</option>
             <option value="permissions">Permissions</option>
             <option value="ui">UI</option>
@@ -291,6 +296,18 @@ export default {
       clearFilters
     } = useFileLogger()
 
+    // Loglama durumu
+    const isLoggingActive = computed(() => {
+      // fileLogger'ın logActive durumunu kontrol et
+      try {
+        // localStorage'dan log aktiflik durumunu al
+        const logActive = localStorage.getItem('agora_logging_active')
+        return logActive === 'true'
+      } catch {
+        return true // Varsayılan olarak aktif
+      }
+    })
+
     // Local state
     const logsContainer = ref(null)
     const autoScroll = ref(true)
@@ -391,6 +408,9 @@ export default {
       autoScroll,
       showFilters,
       showFiles,
+      
+      // Computed
+      isLoggingActive,
       
       // State from useFileLogger
       logs,
@@ -513,6 +533,39 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.logging-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.logging-status.active {
+  color: var(--rs-agora-success);
+}
+
+.logging-status.inactive {
+  color: var(--rs-agora-warning);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.logging-status.active .status-dot {
+  background-color: var(--rs-agora-success);
+  box-shadow: 0 0 6px var(--rs-agora-success-alpha);
+}
+
+.logging-status.inactive .status-dot {
+  background-color: var(--rs-agora-warning);
+  box-shadow: 0 0 6px var(--rs-agora-warning-alpha);
 }
 
 .header-text p {

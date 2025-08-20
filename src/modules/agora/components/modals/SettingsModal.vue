@@ -10,140 +10,91 @@
 
       <!-- Content -->
       <div class="settings-content">
-        <!-- Camera Settings -->
-        <div class="settings-section">
+        <!-- Device Settings -->
+        <div class="settings-section device-settings">
           <div class="section-header">
-            <span class="section-icon">📹</span>
-            <h3>Kamera Ayarları</h3>
+            <span class="section-icon">⚙️</span>
+            <h3>Cihaz Ayarları</h3>
           </div>
           
           <div class="setting-item">
-            <label for="camera-select">Kamera Seçimi:</label>
+            <label for="camera-select">Kamera:</label>
             <select 
               id="camera-select" 
               v-model="selectedCamera" 
-              @change="handleCameraChange"
-              :disabled="!canSwitchVideo"
               class="device-select"
             >
-              <option v-for="device in videoInputDevices" :key="device.deviceId" :value="device.deviceId">
+              <option 
+                v-for="device in videoInputDevices" 
+                :key="device.deviceId" 
+                :value="device.deviceId"
+              >
                 {{ device.label || `Kamera ${device.deviceId.slice(0, 8)}...` }}
               </option>
             </select>
-            <div v-if="!canSwitchVideo" class="device-hint">
-              {{ videoInputDevices.length === 0 ? 'Kamera bulunamadı' : 'Tek kamera mevcut' }}
-            </div>
           </div>
 
+          <div class="setting-item">
+            <label for="microphone-select">Mikrofon:</label>
+            <select 
+              id="microphone-select" 
+              v-model="selectedMicrophone" 
+              class="device-select"
+            >
+              <option 
+                v-for="device in audioInputDevices" 
+                :key="device.deviceId" 
+                :value="device.deviceId"
+              >
+                {{ device.label || `Mikrofon ${device.deviceId.slice(0, 8)}...` }}
+              </option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <button 
+              @click="refreshDevices" 
+              :disabled="isRefreshing"
+              class="refresh-btn"
+            >
+              {{ isRefreshing ? 'Yenileniyor...' : '🔄 Cihazları Yenile' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Quality Settings -->
+        <div class="settings-section quality-settings">
+          <div class="section-header">
+            <span class="section-icon">🎥</span>
+            <h3>Kalite Ayarları</h3>
+          </div>
+          
           <div class="setting-item">
             <label for="video-quality-select">Video Kalitesi:</label>
             <select 
               id="video-quality-select" 
               v-model="selectedVideoQuality" 
               @change="handleVideoQualityChange"
-              class="quality-select"
-            >
-              <option value="low">Düşük (480p, 15fps)</option>
-              <option value="medium">Orta (720p, 24fps)</option>
-              <option value="high">Yüksek (720p, 30fps)</option>
-              <option value="ultra">Ultra (1080p, 30fps)</option>
-            </select>
-            <div class="quality-info">
-              {{ getVideoQualityInfo(selectedVideoQuality) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Microphone Settings -->
-        <div class="settings-section">
-          <div class="section-header">
-            <span class="section-icon">🎤</span>
-            <h3>Mikrofon Ayarları</h3>
-          </div>
-          
-          <div class="setting-item">
-            <label for="microphone-select">Mikrofon Seçimi:</label>
-            <select 
-              id="microphone-select" 
-              v-model="selectedMicrophone" 
-              @change="handleMicrophoneChange"
-              :disabled="!canSwitchAudio"
               class="device-select"
             >
-              <option v-for="device in audioInputDevices" :key="device.deviceId" :value="device.deviceId">
-                {{ device.label || `Mikrofon ${device.deviceId.slice(0, 8)}...` }}
-              </option>
+              <option value="low">Düşük (720p)</option>
+              <option value="medium">Orta (1080p)</option>
+              <option value="high">Yüksek (4K)</option>
             </select>
-            <div v-if="!canSwitchAudio" class="device-hint">
-              {{ audioInputDevices.length === 0 ? 'Mikrofon bulunamadı' : 'Tek mikrofon mevcut' }}
-            </div>
           </div>
-        </div>
 
-        <!-- Screen Share Settings -->
-        <div class="settings-section">
-          <div class="section-header">
-            <span class="section-icon">🖥️</span>
-            <h3>Ekran Paylaşımı Ayarları</h3>
-          </div>
-          
           <div class="setting-item">
-            <label for="screen-quality-select">Ekran Paylaşımı Kalitesi:</label>
+            <label for="screen-quality-select">Ekran Paylaşım Kalitesi:</label>
             <select 
               id="screen-quality-select" 
               v-model="selectedScreenQuality" 
               @change="handleScreenQualityChange"
-              class="quality-select"
-            >
-              <option value="low">Düşük (480p, 10fps)</option>
-              <option value="medium">Orta (720p, 15fps)</option>
-              <option value="high">Yüksek (1080p, 30fps)</option>
-            </select>
-            <div class="quality-info">
-              {{ getScreenQualityInfo(selectedScreenQuality) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Log Settings -->
-        <div class="settings-section">
-          <div class="section-header">
-            <span class="section-icon">📝</span>
-            <h3>Log Ayarları</h3>
-          </div>
-          
-          <div class="setting-item">
-            <label for="log-method-select">Log Yöntemi:</label>
-            <select 
-              id="log-method-select" 
-              v-model="selectedLogMethod" 
-              @change="handleLogMethodChange"
               class="device-select"
             >
-              <option value="localStorage">LocalStorage (Tarayıcı - Test için)</option>
-              <option value="localFolder">Local Klasör (Proje klasörü)</option>
+              <option value="low">Düşük (720p)</option>
+              <option value="medium">Orta (1080p)</option>
+              <option value="high">Yüksek (4K)</option>
             </select>
-            <div class="setting-info">
-              {{ getLogMethodInfo(selectedLogMethod) }}
-            </div>
-          </div>
-
-          <div class="setting-item">
-            <label for="log-retention-select">Log Saklama Süresi:</label>
-            <select 
-              id="log-retention-select" 
-              v-model="selectedLogRetention" 
-              @change="handleLogRetentionChange"
-              class="device-select"
-            >
-              <option value="7">7 gün</option>
-              <option value="15">15 gün</option>
-              <option value="30">30 gün (varsayılan)</option>
-              <option value="60">60 gün</option>
-            </select>
-            <div class="setting-info">
-              {{ getLogRetentionInfo(selectedLogRetention) }}
-            </div>
           </div>
         </div>
 
@@ -184,7 +135,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
 import { VIDEO_CONFIG, SCREEN_SHARE_CONFIG } from '../../constants.js'
-import { fileLogger, localFolderLogger, STORAGE_METHODS } from '../../services/fileLogger.js'
+import { fileLogger } from '../../services/fileLogger.js'
 
 // Props
 const props = defineProps({
@@ -193,8 +144,6 @@ const props = defineProps({
   currentMicrophone: { type: String, default: '' },
   currentVideoQuality: { type: String, default: 'medium' },
   currentScreenQuality: { type: String, default: 'medium' },
-  currentLogMethod: { type: String, default: 'localStorage' },
-  currentLogRetention: { type: Number, default: 30 },
   isMobile: { type: Boolean, default: false }
 })
 
@@ -222,17 +171,14 @@ const selectedCamera = ref('')
 const selectedMicrophone = ref('')
 const selectedVideoQuality = ref('medium')
 const selectedScreenQuality = ref('medium')
-const selectedLogMethod = ref('localStorage')
-const selectedLogRetention = ref(30)
+const isRefreshing = ref(false)
 
 // Computed
 const hasChanges = computed(() => {
   return selectedCamera.value !== props.currentCamera ||
          selectedMicrophone.value !== props.currentMicrophone ||
          selectedVideoQuality.value !== props.currentVideoQuality ||
-         selectedScreenQuality.value !== props.currentScreenQuality ||
-         selectedLogMethod.value !== props.currentLogMethod ||
-         selectedLogRetention.value !== props.currentLogRetention
+         selectedScreenQuality.value !== props.currentScreenQuality
 })
 
 // Quality info functions
@@ -253,19 +199,6 @@ const getScreenQualityInfo = (quality) => {
     high: 'Yüksek kalite, detaylı paylaşım'
   }
   return qualityMap[quality] || ''
-}
-
-// Log settings info functions
-const getLogMethodInfo = (method) => {
-  const methodMap = {
-    localStorage: 'Loglar tarayıcının LocalStorage\'ında saklanır (test için ideal)',
-    localFolder: 'Loglar proje klasöründeki logs/ dizininde saklanır (production için ideal)'
-  }
-  return methodMap[method] || ''
-}
-
-const getLogRetentionInfo = (days) => {
-  return `${days} gün sonra eski loglar otomatik olarak silinir`
 }
 
 // Methods
@@ -309,31 +242,6 @@ const handleScreenQualityChange = () => {
   // Screen quality change logic - implement later
 }
 
-const handleLogMethodChange = () => {
-  console.log('Log method changed to:', selectedLogMethod.value)
-  
-  // Log yöntemini değiştir
-  if (selectedLogMethod.value === 'localFolder') {
-    localFolderLogger.setStorageMethod(STORAGE_METHODS.LOCAL_FOLDER)
-    console.log('Switched to local folder logging')
-  } else {
-    fileLogger.setStorageMethod(STORAGE_METHODS.LOCAL_STORAGE)
-    console.log('Switched to localStorage logging')
-  }
-}
-
-const handleLogRetentionChange = () => {
-  console.log('Log retention changed to:', selectedLogRetention.value)
-  
-  // Log retention süresini güncelle
-  const days = parseInt(selectedLogRetention.value)
-  if (selectedLogMethod.value === 'localFolder') {
-    localFolderLogger.retentionDays = days
-  } else {
-    fileLogger.retentionDays = days
-  }
-}
-
 const refreshDevices = async () => {
   try {
     console.log('Refreshing devices...')
@@ -373,9 +281,7 @@ const applySettings = () => {
     camera: selectedCamera.value,
     microphone: selectedMicrophone.value,
     videoQuality: selectedVideoQuality.value,
-    screenQuality: selectedScreenQuality.value,
-    logMethod: selectedLogMethod.value,
-    logRetention: selectedLogRetention.value
+    screenQuality: selectedScreenQuality.value
   }
   
   emit('settings-changed', newSettings)
@@ -413,16 +319,12 @@ onMounted(async () => {
     selectedMicrophone.value = props.currentMicrophone || currentAudioInputId.value
     selectedVideoQuality.value = props.currentVideoQuality
     selectedScreenQuality.value = props.currentScreenQuality
-    selectedLogMethod.value = props.currentLogMethod
-    selectedLogRetention.value = props.currentLogRetention
     
     console.log('Settings initialized:', {
       camera: selectedCamera.value,
       microphone: selectedMicrophone.value,
       videoQuality: selectedVideoQuality.value,
-      screenQuality: selectedScreenQuality.value,
-      logMethod: selectedLogMethod.value,
-      logRetention: selectedLogRetention.value
+      screenQuality: selectedScreenQuality.value
     })
     
   } catch (error) {

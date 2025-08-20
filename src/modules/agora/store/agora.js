@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser } from '../constants.js'
-import { fileLogger } from '../services/index.js'
+import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser, isWhiteboardUser, NETLESS_CONFIG, USER_ID_RANGES } from '../constants.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
 
 /**
  * Agora Store - Video ve Ekran Paylaşımı client'larını yönetir
@@ -37,6 +37,15 @@ export const useAgoraStore = defineStore('agora', () => {
       client: null,
       isConnected: false,
       isInitialized: false
+    },
+    whiteboard: {  // 🆕 YENİ
+      client: null,
+      isConnected: false,
+      isInitialized: false,
+      isActive: false,
+      isPresenter: false,
+      dataChannel: null,
+      roomId: null
     }
   })
 
@@ -44,7 +53,8 @@ export const useAgoraStore = defineStore('agora', () => {
   const users = ref({
     local: {
       video: null,
-      screen: null
+      screen: null,
+      whiteboard: null  // 🆕 YENİ
     },
     remote: [] // Tüm uzak kullanıcılar tek listede
   })
@@ -53,22 +63,36 @@ export const useAgoraStore = defineStore('agora', () => {
   const tracks = ref({
     local: {
       video: { audio: null, video: null },
-      screen: { video: null }
+      screen: { video: null },
+      whiteboard: {  // 🆕 YENİ
+        canvas: null,
+        dataChannel: null,
+        drawingData: null,
+        history: [],
+        currentTool: NETLESS_CONFIG.DEFAULTS.TOOL,
+        currentColor: NETLESS_CONFIG.DEFAULTS.STROKE_COLOR,
+        currentWidth: NETLESS_CONFIG.DEFAULTS.STROKE_WIDTH
+      }
     },
-    remote: new Map() // UID -> { audio, video, screen }
+    remote: new Map() // UID -> { audio, video, screen, whiteboard }
   })
 
   // Unified Control State - Birleştirilmiş kontrol durumu
   const controls = ref({
     isLocalVideoOff: false,
     isLocalAudioMuted: false,
-    isScreenSharing: false
+    isScreenSharing: false,
+    isWhiteboardActive: false,  // 🆕 YENİ
+    isWhiteboardPresenting: false  // 🆕 YENİ
   })
 
   // Session State - Oturum durumu
   const session = ref({
     videoChannelName: null,
-    appId: null
+    appId: null,
+    whiteboardRoomId: null,  // 🆕 YENİ
+    whiteboardSessionId: null,  // 🆕 YENİ
+    whiteboardRoom: null  // 🆕 YENİ - Room bilgileri
   })
 
   // Device State - Cihaz durumu
@@ -111,8 +135,14 @@ export const useAgoraStore = defineStore('agora', () => {
     tracks.value.local.screen.video && controls.value.isScreenSharing
   )
 
+  const hasLocalWhiteboard = computed(() =>  // 🆕 YENİ
+    tracks.value.local.whiteboard.canvas && controls.value.isWhiteboardActive
+  )
+
   const videoChannelName = computed(() => session.value.videoChannelName)
   const appId = computed(() => session.value.appId)
+  const whiteboardRoomId = computed(() => session.value.whiteboardRoomId)  // 🆕 YENİ
+  const whiteboardRoom = computed(() => session.value.whiteboardRoom)  // 🆕 YENİ
 
   // Device computed properties
   const canUseCamera = computed(() => 
@@ -135,10 +165,19 @@ export const useAgoraStore = defineStore('agora', () => {
     controls.value.isScreenSharing
   )
 
+  const isWhiteboardActive = computed(() =>  // 🆕 YENİ
+    controls.value.isWhiteboardActive
+  )
+
+  const isWhiteboardPresenting = computed(() =>  // 🆕 YENİ
+    controls.value.isWhiteboardPresenting
+  )
+
   // Helper functions
   const isLocalUID = (uid) => {
     return (users.value.local.video && users.value.local.video.uid === uid) ||
-           (users.value.local.screen && users.value.local.screen.uid === uid)
+           (users.value.local.screen && users.value.local.screen.uid === uid) ||
+           (users.value.local.whiteboard && users.value.local.whiteboard.uid === uid)  // 🆕 YENİ
   }
 
   const isLocalVideoUID = (uid) => {
@@ -148,6 +187,12 @@ export const useAgoraStore = defineStore('agora', () => {
   const isLocalScreenUID = (uid) => {
     return users.value.local.screen && users.value.local.screen.uid === uid
   }
+
+  const isLocalWhiteboardUID = (uid) => {  // 🆕 YENİ
+    return users.value.local.whiteboard && users.value.local.whiteboard.uid === uid
+  }
+
+  // isWhiteboardUser artık constants'tan import ediliyor
 
   // Client Actions - Client işlemleri
   const setClient = (type, client) => {
@@ -162,16 +207,58 @@ export const useAgoraStore = defineStore('agora', () => {
     clients.value[type].isInitialized = initialized
   }
 
+  // Whiteboard Client Actions - 🆕 YENİ
+  const setWhiteboardClient = (client) => {
+    clients.value.whiteboard.client = client
+  }
+
+  const setWhiteboardConnected = (connected) => {
+    clients.value.whiteboard.isConnected = connected
+  }
+
+  const setWhiteboardInitialized = (initialized) => {
+    clients.value.whiteboard.isInitialized = initialized
+  }
+
+  const setWhiteboardActive = (active) => {
+    clients.value.whiteboard.isActive = active
+    controls.value.isWhiteboardActive = active
+  }
+
+  const setWhiteboardPresenter = (presenter) => {
+    clients.value.whiteboard.isPresenter = presenter
+    controls.value.isWhiteboardPresenting = presenter
+  }
+
   // User Actions - Kullanıcı işlemleri
   const setLocalUser = (type, user) => {
     users.value.local[type] = user
+  }
+
+  // Whiteboard User Actions - 🆕 YENİ
+  const setLocalWhiteboardUser = (user) => {
+    users.value.local.whiteboard = user
+  }
+
+  const addWhiteboardUser = (user) => {
+    // Whiteboard kullanıcısı ekleme
+    if (isWhiteboardUser(user.uid)) {
+      user.isWhiteboard = true
+      addRemoteUser(user)
+    }
+  }
+
+  const removeWhiteboardUser = (uid) => {
+    if (isWhiteboardUser(uid)) {
+      removeRemoteUser(uid)
+    }
   }
 
   // User lookup cache for performance
   const userLookupCache = new Map()
   
   const addRemoteUser = (user) => {
-    console.log('🟢 [STORE] addRemoteUser çağrıldı:', {
+    logInfo('addRemoteUser çağrıldı', {
       uid: user.uid,
       name: user.name,
       isScreenShare: user.isScreenShare,
@@ -181,7 +268,7 @@ export const useAgoraStore = defineStore('agora', () => {
     // UID'ye göre isScreenShare özelliğini otomatik olarak ayarla
     if (isScreenShareUser(user.uid)) {
       user.isScreenShare = true
-      console.log('🟢 [STORE] UID\'ye göre ekran paylaşımı kullanıcısı olarak işaretlendi:', user.uid)
+      logInfo('UID\'ye göre ekran paylaşımı kullanıcısı olarak işaretlendi', { uid: user.uid })
     }
     
     const existingIndex = users.value.remote.findIndex(u => u.uid === user.uid)
@@ -193,7 +280,7 @@ export const useAgoraStore = defineStore('agora', () => {
       // Eğer ekran paylaşımı kullanıcısı ise, isScreenShare özelliğini kontrol et
       if (user.isScreenShare) {
         existingUser.isScreenShare = true
-        console.log('🟢 [STORE] Mevcut uzak ekran paylaşımı kullanıcısı güncellendi:', user.uid)
+        logInfo('Mevcut uzak ekran paylaşımı kullanıcısı güncellendi', { uid: user.uid })
       }
       
       // Update cache
@@ -204,19 +291,21 @@ export const useAgoraStore = defineStore('agora', () => {
       
       // Eğer ekran paylaşımı kullanıcısı ise, log ekle
       if (user.isScreenShare) {
-        console.log('🟢 [STORE] Yeni uzak ekran paylaşımı kullanıcısı eklendi:', user.uid)
+        logInfo('Yeni uzak ekran paylaşımı kullanıcısı eklendi', { uid: user.uid })
       }
       
       // Update cache
       userLookupCache.set(user.uid, users.value.remote.length - 1)
     }
     
-    console.log('🟢 [STORE] Güncel remote users listesi:', users.value.remote.map(u => ({
-      uid: u.uid,
-      name: u.name,
-      isScreenShare: u.isScreenShare,
-      isLocal: u.isLocal
-    })))
+    logInfo('Güncel remote users listesi', {
+      users: users.value.remote.map(u => ({
+        uid: u.uid,
+        name: u.name,
+        isScreenShare: u.isScreenShare,
+        isLocal: u.isLocal
+      }))
+    })
   }
 
   const removeRemoteUser = (uid) => {
@@ -251,12 +340,19 @@ export const useAgoraStore = defineStore('agora', () => {
         }
       } else if (type === 'screen') {
         localUser.hasVideo = !!track
+      } else if (type === 'whiteboard') {  // 🆕 YENİ
+        localUser.hasCanvas = !!track
       }
     }
   }
 
+  // Whiteboard Track Actions - 🆕 YENİ
+  const setLocalWhiteboardTrack = (trackType, track) => {
+    tracks.value.local.whiteboard[trackType] = track
+  }
+
   const setRemoteTrack = (uid, type, track) => {
-    console.log('🟢 [STORE] setRemoteTrack çağrıldı:', {
+    logInfo('setRemoteTrack çağrıldı', {
       uid,
       type,
       hasTrack: !!track,
@@ -270,36 +366,59 @@ export const useAgoraStore = defineStore('agora', () => {
     userTracks[type] = track
     tracks.value.remote.set(uid, userTracks)
     
-    // Eğer ekran paylaşımı track'i eklendiyse, kullanıcının isScreenShare özelliğini güncelle
-    if (type === 'screen' && track) {
-      const remoteUser = users.value.remote.find(u => u.uid === uid)
-      if (remoteUser) {
-        remoteUser.isScreenShare = true
-        remoteUser.hasVideo = true
-        console.log('🟢 [STORE] Uzak ekran paylaşımı kullanıcısı güncellendi:', uid, {
-          isScreenShare: true,
-          hasVideo: true
-        })
-      } else {
-        console.log('🟡 [STORE] Uzak ekran paylaşımı kullanıcısı bulunamadı, yeni kullanıcı oluşturuluyor:', uid)
-        // Eğer kullanıcı yoksa, yeni kullanıcı oluştur
-        const newUser = {
-          uid: uid,
-          name: `Ekran Paylaşımı ${uid}`,
-          isLocal: false,
-          hasVideo: true,
-          isScreenShare: true
+            // Eğer ekran paylaşımı track'i eklendiyse, kullanıcının isScreenShare özelliğini güncelle
+        if (type === 'screen' && track) {
+          const remoteUser = users.value.remote.find(u => u.uid === uid)
+          if (remoteUser) {
+            remoteUser.isScreenShare = true
+            remoteUser.hasVideo = true
+            logInfo('Uzak ekran paylaşımı kullanıcısı güncellendi', { uid, isScreenShare: true, hasVideo: true })
+          } else {
+            logInfo('Uzak ekran paylaşımı kullanıcısı bulunamadı, yeni kullanıcı oluşturuluyor', { uid })
+            // Eğer kullanıcı yoksa, yeni kullanıcı oluştur
+            const newUser = {
+              uid: uid,
+              name: getRemoteUserDisplayName(uid, 'Ekran Paylaşımı'),
+              isLocal: false,
+              hasVideo: true,
+              isScreenShare: true
+            }
+            users.value.remote.push(newUser)
+            logInfo('Yeni ekran paylaşımı kullanıcısı oluşturuldu', { uid })
+          }
         }
-        users.value.remote.push(newUser)
-        console.log('🟢 [STORE] Yeni ekran paylaşımı kullanıcısı oluşturuldu:', uid)
-      }
-    }
+        
+        // Eğer whiteboard track'i eklendiyse
+        if (type === 'whiteboard' && track) {
+          const remoteUser = users.value.remote.find(u => u.uid === uid)
+          if (remoteUser) {
+            remoteUser.isWhiteboard = true
+            remoteUser.hasCanvas = true
+            logInfo('Uzak whiteboard kullanıcısı güncellendi', { uid, isWhiteboard: true, hasCanvas: true })
+          } else {
+            logInfo('Uzak whiteboard kullanıcısı bulunamadı, yeni kullanıcı oluşturuluyor', { uid })
+            // Eğer kullanıcı yoksa, yeni kullanıcı oluştur
+            const newUser = {
+              uid: uid,
+              name: getRemoteUserDisplayName(uid, 'Whiteboard'),
+              isLocal: false,
+              hasCanvas: true,
+              isWhiteboard: true
+            }
+            users.value.remote.push(newUser)
+            logInfo('Yeni whiteboard kullanıcısı oluşturuldu', { uid })
+          }
+        }
     
-    console.log('🟢 [STORE] Güncel remote tracks:', {
+    logInfo('Güncel remote tracks', {
       uid,
       userTracks: Object.keys(userTracks),
       totalRemoteTracks: tracks.value.remote.size
     })
+  }
+
+  const setRemoteWhiteboardTrack = (uid, track) => {
+    setRemoteTrack(uid, 'whiteboard', track)
   }
 
   // Yeni eklenen fonksiyon: remote track'i kaldır
@@ -314,9 +433,17 @@ export const useAgoraStore = defineStore('agora', () => {
           const remoteUser = users.value.remote.find(u => u.uid === uid)
           if (remoteUser) {
             remoteUser.isScreenShare = false
-            console.log('🟢 [STORE] Uzak ekran paylaşımı kullanıcısı güncellendi:', uid, {
-              isScreenShare: false
-            })
+            logInfo('Uzak ekran paylaşımı kullanıcısı güncellendi', { uid, isScreenShare: false })
+          }
+        }
+        
+        // Eğer whiteboard track'i kaldırıldıysa
+        if (type === 'whiteboard') {
+          const remoteUser = users.value.remote.find(u => u.uid === uid)
+          if (remoteUser) {
+            remoteUser.isWhiteboard = false
+            remoteUser.hasCanvas = false
+            logInfo('Uzak whiteboard kullanıcısı güncellendi', { uid, isWhiteboard: false, hasCanvas: false })
           }
         }
       }
@@ -352,7 +479,7 @@ export const useAgoraStore = defineStore('agora', () => {
     
     if (sharing && tracks.value.local.screen.video) {
       if (!users.value.local.screen) {
-        const screenUID = Math.floor(Math.random() * (3000 - 2000)) + 2000
+        const screenUID = Math.floor(Math.random() * (USER_ID_RANGES.SCREEN_SHARE.MAX - USER_ID_RANGES.SCREEN_SHARE.MIN)) + USER_ID_RANGES.SCREEN_SHARE.MIN
         users.value.local.screen = {
           uid: screenUID,
           name: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
@@ -410,24 +537,74 @@ export const useAgoraStore = defineStore('agora', () => {
     }
   }
 
+  // Whiteboard Reset Actions - 🆕 YENİ
+  const resetWhiteboard = () => {
+    clients.value.whiteboard = {
+      client: null,
+      isConnected: false,
+      isInitialized: false,
+      isActive: false,
+      isPresenter: false,
+      dataChannel: null,
+      roomId: null
+    }
+  }
+
   const resetUsers = (type) => {
     if (type) {
       users.value.local[type] = null
     } else {
-      users.value.local = { video: null, screen: null }
+      users.value.local = { video: null, screen: null, whiteboard: null }  // 🆕 YENİ
       users.value.remote = []
     }
   }
 
+  // Whiteboard Users Reset - 🆕 YENİ
+  const resetWhiteboardUsers = () => {
+    users.value.local.whiteboard = null
+    // Remote whiteboard users'ları da temizle
+    users.value.remote = users.value.remote.filter(u => !isWhiteboardUser(u.uid))
+  }
+
   const resetTracks = (type) => {
     if (type) {
-      tracks.value.local[type] = type === 'video' ? { audio: null, video: null } : { video: null }
+      tracks.value.local[type] = type === 'video' ? { audio: null, video: null } : 
+                                  type === 'screen' ? { video: null } : 
+                                  { canvas: null, dataChannel: null, drawingData: null, history: [], currentTool: WHITEBOARD_CONFIG.DEFAULTS.TOOL, currentColor: WHITEBOARD_CONFIG.DEFAULTS.PRIMARY_COLOR, currentWidth: WHITEBOARD_CONFIG.WIDTH.DEFAULT }  // 🆕 YENİ
     } else {
       tracks.value.local = {
         video: { audio: null, video: null },
-        screen: { video: null }
+        screen: { video: null },
+        whiteboard: {  // 🆕 YENİ
+          canvas: null,
+          dataChannel: null,
+          drawingData: null,
+          history: [],
+                  currentTool: NETLESS_CONFIG.DEFAULTS.TOOL,
+        currentColor: NETLESS_CONFIG.DEFAULTS.STROKE_COLOR,
+        currentWidth: NETLESS_CONFIG.DEFAULTS.STROKE_WIDTH
+        }
       }
       tracks.value.remote.clear()
+    }
+  }
+
+  // Whiteboard Tracks Reset - 🆕 YENİ
+  const resetWhiteboardTracks = () => {
+    tracks.value.local.whiteboard = {
+      canvas: null,
+      dataChannel: null,
+      drawingData: null,
+      history: [],
+      currentTool: NETLESS_CONFIG.DEFAULTS.TOOL,
+      currentColor: NETLESS_CONFIG.DEFAULTS.STROKE_COLOR,
+      currentWidth: NETLESS_CONFIG.DEFAULTS.STROKE_WIDTH
+    }
+    // Remote whiteboard tracks'leri temizle
+    for (const [uid, userTracks] of tracks.value.remote) {
+      if (userTracks.whiteboard) {
+        delete userTracks.whiteboard
+      }
     }
   }
 
@@ -435,8 +612,16 @@ export const useAgoraStore = defineStore('agora', () => {
     controls.value = {
       isLocalVideoOff: false,
       isLocalAudioMuted: false,
-      isScreenSharing: false
+      isScreenSharing: false,
+      isWhiteboardActive: false,  // 🆕 YENİ
+      isWhiteboardPresenting: false  // 🆕 YENİ
     }
+  }
+
+  // Whiteboard Controls Reset - 🆕 YENİ
+  const resetWhiteboardControls = () => {
+    controls.value.isWhiteboardActive = false
+    controls.value.isWhiteboardPresenting = false
   }
 
   // Session Actions - Oturum işlemleri
@@ -448,11 +633,34 @@ export const useAgoraStore = defineStore('agora', () => {
     session.value.appId = appId
   }
 
+  // Whiteboard Session Actions - 🆕 YENİ
+  const setWhiteboardRoomId = (roomId) => {
+    session.value.whiteboardRoomId = roomId
+  }
+
+  const setWhiteboardSessionId = (sessionId) => {
+    session.value.whiteboardSessionId = sessionId
+  }
+
+  const setWhiteboardRoom = (roomData) => {
+    session.value.whiteboardRoomId = roomData.uuid
+    session.value.whiteboardRoom = roomData
+  }
+
   const resetSession = () => {
     session.value = {
       videoChannelName: null,
-      appId: null
+      appId: null,
+      whiteboardRoomId: null,  // 🆕 YENİ
+      whiteboardSessionId: null,  // 🆕 YENİ
+      whiteboardRoom: null  // 🆕 YENİ
     }
+  }
+
+  // Whiteboard Session Reset - 🆕 YENİ
+  const resetWhiteboardSession = () => {
+    session.value.whiteboardRoomId = null
+    session.value.whiteboardSessionId = null
   }
 
   const resetDevices = () => {
@@ -469,10 +677,15 @@ export const useAgoraStore = defineStore('agora', () => {
   const reset = () => {
     resetClient('video')
     resetClient('screen')
+    resetWhiteboard()        // 🆕 YENİ
     resetUsers()
+    resetWhiteboardUsers()   // 🆕 YENİ
     resetTracks()
+    resetWhiteboardTracks()  // 🆕 YENİ
     resetControls()
+    resetWhiteboardControls() // 🆕 YENİ
     resetSession()
+    resetWhiteboardSession() // 🆕 YENİ
     resetDevices()
   }
 
@@ -493,23 +706,38 @@ export const useAgoraStore = defineStore('agora', () => {
     hasLocalVideo,
     hasLocalAudio,
     hasLocalScreenShare,
+    hasLocalWhiteboard,        // 🆕 YENİ
     videoChannelName,
     appId,
+    whiteboardRoomId,          // 🆕 YENİ
+    whiteboardRoom,            // 🆕 YENİ
     canUseCamera,
     canUseMicrophone,
     isLocalVideoOff,
     isLocalAudioMuted,
     isScreenSharing,
+    isWhiteboardActive,        // 🆕 YENİ
+    isWhiteboardPresenting,    // 🆕 YENİ
 
     // Unified Actions - Birleştirilmiş işlemler
     setClient,
     setClientConnected,
     setClientInitialized,
+    setWhiteboardClient,       // 🆕 YENİ
+    setWhiteboardConnected,    // 🆕 YENİ
+    setWhiteboardInitialized,  // 🆕 YENİ
+    setWhiteboardActive,       // 🆕 YENİ
+    setWhiteboardPresenter,    // 🆕 YENİ
     setLocalUser,
+    setLocalWhiteboardUser,    // 🆕 YENİ
     addRemoteUser,
+    addWhiteboardUser,         // 🆕 YENİ
     removeRemoteUser,
+    removeWhiteboardUser,      // 🆕 YENİ
     setLocalTrack,
+    setLocalWhiteboardTrack,   // 🆕 YENİ
     setRemoteTrack,
+    setRemoteWhiteboardTrack,  // 🆕 YENİ
     removeRemoteTrack,
     setLocalVideoOff,
     setLocalAudioMuted,
@@ -518,17 +746,27 @@ export const useAgoraStore = defineStore('agora', () => {
     updateDevicePermissions,
     setVideoChannelName,
     setAppId,
+    setWhiteboardRoomId,       // 🆕 YENİ
+    setWhiteboardSessionId,    // 🆕 YENİ
+    setWhiteboardRoom,         // 🆕 YENİ
     resetClient,
+    resetWhiteboard,           // 🆕 YENİ
     resetUsers,
+    resetWhiteboardUsers,      // 🆕 YENİ
     resetTracks,
+    resetWhiteboardTracks,     // 🆕 YENİ
     resetControls,
+    resetWhiteboardControls,   // 🆕 YENİ
     resetSession,
+    resetWhiteboardSession,    // 🆕 YENİ
     resetDevices,
     reset,
 
     // Helper
     isLocalUID,
     isLocalVideoUID,
-    isLocalScreenUID
+    isLocalScreenUID,
+    isLocalWhiteboardUID,      // 🆕 YENİ
+    isWhiteboardUser           // 🆕 YENİ
   }
 }) 

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
+    "@netless/fastboard": "^1.1.0",
     "agora-rtc-sdk-ng": "^4.20.0",
     "mitt": "^3.0.1",
     "pinia": "^2.1.7",

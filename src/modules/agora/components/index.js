@@ -19,4 +19,7 @@ export * from './forms/index.js'
 export * from './modals/index.js'
 
 // UI components (Yeniden kullanılabilir UI)
-export * from './ui/index.js' 
+export * from './ui/index.js'
+
+// Whiteboard components (Çizim ve işbirliği) 🆕 YENİ - NETLESS EXCALIDRAW STYLE
+export * from './whiteboard/index.js' 

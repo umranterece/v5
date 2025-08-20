@@ -40,6 +40,8 @@ import SettingsModal from '../modals/SettingsModal.vue'
 import GridLayout from '../layouts/GridLayout.vue'
 import SpotlightLayout from '../layouts/SpotlightLayout.vue'
 import PresentationLayout from '../layouts/PresentationLayout.vue'
+import WhiteboardLayout from '../layouts/WhiteboardLayout.vue'
+
 import { AGORA_EVENTS } from '../../constants.js'
 
 // Props
@@ -84,6 +86,8 @@ const currentLayoutComponent = computed(() => {
     case 'grid': return GridLayout
     case 'spotlight': return SpotlightLayout
     case 'presentation': return PresentationLayout
+    case 'whiteboard': return WhiteboardLayout
+    
     default: return GridLayout
   }
 })

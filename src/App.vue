@@ -6,8 +6,7 @@
       :userUid="userUid"
       :tokenEndpoint="tokenEndpoint"
       :debugMode="debugMode"
-      :logMethod="logMethod"
-      :logRetention="logRetention"
+      :logActive="logActive"
       @joined="handleJoined"
       @left="handleLeft"
       @error="handleError"
@@ -43,8 +42,7 @@ const userUid = ref(null) // null = random UID
 const debugMode = ref(true) // true = günlükleri göster, false = gizle
 
 // Log ayarları
-const logMethod = ref('localStorage') // 'localStorage' veya 'localFolder'
-const logRetention = ref(30) // 7, 15, 30, 60 gün
+const logActive = ref(true) // true = loglama aktif, false = loglama pasif
 
 // Event handlers
 const handleJoined = (data) => {
@@ -83,14 +81,9 @@ const handleSettingsChanged = (newSettings) => {
   console.log('Ayarlar değişti:', newSettings)
   
   // Log ayarları güncellendiğinde local state'i güncelle
-  if (newSettings.logMethod) {
-    logMethod.value = newSettings.logMethod
-    console.log('Log yöntemi değişti:', newSettings.logMethod)
-  }
-  
-  if (newSettings.logRetention) {
-    logRetention.value = newSettings.logRetention
-    console.log('Log saklama süresi değişti:', newSettings.logRetention)
+  if (newSettings.logActive !== undefined) {
+    logActive.value = newSettings.logActive
+    console.log('Log aktifliği değişti:', newSettings.logActive)
   }
 }
 
