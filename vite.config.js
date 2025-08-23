@@ -8,5 +8,16 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'agora-rtc': ['agora-rtc-sdk-ng'],
+          'agora-rtm': ['agora-rtm-sdk'],
+          'netless': ['@netless/fastboard']
+        }
+      }
+    }
   }
 })
