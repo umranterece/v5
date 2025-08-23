@@ -1,10 +1,9 @@
 import { ref, onUnmounted } from 'vue'
 import { USER_ID_RANGES, CHANNEL_NAMES, getUserDisplayName, getRemoteUserDisplayName, isScreenShareUser, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
-import { useLayoutStore } from '../store/layout.js'
+import { useLayoutStore } from '../store/index.js'
 import { useTrackManagement } from './useTrackManagement.js'
-import { centralEmitter } from '../utils/centralEmitter.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
-import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
+import { centralEmitter, createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 
 /**
  * Video/Ses Composable - Video client işlemlerini yönetir
@@ -806,7 +805,7 @@ export function useVideo(agoraStore) {
       
       agoraStore.addRemoteUser(remoteUser)
       
-      console.log('🟢 [VIDEO] Uzak kullanıcı eklendi:', {
+      logInfo('Uzak kullanıcı eklendi', {
         uid: user.uid,
         name: remoteUser.name,
         isScreenShare: remoteUser.isScreenShare,
@@ -819,7 +818,7 @@ export function useVideo(agoraStore) {
         const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
         
         if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-          console.log('🟢 [VIDEO] Ekran paylaşımı var, layout presentation\'a geçiliyor:', user.uid)
+          logInfo('Ekran paylaşımı var, layout presentation\'a geçiliyor', { uid: user.uid })
           layoutStore.switchLayoutWithSave('presentation')
         }
       } else {
@@ -828,7 +827,7 @@ export function useVideo(agoraStore) {
         const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
         
         if (!hasScreenShare && layoutStore.currentLayout !== 'grid') {
-          console.log('🟢 [VIDEO] Normal kullanıcı katıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor:', user.uid)
+          logInfo('Normal kullanıcı katıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor', { uid: user.uid })
           layoutStore.switchLayoutWithSave('grid')
         }
       }

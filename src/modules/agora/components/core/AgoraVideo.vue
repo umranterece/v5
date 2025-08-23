@@ -33,15 +33,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { useAgoraStore } from '../../store/index.js'
-import { useLayoutStore } from '../../store/layout.js'
-import LayoutModal from '../modals/LayoutModal.vue'
-import SettingsModal from '../modals/SettingsModal.vue'
-import GridLayout from '../layouts/GridLayout.vue'
-import SpotlightLayout from '../layouts/SpotlightLayout.vue'
-import PresentationLayout from '../layouts/PresentationLayout.vue'
-import WhiteboardLayout from '../layouts/WhiteboardLayout.vue'
-
+import { useAgoraStore, useLayoutStore } from '../../store/index.js'
+import { LayoutModal, SettingsModal } from '../modals/index.js'
+import { GridLayout, SpotlightLayout, PresentationLayout, WhiteboardLayout } from '../layouts/index.js'
 import { AGORA_EVENTS } from '../../constants.js'
 
 // Props

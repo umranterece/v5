@@ -3,20 +3,10 @@ import { useVideo } from './useVideo.js'
 import { useScreenShare } from './useScreenShare.js'
 import { useStreamQuality } from './useStreamQuality.js'
 import { useRecording } from './useRecording.js'
-import { useAgoraStore } from '../store/index.js'
+import { useAgoraStore, useLayoutStore } from '../store/index.js'
 import { DEFAULTS } from '../constants.js'
-import { createToken } from '../services/tokenService.js'
-import { useFileLogger } from './useFileLogger.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
-import { useLayoutStore } from '../store/layout.js'
-
-const {
-  logs,
-  logStats,
-  filteredLogs,
-  refreshLogs,
-  exportLogsToCSV
-} = useFileLogger()
+import { createTokenRTC } from '../services/index.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 
 /**
  * Toplantı Composable - Video konferans işlemlerini yönetir ve tüm alt composable'ları koordine eder
@@ -370,13 +360,6 @@ export function useMeeting() {
   }
 
   return {
-    // Log yönetimi - Log management
-    logs,
-    logStats,
-    filteredLogs,
-    refreshLogs,
-    exportLogsToCSV,
-    
     // State - Durum değişkenleri
     isConnected,
     isInitialized,

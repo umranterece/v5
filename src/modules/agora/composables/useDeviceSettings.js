@@ -5,8 +5,7 @@
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAgoraStore } from '../store/index.js'
-import { centralEmitter } from '../utils/centralEmitter.js'
-import { AGORA_EVENTS } from '../constants.js'
+import { centralEmitter, AGORA_EVENTS } from '../utils/index.js'
 import { fileLogger } from '../services/index.js'
 
 export function useDeviceSettings() {

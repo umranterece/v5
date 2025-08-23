@@ -126,8 +126,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useLayoutStore } from '../../store/layout.js'
-import { useTheme } from '../../composables/useTheme.js'
+import { useLayoutStore } from '../../store/index.js'
+import { useTheme } from '../../composables/index.js'
 
 // Props
 const props = defineProps({

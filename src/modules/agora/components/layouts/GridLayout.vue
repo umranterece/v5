@@ -84,7 +84,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useAgoraStore } from '../../store/index.js'
-import VideoItem from '../video/VideoItem.vue'
+import { VideoItem } from '../video/index.js'
 
 // Props
 const props = defineProps({

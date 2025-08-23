@@ -353,10 +353,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { useNetlessWhiteboard } from '../../composables/useNetlessWhiteboard.js'
+import { useNetlessWhiteboard } from '../../composables/index.js'
 import { useAgoraStore } from '../../store/index.js'
 import { NETLESS_CONFIG } from '../../constants.js'
-import { netlessService } from '../../services/netlessService.js'
+import { netlessService } from '../../services/index.js'
 import { 
   CursorArrowRaysIcon,
   PencilIcon,
@@ -669,7 +669,12 @@ const connectToNetless = async () => {
     const roomResponse = await netlessService.createRoomWithToken({
       roomName: `agora-whiteboard-${Date.now()}`,
       userId,
-      role: 'writer'
+      role: 'writer',
+      agoraInfo: {
+        channelName: agoraStore.session?.videoChannelName || 'unknown',
+        videoUID: agoraStore.users?.local?.video?.uid,
+        userName: agoraStore.users?.local?.video?.name || userName
+      }
     })
     
     // Room bilgilerini store'a kaydet

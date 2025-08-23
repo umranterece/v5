@@ -25,7 +25,7 @@ export { GridLayout, SpotlightLayout, PresentationLayout } from './components/la
 export { ThemeSelector } from './components/ui'
 
 // Whiteboard Components
-export { NetlessWhiteboard, AdvancedWhiteboard } from './components/whiteboard'
+export { AdvancedWhiteboard } from './components/whiteboard'
 
 // Composables
 export * from './composables'

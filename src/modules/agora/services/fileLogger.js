@@ -28,7 +28,9 @@ export const LOG_CATEGORIES = {
   UI: 'ui',
   STORE: 'store',
   DEVICE: 'device',
-  SYSTEM: 'system'
+  SYSTEM: 'system',
+  RTM: 'rtm',
+  WHITEBOARD: 'whiteboard'
 }
 
 class FileLogger {
@@ -101,6 +103,10 @@ class FileLogger {
       return
     }
     
+    // 🚀 SADECE RTM VE WHITEBOARD LOGLARINI GÖSTER - diğerlerini atla
+    if (category !== 'rtm' && category !== 'RTM' && category !== 'whiteboard' && category !== 'WHITEBOARD') {
+      return
+    }
     
     const logEntry = {
       id: Date.now() + Math.random(),

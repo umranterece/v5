@@ -1,12 +1,12 @@
 import { ref, onUnmounted, computed } from 'vue'
 import { USER_ID_RANGES, getUserDisplayName, getRemoteUserDisplayName, DEV_CONFIG, AGORA_EVENTS } from '../constants.js'
-import { createToken } from '../services/tokenService.js'
+import { createTokenRTC } from '../services/index.js'
 import { useTrackManagement } from './useTrackManagement.js'
 import { useStreamQuality } from './useStreamQuality.js'
-import { centralEmitter } from '../utils/centralEmitter.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
-import { createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
-import { useLayoutStore } from '../store/layout.js'
+import { centralEmitter, createSafeTimeout as createSafeTimeoutFromUtils } from '../utils/index.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
+import { useLayoutStore } from '../store/index.js'
+import { useRTM } from './useRTM.js'
 
 /**
  * Ekran Paylaşımı Composable - Ekran paylaşımı işlemlerini yönetir
@@ -60,17 +60,20 @@ export function useScreenShare(agoraStore) {
   // Kalite optimizasyonu composable'ı
   const { optimizeScreenShareQuality } = useStreamQuality()
 
+  // RTM composable'ını al - Notification'lar için
+  const { notifyScreenShareStarted, notifyScreenShareStopped } = useRTM(agoraStore)
+
   /**
    * Ekran paylaşımı kullanıcısına abone olur
    * @param {number} uid - Kullanıcı ID'si
    */
   const subscribeToScreenUser = async (uid) => {
     try {
-      console.log('🟢 [SCREEN] subscribeToScreenUser BAŞLADI:', uid)
+      logInfo('subscribeToScreenUser BAŞLADI', { uid })
       
       const client = agoraStore.clients.screen.client
       if (!client) {
-        console.log('🔴 [SCREEN] Ekran client mevcut değil:', uid)
+        logWarn('Ekran client mevcut değil', { uid })
         return
       }
 
@@ -78,20 +81,20 @@ export function useScreenShare(agoraStore) {
       const user = users.find(u => u.uid === uid)
       
       if (!user) {
-        console.log('🔴 [SCREEN] Ekran paylaşımı kullanıcısı bulunamadı:', uid)
+        logWarn('Ekran paylaşımı kullanıcısı bulunamadı', { uid })
         return
       }
 
       // Subscribe to screen track
-      console.log('🟡 [SCREEN] Track subscribe başlıyor:', uid)
+      logInfo('Track subscribe başlıyor', { uid })
       await client.subscribe(user, 'video')
-      console.log('🟢 [SCREEN] Track subscribe tamamlandı:', uid)
+      logInfo('Track subscribe tamamlandı', { uid })
       
       const track = user.videoTrack
       if (track) {
         // Store'u hemen güncelle
         agoraStore.setRemoteTrack(uid, 'screen', track)
-        console.log('🟢 [SCREEN] Store güncellendi:', uid)
+        logInfo('Store güncellendi', { uid })
         
         // Kullanıcı durumunu hemen güncelle
         const currentUser = agoraStore.users.remote.filter(u => u.isScreenShare).find(u => u.uid === uid)
@@ -101,14 +104,14 @@ export function useScreenShare(agoraStore) {
         }
         
         // Event'i hemen emit et
-        console.log('🟢 [SCREEN] remote-screen-ready emit ediliyor:', uid)
+        logInfo('remote-screen-ready emit ediliyor', { uid })
         centralEmitter.emit(AGORA_EVENTS.REMOTE_SCREEN_READY, { uid, track, clientType: 'screen' })
         
-        console.log('🎉 [SCREEN] subscribeToScreenUser BAŞARILI:', uid)
+        logInfo('subscribeToScreenUser BAŞARILI', { uid })
       }
       
     } catch (error) {
-      console.log('🔴 [SCREEN] subscribeToScreenUser HATA:', uid, error)
+      logError('subscribeToScreenUser HATA', { uid, error })
       throw error
     }
   }
@@ -292,7 +295,7 @@ export function useScreenShare(agoraStore) {
 
       // Ekran kanalı için token al
       logInfo('Ekran kanalı için token alınıyor:', baseChannelName)
-      const tokenData = await createToken(baseChannelName, screenUID)
+      const tokenData = await createTokenRTC(baseChannelName, screenUID)
       logInfo('Ekran kanalı için token alındı')
 
       // Ekran client'ını başlat (eğer yoksa)
@@ -350,10 +353,37 @@ export function useScreenShare(agoraStore) {
       logInfo('Ekran paylaşımı başarıyla başlatıldı')
       centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STARTED, { track: screenTrack, clientType: 'screen' })
       
+      // 🆕 RTM notification gönder - Ekran paylaşımı başladığında
+      try {
+        await notifyScreenShareStarted({
+          uid: screenUID,
+          userName: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
+          channelName: baseChannelName,
+          timestamp: Date.now(),
+          userInfo: {
+            uid: screenUID,
+            userName: getUserDisplayName(screenUID, 'Ekran Paylaşımı'),
+            isLocal: true
+          }
+        })
+        logInfo('✅ RTM ekran paylaşımı başlama bildirimi gönderildi')
+      } catch (rtmError) {
+        logWarn('⚠️ RTM bildirimi gönderilemedi, ekran paylaşımı devam ediyor', { 
+          error: rtmError.message || rtmError,
+          errorStack: rtmError.stack,
+          screenUID,
+          channelName: baseChannelName,
+          timestamp: new Date().toISOString()
+        })
+        
+        // RTM hatası ekran paylaşımını etkilemesin
+        // Sadece log'da göster, kullanıcıya bildirme
+      }
+      
       // Layout mantığı: Ekran paylaşımı başladığında presentation'a geç
       const layoutStore = useLayoutStore()
       if (layoutStore.currentLayout !== 'presentation') {
-        console.log('🟢 [SCREEN] Yerel ekran paylaşımı başladı, layout presentation\'a geçiliyor')
+        logInfo('Yerel ekran paylaşımı başladı, layout presentation\'a geçiliyor')
         layoutStore.switchLayoutWithSave('presentation')
       }
       
@@ -440,8 +470,35 @@ export function useScreenShare(agoraStore) {
         const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
         
         if (!hasScreenShare && layoutStore.currentLayout === 'presentation') {
-          console.log('🟢 [SCREEN] Yerel ekran paylaşımı durdu, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+          logInfo('Yerel ekran paylaşımı durdu, ekran paylaşımı yok, layout grid\'e zorlanıyor')
           layoutStore.switchLayoutWithSave('grid')
+        }
+        
+        // 🆕 RTM notification gönder - Ekran paylaşımı durduğunda
+        try {
+          await notifyScreenShareStopped({
+            uid: agoraStore.localUser?.uid || 'unknown',
+            userName: agoraStore.localUser?.name || 'Local User',
+            channelName: agoraStore.videoChannelName,
+            timestamp: Date.now(),
+            userInfo: {
+              uid: agoraStore.localUser?.uid || 'unknown',
+              userName: agoraStore.localUser?.name || 'Local User',
+              isLocal: true
+            }
+          })
+          logInfo('✅ RTM ekran paylaşımı durdurma bildirimi gönderildi')
+        } catch (rtmError) {
+          logWarn('⚠️ RTM durdurma bildirimi gönderilemedi', { 
+            error: rtmError.message || rtmError,
+            errorStack: rtmError.stack,
+            uid: agoraStore.localUser?.uid,
+            channelName: agoraStore.videoChannelName,
+            timestamp: new Date().toISOString()
+          })
+          
+          // RTM hatası ekran paylaşımı durdurmayı etkilemesin
+          // Sadece log'da göster, kullanıcıya bildirme
         }
         
         logInfo('Ekran paylaşımı başarıyla durduruldu')
@@ -451,6 +508,34 @@ export function useScreenShare(agoraStore) {
         logInfo('Ekran track\'i bulunamadı, sadece store temizleniyor')
         agoraStore.setLocalTrack('screen', 'video', null)
         agoraStore.setScreenSharing(false)
+        
+        // 🆕 RTM notification gönder - Track bulunamadığında da
+        try {
+          await notifyScreenShareStopped({
+            uid: agoraStore.localUser?.uid || 'unknown',
+            userName: agoraStore.localUser?.name || 'Local User',
+            channelName: agoraStore.videoChannelName,
+            timestamp: Date.now(),
+            userInfo: {
+              uid: agoraStore.localUser?.uid || 'unknown',
+              userName: agoraStore.localUser?.name || 'Local User',
+              isLocal: true
+            }
+          })
+          logInfo('✅ RTM ekran paylaşımı durdurma bildirimi gönderildi (track bulunamadı)')
+        } catch (rtmError) {
+          logWarn('⚠️ RTM durdurma bildirimi gönderilemedi (track bulunamadı)', { 
+            error: rtmError.message || rtmError,
+            errorStack: rtmError.stack,
+            uid: agoraStore.localUser?.uid,
+            channelName: agoraStore.videoChannelName,
+            timestamp: new Date().toISOString()
+          })
+          
+          // RTM hatası ekran paylaşımı durdurmayı etkilemesin
+          // Sadece log'da göster, kullanıcıya bildirme
+        }
+        
         centralEmitter.emit(AGORA_EVENTS.SCREEN_SHARE_STOPPED, { clientType: 'screen' })
       }
       
@@ -537,7 +622,7 @@ export function useScreenShare(agoraStore) {
 
     // Ekran kullanıcısı katıldı
     client.on(AGORA_EVENTS.USER_JOINED, (user) => {
-      console.log('🟢 [SCREEN] USER_JOINED:', user.uid)
+      logInfo('USER_JOINED', { uid: user.uid })
       if (agoraStore.isLocalUID(user.uid)) {
         logInfo('Yerel kullanıcı ekran client\'ında yoksayılıyor:', user.uid)
         return;
@@ -562,7 +647,7 @@ export function useScreenShare(agoraStore) {
       }
       agoraStore.addRemoteUser(remoteUser)
       
-      console.log('🟢 [SCREEN] Uzak ekran paylaşımı kullanıcısı eklendi:', {
+      logInfo('Uzak ekran paylaşımı kullanıcısı eklendi', {
         uid: user.uid,
         name: remoteUser.name,
         isScreenShare: remoteUser.isScreenShare
@@ -573,19 +658,19 @@ export function useScreenShare(agoraStore) {
       const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
       
       if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-        console.log('🟢 [SCREEN] Ekran paylaşımı var, layout presentation\'a geçiliyor:', user.uid)
+        logInfo('Ekran paylaşımı var, layout presentation\'a geçiliyor', { uid: user.uid })
         layoutStore.switchLayoutWithSave('presentation')
       } else if (!hasScreenShare && layoutStore.currentLayout !== 'grid') {
-        console.log('🟢 [SCREEN] Ekran paylaşımı yok, layout grid\'e zorlanıyor:', user.uid)
+        logInfo('Ekran paylaşımı yok, layout grid\'e zorlanıyor', { uid: user.uid })
         layoutStore.switchLayoutWithSave('grid')
       }
       
                     // Basit ve etkili yaklaşım: Hızlı retry
       if (user.videoTrack) {
-        console.log('🟢 [SCREEN] Track hazır, hemen abone olunuyor:', user.uid)
+        logInfo('Track hazır, hemen abone olunuyor', { uid: user.uid })
         subscribeToScreenUser(user.uid)
       } else {
-        console.log('🟡 [SCREEN] Track hazır değil, retry başlatılıyor:', user.uid)
+        logInfo('Track hazır değil, retry başlatılıyor', { uid: user.uid })
         
         // Hemen dene
         setTimeout(() => subscribeToScreenUser(user.uid), 0)

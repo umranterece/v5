@@ -91,7 +91,7 @@ import { PresentationChartBarIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/2
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAgoraStore } from '../../store/index.js'
 import { isScreenShareUser } from '../../constants.js'
-import VideoItem from '../video/VideoItem.vue'
+import { VideoItem } from '../video/index.js'
 
 // Props
 const props = defineProps({
@@ -126,7 +126,7 @@ const presenter = computed(() => {
   const screenShareUser = props.users.find(u => isScreenShareUser(u.uid))
   
   // Debug log
-  console.log('🟢 [PRESENTATION] Users listesi:', props.users.map(u => ({
+  props.logger.debug('Users listesi:', props.users.map(u => ({
     uid: u.uid,
     name: u.name,
     isScreenShare: u.isScreenShare,
@@ -137,7 +137,7 @@ const presenter = computed(() => {
   })))
   
   if (screenShareUser) {
-    console.log('🟢 [PRESENTATION] Ekran paylaşımı kullanıcısı bulundu (UID\'ye göre):', screenShareUser.uid)
+    props.logger.debug('Ekran paylaşımı kullanıcısı bulundu (UID\'ye göre):', screenShareUser.uid)
     
     // Ekran paylaşımı kullanıcısı için track'i store'dan al
     const agoraStore = useAgoraStore()
@@ -146,11 +146,11 @@ const presenter = computed(() => {
     if (screenShareUser.isLocal) {
       // Yerel ekran paylaşımı için local tracks'dan al
       track = agoraStore.tracks.local.screen.video
-      console.log('🟢 [PRESENTATION] Yerel ekran paylaşımı track\'i:', !!track)
+      props.logger.debug('Yerel ekran paylaşımı track\'i:', !!track)
     } else {
       // Uzak ekran paylaşımı için remote tracks'dan al
       track = agoraStore.tracks.remote.get(screenShareUser.uid)?.screen
-      console.log('🟢 [PRESENTATION] Uzak ekran paylaşımı track\'i:', !!track)
+      props.logger.debug('Uzak ekran paylaşımı track\'i:', !!track)
     }
     
     return {
@@ -160,7 +160,7 @@ const presenter = computed(() => {
     }
   }
   
-  console.log('🟡 [PRESENTATION] Ekran paylaşımı kullanıcısı bulunamadı')
+  props.logger.debug('Ekran paylaşımı kullanıcısı bulunamadı')
   
   // Ekran paylaşımı yoksa normal video kullanıcısı seç
   const localUser = props.users.find(u => u.isLocal && !isScreenShareUser(u.uid))
@@ -176,7 +176,7 @@ const participants = computed(() => {
   const filteredParticipants = props.users.filter(u => u.uid !== presenter.value.uid && !isScreenShareUser(u.uid))
   
   // Debug log
-  console.log('🟢 [PRESENTATION] Katılımcılar filtrelendi:', {
+  props.logger.debug('Katılımcılar filtrelendi:', {
     totalUsers: props.users.length,
     presenterUid: presenter.value?.uid,
     presenterIsScreenShare: isScreenShareUser(presenter.value?.uid),
@@ -252,7 +252,7 @@ const getPresenterTrack = (user) => {
     if (user.isLocal) {
       // Yerel ekran paylaşımı için local tracks'dan al
       const track = agoraStore.tracks.local.screen.video
-      console.log('🟢 [PRESENTATION] Yerel ekran paylaşımı track\'i:', {
+      props.logger.debug('Yerel ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id,
@@ -263,7 +263,7 @@ const getPresenterTrack = (user) => {
     } else {
       // Uzak ekran paylaşımı için remote tracks'dan al
       const track = agoraStore.tracks.remote.get(user.uid)?.screen
-      console.log('🟢 [PRESENTATION] Uzak ekran paylaşımı track\'i:', {
+      props.logger.debug('Uzak ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id,
@@ -276,7 +276,7 @@ const getPresenterTrack = (user) => {
     // Normal video kullanıcısı için
     if (user.isLocal) {
       const track = agoraStore.tracks.local.video.video
-      console.log('🟢 [PRESENTATION] Yerel video track\'i:', {
+      props.logger.debug('Yerel video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -284,7 +284,7 @@ const getPresenterTrack = (user) => {
       return track
     } else {
       const track = agoraStore.tracks.remote.get(user.uid)?.video
-      console.log('🟢 [PRESENTATION] Uzak video track\'i:', {
+      props.logger.debug('Uzak video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -303,7 +303,7 @@ const getUserTrack = (user) => {
     if (user.isLocal) {
       // Yerel ekran paylaşımı için local tracks'dan al
       const track = agoraStore.tracks.local.screen.video
-      console.log('🟢 [PRESENTATION] Katılımcı yerel ekran paylaşımı track\'i:', {
+      props.logger.debug('Katılımcı yerel ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -312,7 +312,7 @@ const getUserTrack = (user) => {
     } else {
       // Uzak ekran paylaşımı için remote tracks'dan al
       const track = agoraStore.tracks.remote.get(user.uid)?.screen
-      console.log('🟢 [PRESENTATION] Katılımcı uzak ekran paylaşımı track\'i:', {
+      props.logger.debug('Katılımcı uzak ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -323,7 +323,7 @@ const getUserTrack = (user) => {
     // Normal video kullanıcısı için
     if (user.isLocal) {
       const track = agoraStore.tracks.local.video.video
-      console.log('🟢 [PRESENTATION] Katılımcı yerel video track\'i:', {
+      props.logger.debug('Katılımcı yerel video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -331,7 +331,7 @@ const getUserTrack = (user) => {
       return track
     } else {
       const track = agoraStore.tracks.remote.get(user.uid)?.video
-      console.log('🟢 [PRESENTATION] Katılımcı uzak video track\'i:', {
+      props.logger.debug('Katılımcı uzak video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id

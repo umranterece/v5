@@ -144,9 +144,9 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
+import { useDeviceSettings } from '../../composables/index.js'
 import { VIDEO_CONFIG, SCREEN_SHARE_CONFIG } from '../../constants.js'
-import { fileLogger } from '../../services/fileLogger.js'
+import { fileLogger } from '../../services/index.js'
 
 // Props
 const props = defineProps({

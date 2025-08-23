@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { centralEmitter } from './centralEmitter.js'
 import { AGORA_EVENTS } from '../constants.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 
 /**
  * Event Deduplication Utility

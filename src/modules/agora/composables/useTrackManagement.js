@@ -6,7 +6,7 @@ import {
   cleanupCentralEvents
 } from '../utils/index.js'
 import { VIDEO_CONFIG, AUDIO_CONFIG, SCREEN_SHARE_CONFIG, AGORA_CONFIG } from '../constants.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 import { useStreamQuality } from './useStreamQuality.js'
 
 /**

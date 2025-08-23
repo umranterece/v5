@@ -95,7 +95,7 @@
 
 <script>
 import { computed, onMounted, onUnmounted } from 'vue'
-import { useNotificationStore } from '../../store/notification.js'
+import { useNotificationStore } from '../../store/index.js'
 import { NOTIFICATION_POSITIONS } from '../../constants.js'
 
 export default {

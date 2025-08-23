@@ -1,21 +1,8 @@
 <template>
   <div id="app">
     <AgoraConference 
-      :channelName="channelName"
-      :autoJoin="autoJoin"
-      :userUid="userUid"
-      :tokenEndpoint="tokenEndpoint"
-
-      :logActive="logActive"
-      @joined="handleJoined"
-      @left="handleLeft"
-      @error="handleError"
-      @user-joined="handleUserJoined"
-      @user-left="handleUserLeft"
-      @connection-state-change="handleConnectionStateChange"
-      @token-requested="handleTokenRequested"
-      @token-received="handleTokenReceived"
-      @settings-changed="handleSettingsChanged"
+      :options="agoraOptions"
+      @change="handleChange"
     />
   </div>
 </template>
@@ -28,61 +15,65 @@ import { useTheme } from './modules/agora/composables/useTheme.js'
 // Tema sistemini başlat
 const { initializeTheme } = useTheme()
 
-// Kanal ayarları
-const channelName = ref('test-2512')
-const autoJoin = ref(true)  // true yaparak test ediyorum
+// Agora konfigürasyon seçenekleri
+const agoraOptions = ref({
+  channelName: 'test-123456',
+  autoJoin: true,  // true yaparak test ediyorum
+  userUid: null,   // null = random UID
+  tokenEndpoint: null, // null = varsayılan API endpoint
+  logActive: true  // true = loglama aktif, false = loglama pasif
+})
 
-// Token ayarları
-const tokenEndpoint = ref(null) // null = varsayılan API endpoint
-
-// Kullanıcı ayarları
-const userUid = ref(null) // null = random UID
-
-
-
-// Log ayarları
-const logActive = ref(true) // true = loglama aktif, false = loglama pasif
-
-// Event handlers
-const handleJoined = (data) => {
-  console.log('Kanala katıldı:', data)
-}
-
-const handleLeft = (data) => {
-  console.log('Kanaldan ayrıldı:', data)
-}
-
-const handleError = (data) => {
-  console.error('Hata oluştu:', data)
-}
-
-const handleUserJoined = (data) => {
-  console.log('Kullanıcı katıldı:', data)
-}
-
-const handleUserLeft = (data) => {
-  console.log('Kullanıcı ayrıldı:', data)
-}
-
-const handleConnectionStateChange = (data) => {
-  console.log('Bağlantı durumu değişti:', data)
-}
-
-const handleTokenRequested = (data) => {
-  console.log('Token istendi:', data)
-}
-
-const handleTokenReceived = (data) => {
-  console.log('Token alındı:', data)
-}
-
-const handleSettingsChanged = (newSettings) => {
-  console.log('Ayarlar değişti:', newSettings)
+// Event handler - Tüm event'leri tek noktadan yönet
+const handleChange = (event) => {
+  const { type, data } = event
   
-  // Log ayarları güncellendiğinde local state'i güncelle
-  if (newSettings.logActive !== undefined) {
-    logActive.value = newSettings.logActive
-    console.log('Log aktifliği değişti:', newSettings.logActive)
+  switch (type) {
+    case 'joined':
+      console.log('Kanala katıldı:', data)
+      break
+      
+    case 'left':
+      console.log('Kanaldan ayrıldı:', data)
+      break
+      
+    case 'error':
+      console.error('Hata oluştu:', data)
+      break
+      
+    case 'user-joined':
+      console.log('Kullanıcı katıldı:', data)
+      break
+      
+    case 'user-left':
+      console.log('Kullanıcı ayrıldı:', data)
+      break
+      
+    case 'connection-state-change':
+      console.log('Bağlantı durumu değişti:', data)
+      break
+      
+    case 'token-requested':
+      console.log('Token istendi:', data)
+      break
+      
+    case 'token-received':
+      console.log('Token alındı:', data)
+      break
+      
+    case 'settings-changed':
+      console.log('Ayarlar değişti:', data)
+      
+      // Log ayarları güncellendiğinde local state'i güncelle
+      if (data.logActive !== undefined) {
+        agoraOptions.value.logActive = data.logActive
+        console.log('Log aktifliği değişti:', data.logActive)
+      }
+      break
+      
+    default:
+      console.log('Bilinmeyen event type:', type, data)
+      break
   }
 }
 
@@ -94,7 +85,7 @@ onMounted(() => {
 
 <style>
 /* Tema CSS'ini import et */
-@import './assets/themes.css';
+@import './modules/agora/assets/themes.css';
 
 * {
   margin: 0;

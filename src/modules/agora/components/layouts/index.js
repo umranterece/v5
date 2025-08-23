@@ -14,5 +14,3 @@ export { default as PresentationLayout } from './PresentationLayout.vue'
 
 // Whiteboard Layout - Çizim odaklı düzen 🆕 YENİ
 export { default as WhiteboardLayout } from './WhiteboardLayout.vue'
-
-

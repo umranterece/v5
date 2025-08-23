@@ -170,7 +170,7 @@ watch(() => props.user?.isVideoOff, (newVideoOff) => {
 watch(
   [() => props.track, videoElement],
   async ([newTrack, el], [oldTrack]) => {
-    console.log('🟢 [VIDEOITEM] Track/Element değişti:', {
+    props.logger.debug('Track/Element değişti:', {
       uid: props.user?.uid,
       name: props.user?.name,
       isScreenShare: props.isScreenShare,
@@ -184,10 +184,10 @@ watch(
     // Eski track'ı güvenli şekilde durdur
     if (oldTrack && lastPlayedTrack) {
       try { 
-        console.log('🟡 [VIDEOITEM] Eski track durduruluyor:', oldTrack.id)
+        props.logger.debug('Eski track durduruluyor:', oldTrack.id)
         oldTrack.stop(); 
       } catch (e) {
-        console.log('🔴 [VIDEOITEM] Eski track durdurma hatası:', e)
+        props.logger.debug('Eski track durdurma hatası:', e)
       }
       lastPlayedTrack = null
     }
@@ -195,7 +195,7 @@ watch(
     // Yeni track varsa ve element DOM'da ise
     if (newTrack && el) {
       try {
-        console.log('🟢 [VIDEOITEM] Track play edilmeye çalışılıyor:', {
+        props.logger.debug('Track play edilmeye çalışılıyor:', {
           trackId: newTrack.id,
           trackEnabled: newTrack.enabled,
           trackReadyState: newTrack.readyState,
@@ -206,13 +206,13 @@ watch(
         await newTrack.play(el);
         lastPlayedTrack = newTrack;
         
-        console.log('🟢 [VIDEOITEM] Track başarıyla play edildi:', newTrack.id)
+        props.logger.debug('Track başarıyla play edildi:', newTrack.id)
       } catch (e) {
-        console.error('🔴 [VIDEOITEM] track.play() hatası:', e)
+        props.logger.error('track.play() hatası:', e)
         props.logger.error(e, { context: 'track.play' })
       }
     } else {
-      console.log('🟡 [VIDEOITEM] Track play edilemedi:', {
+      props.logger.debug('Track play edilemedi:', {
         hasTrack: !!newTrack,
         hasElement: !!el,
         trackId: newTrack?.id

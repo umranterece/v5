@@ -4,7 +4,7 @@
  */
 
 import { ref, computed, onMounted, watch } from 'vue'
-import { fileLogger, LOG_LEVELS, LOG_CATEGORIES } from '../services/fileLogger.js'
+import { fileLogger, LOG_LEVELS, LOG_CATEGORIES } from '../services/index.js'
 
 export const useFileLogger = () => {
   // Reactive state

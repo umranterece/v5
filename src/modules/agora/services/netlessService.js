@@ -6,6 +6,7 @@
 
 import { NETLESS_CONFIG } from '../constants.js'
 import { fileLogger, LOG_CATEGORIES } from './fileLogger.js'
+import { rtmService } from './rtmService.js'
 
 /**
  * Netless Service Class
@@ -146,13 +147,15 @@ class NetlessService {
    * @param {string} options.roomName - Room adı
    * @param {string} options.userId - Kullanıcı ID
    * @param {string} options.role - Kullanıcı rolü
+   * @param {Object} options.agoraInfo - Agora bilgileri (RTM bildirimi için)
    * @returns {Promise<Object>} Room ve token bilgileri
    */
   async createRoomWithToken(options = {}) {
     const {
       roomName,
       userId = `user-${Date.now()}`,
-      role = 'writer'
+      role = 'writer',
+      agoraInfo = null
     } = options
 
     try {
@@ -176,7 +179,46 @@ class NetlessService {
         throw new Error(`PHP backend işlem hatası: ${result.error}`)
       }
 
+
+
       this.logInfo('PHP backend ile room ve token başarıyla oluşturuldu', result.room)
+      
+      // 🚀 RTM BİLDİRİMİ: Whiteboard aktivasyon bildirimi gönder (eğer agora bilgileri varsa)
+      if (agoraInfo) {
+        try {
+          this.logInfo('RTM whiteboard aktivasyon bildirimi gönderiliyor...', { roomUuid: result.room.uuid })
+          
+          const whiteboardData = {
+            roomUuid: result.room.uuid,
+            timestamp: Date.now(),
+            userInfo: {
+              videoUID: agoraInfo.videoUID || 'unknown',
+              userName: agoraInfo.userName || userId || 'Unknown User'
+            },
+            whiteboardInfo: {
+              roomUuid: result.room.uuid,
+              roomToken: result.room.token, // ✅ result.room.token olarak düzeltildi
+              appIdentifier: this.appIdentifier
+            }
+          }
+          
+
+          
+          const notificationSent = await rtmService.notifyWhiteboardActivated(whiteboardData)
+          
+          if (notificationSent) {
+            this.logInfo('RTM whiteboard aktivasyon bildirimi başarıyla gönderildi', whiteboardData)
+          } else {
+            this.logInfo('RTM whiteboard aktivasyon bildirimi gönderilemedi (RTM bağlı değil)')
+          }
+        } catch (rtmError) {
+          // RTM hatası whiteboard'ı durdurmasın, sadece log'la
+          this.logInfo('RTM whiteboard aktivasyon bildirimi hatası (whiteboard devam ediyor)', { error: rtmError.message })
+        }
+      } else {
+        this.logInfo('Agora bilgileri olmadığı için RTM bildirimi gönderilmedi')
+      }
+
       return result.room
 
     } catch (error) {

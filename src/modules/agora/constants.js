@@ -21,10 +21,13 @@ export const LOG_CONFIG = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  CREATE_TOKEN: IS_DEV 
-    ? 'https://umranterece.com/test/agora/createToken.php'  // Development
-    : 'https://umranterece.com/test/agora/createToken.php',  // Production
-    RECORDING: IS_DEV
+  CREATE_TOKEN_RTC: IS_DEV 
+    ? 'https://umranterece.com/test/agora/createTokenRTC.php'  // Development
+    : 'https://umranterece.com/test/agora/createTokenRTC.php',  // Production
+  CREATE_TOKEN_RTM: IS_DEV 
+    ? 'https://umranterece.com/test/agora/createTokenRTM.php'  // Development
+    : 'https://umranterece.com/test/agora/createTokenRTM.php',  // Production
+  RECORDING: IS_DEV
     ? 'https://umranterece.com/test/agora/createRecording.php'  // Development
     : 'https://umranterece.com/test/agora/createRecording.php'   // Production
 }
@@ -592,5 +595,228 @@ export const NOTIFICATION_CATEGORIES = {
   DEVICE: 'device',
   RECORDING: 'recording',
   STORAGE: 'storage',
-  SECURITY: 'security'
+  SECURITY: 'security',
+  RTM: 'rtm',
+  SCREEN_SHARE: 'screen_share',
+  WHITEBOARD: 'whiteboard'
+}
+
+// ===========================
+// 🚀 RTM (Real-Time Messaging) Configuration
+// ===========================
+
+// RTM Client Configuration - Güncellenmiş v2.2.2 için
+export const RTM_CONFIG = {
+  // Agora RTM SDK Ayarları
+  APP_ID: AGORA_APP_ID, // Ana App ID'yi kullan
+  
+  // RTM Client Options - Yeni v2.2.2 yapısı
+  CLIENT_OPTIONS: {
+    // Yeni RTM v2.2.2 seçenekleri
+    enableLogUpload: IS_DEV, // Development'ta log upload açık
+    logLevel: IS_DEV ? 'debug' : 'warn', // Yeni: logLevel kullanılıyor
+    presenceTimeout: 60000, // 60 saniye presence timeout
+    heartbeatInterval: 30000, // 30 saniye heartbeat
+    enableCloudProxy: false, // Hız için kapalı
+    // Yeni v2.2.2 seçenekleri
+    queryLocalUserAttributes: false, // Local user attributes query kapalı
+    enableOfflineMessaging: true, // Offline mesajlaşma açık
+    enableHistoricalMessaging: false // Geçmiş mesajları alma (performans için kapalı)
+  },
+  
+  // Token Configuration
+  TOKEN: {
+    EXPIRE_TIME: 86400, // 24 saat (saniye)
+    ROLE: 'user', // RTM için standart rol
+    ENDPOINT: API_ENDPOINTS.CREATE_TOKEN_RTM // RTM token endpoint'i
+  },
+  
+  // Channel Configuration - Yeni v2.2.2 yapısı
+  CHANNEL: {
+    PREFIX: 'rtm_', // RTM kanal prefix'i
+    MAX_MEMBERS: 100, // Maksimum üye sayısı
+    MESSAGE_RETENTION: 7, // 7 gün mesaj saklama
+    ENABLE_PRESENCE: true, // Presence tracking açık
+    // Yeni v2.2.2 seçenekleri
+    withMessage: true, // Mesajları almak için gerekli
+    withPresence: true, // Presence bilgilerini almak için
+    withMetadata: false // Metadata kapalı (performans için)
+  },
+  
+  // Message Configuration - Yeni v2.2.2 yapısı
+  MESSAGE: {
+    MAX_SIZE: 32768, // 32KB maksimum mesaj boyutu
+    MAX_QUEUE_SIZE: 1000, // Maksimum mesaj kuyruğu
+    RETRY_COUNT: 3, // Başarısız mesajlar için tekrar deneme
+    RETRY_DELAY: 1000, // 1 saniye bekleme süresi
+    ENABLE_OFFLINE_MESSAGING: true, // Offline mesajlaşma
+    ENABLE_HISTORICAL_MESSAGING: false, // Geçmiş mesajları alma (performans için kapalı)
+    // Yeni v2.2.2 seçenekleri
+    customType: '', // Custom message type
+    enableOrdering: false, // Message ordering kapalı (performans için)
+    enableReliableDelivery: true // Reliable delivery açık
+  }
+}
+
+// RTM Message Types
+export const RTM_MESSAGE_TYPES = {
+  // Screen Sharing Messages
+  SCREEN_SHARE_STARTED: 'screen_share_started',
+  SCREEN_SHARE_STOPPED: 'screen_share_stopped',
+  SCREEN_SHARE_PAUSED: 'screen_share_paused',
+  SCREEN_SHARE_RESUMED: 'screen_share_resumed',
+  
+  // User Actions
+  USER_JOINED: 'user_joined',
+  USER_LEFT: 'user_left',
+  USER_MUTED_AUDIO: 'user_muted_audio',
+  USER_UNMUTED_AUDIO: 'user_unmuted_audio',
+  USER_DISABLED_VIDEO: 'user_disabled_video',
+  USER_ENABLED_VIDEO: 'user_enabled_video',
+  
+  // System Messages
+  RECORDING_STARTED: 'recording_started',
+  RECORDING_STOPPED: 'recording_stopped',
+  WHITEBOARD_ACTIVATED: 'whiteboard_activated',
+  WHITEBOARD_DEACTIVATED: 'whiteboard_deactivated',
+  
+  // Chat Messages
+  CHAT_MESSAGE: 'chat_message',
+  CHAT_FILE_SHARE: 'chat_file_share',
+  CHAT_EMOJI_REACTION: 'chat_emoji_reaction',
+  
+  // System Notifications
+  SYSTEM_ANNOUNCEMENT: 'system_announcement',
+  NETWORK_QUALITY_CHANGED: 'network_quality_changed',
+  DEVICE_CHANGED: 'device_changed'
+}
+
+// RTM Message Priorities
+export const RTM_MESSAGE_PRIORITIES = {
+  CRITICAL: 'critical', // Sistem kritik mesajları
+  HIGH: 'high', // Ekran paylaşımı gibi önemli eylemler
+  NORMAL: 'normal', // Kullanıcı eylemleri
+  LOW: 'low' // Chat mesajları
+}
+
+// RTM Events
+export const RTM_EVENTS = {
+  // Connection Events
+  CLIENT_CONNECTED: 'rtm-client-connected',
+  CLIENT_DISCONNECTED: 'rtm-client-disconnected',
+  CLIENT_RECONNECTING: 'rtm-client-reconnecting',
+  CLIENT_ERROR: 'rtm-client-error',
+  
+  // Channel Events
+  CHANNEL_JOINED: 'rtm-channel-joined',
+  CHANNEL_LEFT: 'rtm-channel-left',
+  CHANNEL_MESSAGE_RECEIVED: 'rtm-channel-message-received',
+  CHANNEL_MEMBER_JOINED: 'rtm-channel-member-joined',
+  CHANNEL_MEMBER_LEFT: 'rtm-channel-member-left',
+  
+  // Peer Events
+  PEER_MESSAGE_RECEIVED: 'rtm-peer-message-received',
+  PEER_ONLINE_STATUS_CHANGED: 'rtm-peer-online-status-changed',
+  
+  // System Events
+  TOKEN_WILL_EXPIRE: 'rtm-token-will-expire',
+  TOKEN_EXPIRED: 'rtm-token-expired'
+}
+
+// RTM Error Codes
+export const RTM_ERROR_CODES = {
+  LOGIN_FAILED: 'RTM_LOGIN_FAILED',
+  CHANNEL_JOIN_FAILED: 'RTM_CHANNEL_JOIN_FAILED',
+  MESSAGE_SEND_FAILED: 'RTM_MESSAGE_SEND_FAILED',
+  TOKEN_EXPIRED: 'RTM_TOKEN_EXPIRED',
+  NETWORK_ERROR: 'RTM_NETWORK_ERROR',
+  INVALID_MESSAGE: 'RTM_INVALID_MESSAGE',
+  CHANNEL_FULL: 'RTM_CHANNEL_FULL',
+  USER_NOT_FOUND: 'RTM_USER_NOT_FOUND'
+}
+
+// RTM User-Friendly Error Messages
+export const RTM_USER_FRIENDLY_ERRORS = {
+  LOGIN_FAILED: 'RTM bağlantısı kurulamadı. Lütfen internet bağlantınızı kontrol edin.',
+  CHANNEL_JOIN_FAILED: 'Mesajlaşma kanalına katılınamadı. Lütfen tekrar deneyin.',
+  MESSAGE_SEND_FAILED: 'Mesaj gönderilemedi. Lütfen tekrar deneyin.',
+  TOKEN_EXPIRED: 'Oturum süresi doldu. Sayfa yenileniyor...',
+  NETWORK_ERROR: 'Ağ bağlantısı sorunu. Mesajlaşma geçici olarak kullanılamıyor.',
+  INVALID_MESSAGE: 'Geçersiz mesaj formatı.',
+  CHANNEL_FULL: 'Mesajlaşma kanalı dolu. Lütfen daha sonra deneyin.',
+  USER_NOT_FOUND: 'Kullanıcı bulunamadı.'
+}
+
+// Screen Share Notification Templates
+export const SCREEN_SHARE_NOTIFICATIONS = {
+  STARTED: {
+    type: NOTIFICATION_TYPES.INFO,
+    title: '🖥️ Ekran Paylaşımı',
+    message: '{userName} ekran paylaşımını başlattı',
+    category: NOTIFICATION_CATEGORIES.SCREEN_SHARE,
+    priority: RTM_MESSAGE_PRIORITIES.HIGH,
+    autoDismiss: true,
+    dismissDelay: 4000,
+    icon: '🖥️',
+    sound: true
+  },
+  STOPPED: {
+    type: NOTIFICATION_TYPES.INFO,
+    title: '🖥️ Ekran Paylaşımı',
+    message: '{userName} ekran paylaşımını durdurdu',
+    category: NOTIFICATION_CATEGORIES.SCREEN_SHARE,
+    priority: RTM_MESSAGE_PRIORITIES.NORMAL,
+    autoDismiss: true,
+    dismissDelay: 3000,
+    icon: '🚫',
+    sound: false
+  },
+  PAUSED: {
+    type: NOTIFICATION_TYPES.WARNING,
+    title: '⏸️ Ekran Paylaşımı',
+    message: '{userName} ekran paylaşımını duraklattı',
+    category: NOTIFICATION_CATEGORIES.SCREEN_SHARE,
+    priority: RTM_MESSAGE_PRIORITIES.NORMAL,
+    autoDismiss: true,
+    dismissDelay: 3000,
+    icon: '⏸️',
+    sound: false
+  },
+  RESUMED: {
+    type: NOTIFICATION_TYPES.SUCCESS,
+    title: '▶️ Ekran Paylaşımı',
+    message: '{userName} ekran paylaşımını devam ettirdi',
+    category: NOTIFICATION_CATEGORIES.SCREEN_SHARE,
+    priority: RTM_MESSAGE_PRIORITIES.NORMAL,
+    autoDismiss: true,
+    dismissDelay: 3000,
+    icon: '▶️',
+    sound: false
+  }
+}
+
+// Whiteboard Notification Templates
+export const WHITEBOARD_NOTIFICATIONS = {
+  ACTIVATED: {
+    type: NOTIFICATION_TYPES.SUCCESS,
+    title: '🎨 Whiteboard',
+    message: '{userName} whiteboard\'ı aktif hale getirdi',
+    category: NOTIFICATION_CATEGORIES.WHITEBOARD,
+    priority: RTM_MESSAGE_PRIORITIES.HIGH,
+    autoDismiss: true,
+    dismissDelay: 4000,
+    icon: '🎨',
+    sound: true
+  },
+  DEACTIVATED: {
+    type: NOTIFICATION_TYPES.INFO,
+    title: '🎨 Whiteboard',
+    message: '{userName} whiteboard\'ı kapatıldı',
+    category: NOTIFICATION_CATEGORIES.WHITEBOARD,
+    priority: RTM_MESSAGE_PRIORITIES.NORMAL,
+    autoDismiss: true,
+    dismissDelay: 3000,
+    icon: '🚫',
+    sound: false
+  }
 }

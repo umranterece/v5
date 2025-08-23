@@ -88,7 +88,7 @@ import {
   XMarkIcon
 } from '@heroicons/vue/24/outline'
 import { ref, computed } from 'vue'
-import { useLayoutStore } from '../../store/layout.js'
+import { useLayoutStore } from '../../store/index.js'
 
 const layoutStore = useLayoutStore()
 

@@ -545,6 +545,26 @@ export const notification = {
   info: (title, message = '', options = {}) => notificationService.info(title, message, options),
   system: (title, message = '', options = {}) => notificationService.system(title, message, options),
   
+  // Generic show metodu - template ile notification gösterme
+  show: (template) => {
+    const { type, title, message, options = {} } = template
+    
+    switch (type) {
+      case NOTIFICATION_TYPES.SUCCESS:
+        return notificationService.success(title, message, options)
+      case NOTIFICATION_TYPES.WARNING:
+        return notificationService.warning(title, message, options)
+      case NOTIFICATION_TYPES.ERROR:
+        return notificationService.error(title, message, options)
+      case NOTIFICATION_TYPES.INFO:
+        return notificationService.info(title, message, options)
+      case NOTIFICATION_TYPES.SYSTEM:
+        return notificationService.system(title, message, options)
+      default:
+        return notificationService.info(title, message, options)
+    }
+  },
+  
   // Utility fonksiyonları
   remove: (id) => notificationService.removeNotification(id),
   clear: (category = null) => notificationService.clearNotifications(category),

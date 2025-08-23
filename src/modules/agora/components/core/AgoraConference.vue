@@ -6,7 +6,7 @@
         <div class="loading-spinner"></div>
         
         <!-- Progress Bar -->
-        <div v-if="props.autoJoin && channelName" class="progress-container">
+        <div v-if="props.options.autoJoin && channelName" class="progress-container">
           <div class="progress-bar">
             <div 
               class="progress-fill" 
@@ -17,15 +17,15 @@
         </div>
         
         <img src="https://www.rehberimsensin.com/assets/images/logo.svg" alt="Rehberim Sensin" class="loading-logo" />
-        <h3 v-if="props.autoJoin && channelName">Agora Konferans Bağlanıyor...</h3>
+        <h3 v-if="props.options.autoJoin && channelName">Agora Konferans Bağlanıyor...</h3>
         <h3 v-else>Agora Konferans Yükleniyor...</h3>
-        <p v-if="props.autoJoin && channelName">
+        <p v-if="props.options.autoJoin && channelName">
           <span class="loading-channel">{{ channelName }}</span> kanalına bağlanılıyor...
         </p>
         <p v-else>Lütfen bekleyin, sistem hazırlanıyor</p>
         
         <!-- Auto join durumu için ek bilgi -->
-        <div v-if="props.autoJoin && channelName" class="loading-status">
+        <div v-if="props.options.autoJoin && channelName" class="loading-status">
           <div class="status-item" :class="{ active: loadingStatus === 'token' }">
             <span class="status-icon">🔗</span>
             <span>Token alınıyor...</span>
@@ -101,7 +101,7 @@
           :onOpenLayoutModal="toggleLayoutModal"
           :onOpenInfoModal="toggleInfo"
           :onOpenLogModal="toggleLog"
-          :logActive="props.logActive"
+          :logActive="props.options.logActive"
         />
       </div>
     </main>
@@ -168,11 +168,15 @@
       @settings-changed="handleSettingsChanged"
     />
 
+
+
     <!-- Notification Container -->
     <NotificationContainer 
       position="top-right"
       :max-visible="5"
     />
+
+
 
   </div>
 </template>
@@ -180,17 +184,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useMeeting } from '../../composables/index.js'
+import { useRTM, useDeviceSettings } from '../../composables/index.js'
 import { useLayoutStore } from '../../store/index.js'
 import { AgoraVideo } from './index.js'
 import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
 import { NotificationContainer } from '../ui/index.js'
-import { createToken } from '../../services/tokenService.js'
+import { createBothTokens, fileLogger, notification } from '../../services/index.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG } from '../../constants.js'
-import { useDeviceSettings } from '../../composables/useDeviceSettings.js'
-import { fileLogger } from '../../services/fileLogger.js'
-import { notification } from '../../services/notificationService.js'
 
 // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
 const logDebug = (message, data) => fileLogger.log('debug', 'SYSTEM', message, data)
@@ -242,48 +244,22 @@ const generateRandomUID = () => {
 
 // Props - Component dışından alınacak değerler
 const props = defineProps({
-  // Token ve API ayarları
-  tokenEndpoint: {
-    type: String,
-    default: null
-  },
-  
-  // Kanal ayarları
-  channelName: {
-    type: String,
-    default: ''
-  },
-  autoJoin: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Kullanıcı ayarları
-  userUid: {
-    type: [String, Number],
-    default: null
-  },
-  
-
-  
-  // Log ayarları
-  logActive: {
-    type: Boolean,
-    default: true
+  options: {
+    type: Object,
+    required: true,
+    default: () => ({
+      channelName: '',
+      autoJoin: false,
+      userUid: null,
+      tokenEndpoint: null,
+      logActive: true
+    })
   }
 })
 
 // Emits - Component dışına gönderilecek eventler
 const emit = defineEmits([
-  'joined',
-  'left', 
-  'error',
-  'user-joined',
-  'user-left',
-  'connection-state-change',
-  'token-requested',
-  'token-received',
-  'settings-changed'
+  'change'
 ])
 
 const {
@@ -342,10 +318,17 @@ const {
   handleRecordingQualityChanged
 } = useMeeting()
 
+// RTM composable'ını kullan (initialize, join ve disconnect için)
+const {
+  initialize: initializeRTM,
+  joinChannel: joinRTMChannel,
+  disconnect: disconnectRTM
+} = useRTM()
+
 // Layout store initialization
 const layoutStore = useLayoutStore()
 
-const channelName = ref(props.channelName || '')
+const channelName = ref(props.options.channelName || '')
 
 
 
@@ -358,7 +341,7 @@ const loadingMessage = ref('Sistem başlatılıyor...')
 const loadingMessages = {
   initializing: 'Sistem başlatılıyor...',
   token: 'Token alınıyor...',
-  connecting: 'Kanala bağlanılıyor...',
+  connecting: 'Bağlanıyor...',
   connected: 'Bağlantı kuruldu!'
 }
 
@@ -450,7 +433,7 @@ watch(currentAudioOutputId, (newId) => {
 })
 
 // Props değişikliklerini dinle
-watch(() => props.channelName, (newValue) => {
+watch(() => props.options.channelName, (newValue) => {
   if (newValue && newValue !== channelName.value) {
     channelName.value = newValue
   }
@@ -513,7 +496,10 @@ const handleSettingsChanged = (newSettings) => {
   }
   
   // Emit settings changed event
-  emit('settings-changed', newSettings)
+  emit('change', { 
+    type: 'settings-changed',
+    data: newSettings
+  })
 }
 
 
@@ -530,47 +516,155 @@ const handleJoin = async (name) => {
     updateLoadingStatus('token')
     
     // Eğer userUid null ise random UID oluştur
-    const finalUid = props.userUid || generateRandomUID()
+    const finalUid = props.options.userUid || generateRandomUID()
     
-    // Token al - createToken servisinden tüm veriyi al
-    emit('token-requested', { channelName: channelToJoin, uid: finalUid })
-    const tokenResult = await createToken(channelToJoin, finalUid, props.tokenEndpoint)
-    emit('token-received', { token: tokenResult.token, channelName: channelToJoin, uid: finalUid })
+    // Her iki token'ı da aynı anda al
+    emit('change', { 
+      type: 'token-requested',
+      data: { channelName: channelToJoin, uid: finalUid }
+    })
+    const tokenResult = await createBothTokens(channelToJoin, finalUid, props.options.tokenEndpoint)
+    emit('change', { 
+      type: 'token-received',
+      data: { 
+        rtcToken: tokenResult.rtc.token, 
+        rtmToken: tokenResult.rtm.token, 
+        channelName: channelToJoin, 
+        uid: finalUid 
+      }
+    })
     
     // Loading status'u güncelle
     updateLoadingStatus('connecting')
     
-    // Join parametreleri
+    // RTC Join parametreleri (Video konferans için)
     const joinParams = {
       channelName: channelToJoin,
-      token: tokenResult.token,
+      token: tokenResult.rtc.token,
       uid: finalUid,
-      appId: tokenResult.app_id
+      appId: tokenResult.rtc.app_id
     }
     
     // joinChannel içinde zaten clean() çağrılıyor
     await joinChannel(joinParams)
     
+    // RTM'i başlat ve kanala katıl
+    try {
+      logInfo('🚀 RTM başlatılıyor...', { 
+        uid: finalUid, 
+        channelName: channelToJoin,
+        timestamp: new Date().toISOString(),
+        processId: Math.random().toString(36).substr(2, 9)
+      })
+      
+      await initializeRTM({
+        userId: finalUid.toString(),
+        userName: `User-${finalUid}`,
+        channelName: channelToJoin,
+        token: tokenResult.rtm.token
+      })
+      
+      // RTM kanalına katıl
+      logInfo('📡 RTM kanalına katılım başlatılıyor...', { 
+        channelName: channelToJoin,
+        uid: finalUid,
+        timestamp: new Date().toISOString()
+      })
+      
+      await joinRTMChannel(channelToJoin)
+      logInfo('🎉 RTM başarıyla başlatıldı ve kanala katıldı', { 
+        channelName: channelToJoin,
+        uid: finalUid,
+        timestamp: new Date().toISOString(),
+        processId: Math.random().toString(36).substr(2, 9)
+      })
+    } catch (rtmError) {
+      logWarn('⚠️ RTM başlatılamadı, video konferans devam ediyor', { 
+        error: rtmError.message || rtmError,
+        errorStack: rtmError.stack,
+        uid: finalUid,
+        channelName: channelToJoin,
+        timestamp: new Date().toISOString()
+      })
+      
+      // RTM hatası video konferansı etkilemesin
+      // Kullanıcıya bilgi ver
+      notification.warning(
+        'RTM Bağlantısı Kurulamadı',
+        'Gerçek zamanlı mesajlaşma ve bildirimler kullanılamıyor, ancak video konferans çalışıyor.',
+        {
+          category: 'rtm',
+          priority: 'normal',
+          autoDismiss: true,
+          autoDismissDelay: 8000
+        }
+      )
+    }
+    
     // Loading status'u güncelle
     updateLoadingStatus('connected')
     
-    emit('joined', { channelName: channelToJoin, token: tokenResult.token, uid: finalUid })
+    emit('change', { 
+      type: 'joined',
+      data: {
+        channelName: channelToJoin, 
+        rtcToken: tokenResult.rtc.token, 
+        rtmToken: tokenResult.rtm.token, 
+        uid: finalUid 
+      }
+    })
   } catch (error) {
     logError(error, { context: 'handleJoin', channelName: name })
-    emit('error', { error, message: error.message })
+    emit('change', { 
+      type: 'error',
+      data: { error, message: error.message }
+    })
   }
 }
 
 // Leave channel handler
 const handleLeave = async () => {
   try {
+    // RTM bağlantısını kapat
+    try {
+      logInfo('🔄 RTM bağlantısı kapatılıyor...', { 
+        channelName: channelName.value,
+        timestamp: new Date().toISOString()
+      })
+      
+      await disconnectRTM()
+      logInfo('✅ RTM bağlantısı başarıyla kapatıldı')
+    } catch (rtmError) {
+      logWarn('⚠️ RTM kapatma hatası, video konferans devam ediyor', { 
+        error: rtmError.message || rtmError,
+        channelName: channelName.value,
+        timestamp: new Date().toISOString()
+      })
+      // RTM hatası video konferansı etkilemesin
+    }
+    
+    // Video kanalından ayrıl
+    logInfo('🔄 Video kanalından ayrılım başlatılıyor...', { 
+      channelName: channelName.value,
+      timestamp: new Date().toISOString()
+    })
+    
     await leaveChannel()
-    emit('left', { channelName: channelName.value })
+    logInfo('✅ Video kanalından başarıyla ayrıldı')
+    
+    emit('change', { 
+      type: 'left',
+      data: { channelName: channelName.value }
+    })
     channelName.value = ''
+    
     // clearLogs() artık yok, fileLogger kullanıyoruz
   } catch (error) {
     logError(error, { context: 'handleLeave', channelName: channelName.value })
-    emit('error', { error })
+    emit('change', { 
+      type: 'error',
+      data: { error }
+    })
   }
 }
 
@@ -580,7 +674,10 @@ const handleToggleCamera = async (off) => {
     await toggleCamera(off)
   } catch (error) {
     logError(error, { context: 'handleToggleCamera', state: off ? 'off' : 'on' })
-    emit('error', { error })
+    emit('change', { 
+      type: 'error',
+      data: { error }
+    })
   }
 }
 
@@ -590,7 +687,10 @@ const handleToggleMicrophone = async (muted) => {
     await toggleMicrophone(muted)
   } catch (error) {
     logError(error, { context: 'handleToggleMicrophone', state: muted ? 'muted' : 'unmuted' })
-    emit('error', { error })
+    emit('change', { 
+      type: 'error',
+      data: { error }
+    })
   }
 }
 
@@ -602,18 +702,171 @@ const setupEventListeners = () => {
     
     centralEmitter.on(AGORA_EVENTS.USER_JOINED, (data) => {
       userLogger.info('User joined', data)
-      emit('user-joined', data)
+      emit('change', { 
+        type: 'user-joined',
+        data: data
+      })
     })
 
     centralEmitter.on(AGORA_EVENTS.USER_LEFT, (data) => {
       userLogger.info('User left', { uid: data.uid })
-      emit('user-left', data)
+      emit('change', { 
+        type: 'user-left',
+        data: data
+      })
     })
 
     centralEmitter.on(AGORA_EVENTS.CONNECTION_STATE_CHANGE, (data) => {
       logInfo('Connection state changed', data)
-      emit('connection-state-change', data)
+      emit('change', { 
+        type: 'connection-state-change',
+        data: data
+      })
     })
+  }
+
+  // 🚀 centralEmitter ile RTM event'lerini dinle
+  if (centralEmitter && centralEmitter.on) {
+    // RTM layout change event'ini dinle
+    centralEmitter.on('rtm-layout-change', (data) => {
+      const { layoutId, source, trigger } = data
+      
+      logInfo('🎯 RTM layout değişim event\'i alındı', { 
+        layoutId, 
+        source, 
+        trigger,
+        timestamp: new Date().toISOString()
+      })
+
+      // Layout store'u güncelle
+      if (layoutStore && layoutStore.switchLayoutWithSave) {
+        layoutStore.switchLayoutWithSave(layoutId)
+        logInfo('✅ Layout RTM event ile güncellendi', { 
+          layoutId, 
+          source: 'rtm-event',
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+
+    // 🚀 RTM whiteboard auto-join event'ini dinle
+    centralEmitter.on('rtm-whiteboard-auto-join', async (data) => {
+      const { roomInfo, userInfo, source, trigger } = data
+      
+      logInfo('🚀 RTM whiteboard auto-join event\'i alındı', { 
+        roomInfo, 
+        userInfo, 
+        source, 
+        trigger,
+        timestamp: new Date().toISOString()
+      })
+
+      try {
+        // Whiteboard auto-join request event'i centralEmitter ile gönder
+        centralEmitter.emit('whiteboard-auto-join-request', {
+          roomInfo,
+          userInfo,
+          source: 'rtm-auto-join'
+        })
+        
+        logInfo('✅ Whiteboard auto-join request event\'i centralEmitter ile gönderildi', { 
+          roomUuid: roomInfo.uuid,
+          userName: userInfo.userName,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Bildirim göster
+        notification.info(
+          '🎨 Whiteboard Otomatik Katılım',
+          `${userInfo.userName} whiteboard açtı, otomatik katılım sağlanıyor...`,
+          {
+            category: 'whiteboard',
+            priority: 'normal',
+            autoDismiss: true,
+            autoDismissDelay: 3000
+          }
+        )
+        
+      } catch (error) {
+        logError('❌ Whiteboard auto-join işlemi hatası', { 
+          error: error.message || error,
+          roomInfo,
+          userInfo,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Hata bildirimi göster
+        notification.error(
+          '❌ Whiteboard Katılım Hatası',
+          'Whiteboard\'a otomatik katılım sağlanamadı.',
+          {
+            category: 'whiteboard',
+            priority: 'high',
+            autoDismiss: true,
+            autoDismissDelay: 5000
+          }
+        )
+      }
+    })
+
+    // 🚀 Layout change request event'ini dinle (whiteboard auto-join'dan gelir)
+    centralEmitter.on('layout-change-request', (data) => {
+      const { layoutId, source, trigger } = data
+      
+      logInfo('🎯 Layout change request event\'i alındı', { 
+        layoutId, 
+        source, 
+        trigger,
+        timestamp: new Date().toISOString()
+      })
+
+      // Layout store'u güncelle
+      if (layoutStore && layoutStore.switchLayoutWithSave) {
+        layoutStore.switchLayoutWithSave(layoutId)
+        logInfo('✅ Layout change request ile güncellendi', { 
+          layoutId, 
+          source: 'layout-request',
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+
+    // 🚀 RTM whiteboard auto-join event'ini dinle (whiteboard component yüklenmeden önce)
+    centralEmitter.on('rtm-whiteboard-auto-join', async (data) => {
+      const { roomInfo, userInfo, source, trigger } = data
+      
+      logInfo('🚀 RTM whiteboard auto-join event\'i AgoraConference\'da alındı', { 
+        roomInfo, 
+        userInfo, 
+        source, 
+        trigger,
+        timestamp: new Date().toISOString()
+      })
+      
+      try {
+        // Layout'u whiteboard'a geçir
+        if (layoutStore && layoutStore.switchLayoutWithSave) {
+          layoutStore.switchLayoutWithSave('whiteboard')
+          logInfo('✅ Layout whiteboard\'a geçirildi (AgoraConference)', { 
+            roomUuid: roomInfo.uuid,
+            source,
+            trigger,
+            timestamp: new Date().toISOString()
+          })
+        }
+      } catch (error) {
+        logError('❌ Layout değiştirme hatası (AgoraConference)', { 
+          error: error.message,
+          roomInfo,
+          userInfo,
+          source,
+          trigger,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+
+    logInfo('🚀 RTM event listener\'ları centralEmitter ile eklendi')
   }
 }
 
@@ -645,7 +898,7 @@ const loggers = createLoggerWrappers()
 const initializeLogMethod = () => {
   try {
     // Log ayarları
-    const active = props.logActive ?? true
+    const active = props.options.logActive ?? true
     
     if (active) {
       fileLogger.setLogActive(true)
@@ -662,11 +915,13 @@ const initializeLogMethod = () => {
 
 // Auto join if enabled
 const handleAutoJoin = async () => {
-  if (props.autoJoin && channelName.value && !isConnected.value) {
+      if (props.options.autoJoin && channelName.value && !isConnected.value) {
     logInfo('Auto joining channel...', { channelName: channelName.value })
     await handleJoin(channelName.value)
   }
 }
+
+
 
 // Lifecycle
 onMounted(async () => {
@@ -675,7 +930,7 @@ onMounted(async () => {
   
   logInfo('AgoraConference component mounted', { 
     channelName: channelName.value,
-    autoJoin: props.autoJoin
+            autoJoin: props.options.autoJoin
   })
 
   // Initialize device settings
@@ -690,7 +945,7 @@ onMounted(async () => {
   
   // Layout preference'i sadece kanal değişikliği olmadığında yükle
   // Bu sayede ilk girişte presentation'dan başlamaz
-  if (!props.autoJoin) {
+      if (!props.options.autoJoin) {
     layoutStore.loadLayoutPreference()
   } else {
     // Auto join varsa layout'u grid'e sıfırla
@@ -698,7 +953,7 @@ onMounted(async () => {
   }
   
       // Auto join varsa loading devam ederken arka planda bağlantı kur
-    if (props.autoJoin && channelName.value) {
+    if (props.options.autoJoin && channelName.value) {
       // Loading'i göster ama arka planda bağlantı kur
       logInfo('Auto join aktif - Loading devam ederken arka planda bağlantı kuruluyor...')
       
@@ -723,6 +978,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Tüm kaynakları temizle (RTC ve RTM dahil)
   cleanup()
 })
 
@@ -1030,4 +1286,6 @@ defineExpose({
   
 
 }
+
+
 </style> 

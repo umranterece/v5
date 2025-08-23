@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getUserDisplayName, getRemoteUserDisplayName, isVideoUser, isScreenShareUser, isWhiteboardUser, NETLESS_CONFIG, USER_ID_RANGES } from '../constants.js'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
+
 
 /**
  * Agora Store - Video ve Ekran Paylaşımı client'larını yönetir
@@ -37,6 +38,23 @@ export const useAgoraStore = defineStore('agora', () => {
       client: null,
       isConnected: false,
       isInitialized: false
+    },
+    rtm: {  // 🆕 RTM CLIENT
+      client: null,
+      isConnected: false,
+      isInitialized: false,
+      isChannelJoined: false,
+      currentChannelName: null,
+      currentUserId: null,
+      currentUserName: null,
+      connectionState: 'disconnected',
+      lastConnectionTime: null,
+      metrics: {
+        messagesSent: 0,
+        messagesReceived: 0,
+        messagesFailed: 0,
+        connectionAttempts: 0
+      }
     },
     whiteboard: {  // 🆕 YENİ
       client: null,
@@ -223,11 +241,82 @@ export const useAgoraStore = defineStore('agora', () => {
   const setWhiteboardActive = (active) => {
     clients.value.whiteboard.isActive = active
     controls.value.isWhiteboardActive = active
+
+    // ✅ RTM bildirimi artık composable seviyesinde yönetiliyor (useNetlessWhiteboard)
+    // Store seviyesinde çift bildirim önleniyor
+    logInfo('🎨 Whiteboard durumu güncellendi', { 
+      active, 
+      source: 'store',
+      note: 'RTM bildirimi composable seviyesinde yönetiliyor'
+    })
   }
 
   const setWhiteboardPresenter = (presenter) => {
     clients.value.whiteboard.isPresenter = presenter
     controls.value.isWhiteboardPresenting = presenter
+  }
+
+  // RTM Client Actions - 🚀 YENİ RTM ACTIONS
+  const setRTMClient = (client) => {
+    clients.value.rtm.client = client
+    clients.value.rtm.isInitialized = !!client
+    logDebug('RTM client store\'da ayarlandı', { hasClient: !!client })
+  }
+
+  const setRTMConnected = (connected) => {
+    clients.value.rtm.isConnected = connected
+    if (connected) {
+      clients.value.rtm.lastConnectionTime = Date.now()
+      clients.value.rtm.metrics.connectionAttempts++
+    }
+    logDebug('RTM bağlantı durumu güncellendi', { connected })
+  }
+
+  const setRTMChannelJoined = (joined) => {
+    clients.value.rtm.isChannelJoined = joined
+    logDebug('RTM kanal katılım durumu güncellendi', { joined })
+  }
+
+  const setRTMUserInfo = (userId, userName) => {
+    clients.value.rtm.currentUserId = userId
+    clients.value.rtm.currentUserName = userName
+    logDebug('RTM kullanıcı bilgileri güncellendi', { userId, userName })
+  }
+
+  const setRTMChannelName = (channelName) => {
+    clients.value.rtm.currentChannelName = channelName
+    logDebug('RTM kanal adı güncellendi', { channelName })
+  }
+
+  const setRTMConnectionState = (state) => {
+    clients.value.rtm.connectionState = state
+    logDebug('RTM bağlantı durumu güncellendi', { state })
+  }
+
+  const updateRTMMetrics = (metricsUpdate) => {
+    Object.assign(clients.value.rtm.metrics, metricsUpdate)
+    logDebug('RTM metrics güncellendi', metricsUpdate)
+  }
+
+  const resetRTM = () => {
+    clients.value.rtm = {
+      client: null,
+      isConnected: false,
+      isInitialized: false,
+      isChannelJoined: false,
+      currentChannelName: null,
+      currentUserId: null,
+      currentUserName: null,
+      connectionState: 'disconnected',
+      lastConnectionTime: null,
+      metrics: {
+        messagesSent: 0,
+        messagesReceived: 0,
+        messagesFailed: 0,
+        connectionAttempts: 0
+      }
+    }
+    logInfo('RTM state sıfırlandı')
   }
 
   // User Actions - Kullanıcı işlemleri
@@ -749,6 +838,17 @@ export const useAgoraStore = defineStore('agora', () => {
     setWhiteboardRoomId,       // 🆕 YENİ
     setWhiteboardSessionId,    // 🆕 YENİ
     setWhiteboardRoom,         // 🆕 YENİ
+    
+    // RTM Actions - 🚀 YENİ
+    setRTMClient,
+    setRTMConnected,
+    setRTMChannelJoined,
+    setRTMUserInfo,
+    setRTMChannelName,
+    setRTMConnectionState,
+    updateRTMMetrics,
+    resetRTM,
+    
     resetClient,
     resetWhiteboard,           // 🆕 YENİ
     resetUsers,

@@ -111,8 +111,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useAgoraStore } from '../../store/index.js'
-import { useLayoutStore } from '../../store/layout.js'
+import { useAgoraStore, useLayoutStore } from '../../store/index.js'
+import { rtmService } from '../../services/index.js'
 import { 
   ViewColumnsIcon, 
   Cog6ToothIcon, 
@@ -234,8 +234,8 @@ const toggleMicrophone = () => {
   }
 }
 
-// Whiteboard toggle function - 🆕 YENİ
-const toggleWhiteboard = () => {
+// Whiteboard toggle function - 🚀 RTM NOTIFICATION EKLENDİ
+const toggleWhiteboard = async () => {
   const newWhiteboardState = !isWhiteboardActive.value
   props.logger.info('Whiteboard değiştir', {
     currentState: isWhiteboardActive.value ? 'active' : 'inactive',

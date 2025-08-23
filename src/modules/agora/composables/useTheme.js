@@ -1,10 +1,14 @@
 import { ref, watch } from 'vue'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 
 /**
  * RS-Agora Tema Yönetimi Composable
  * Tema değiştirme ve yönetimi için kullanılır
  */
 export function useTheme() {
+  // Logger helper'ları
+  const logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.UI, message, data)
+  
   // Mevcut tema
   const currentTheme = ref(localStorage.getItem('rs-agora-theme') || 'logmodal-elegance')
   
@@ -115,7 +119,7 @@ export function useTheme() {
     // State'i güncelle
     currentTheme.value = themeId
     
-    console.log(`Tema değiştirildi: ${themeId}`)
+    logInfo(`Tema değiştirildi: ${themeId}`)
   }
 
   /**
@@ -199,7 +203,7 @@ export function useTheme() {
       root.style.setProperty(cssVar, value)
     })
     
-    console.log('Custom tema uygulandı:', customColors)
+    logInfo('Custom tema uygulandı', customColors)
   }
 
   // Component mount olduğunda temayı uygula

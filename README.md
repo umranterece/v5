@@ -1,12 +1,13 @@
-# 🎥 Agora Video Conference v5
+# 🎥 Agora Video Conference v5.0.0
 
-Modern, özelleştirilebilir ve güçlü video konferans uygulaması. Agora SDK kullanarak gerçek zamanlı iletişim, ekran paylaşımı ve gelişmiş loglama özellikleri sunar.
+Modern, özelleştirilebilir ve güçlü video konferans uygulaması. Agora SDK kullanarak gerçek zamanlı iletişim, ekran paylaşımı, beyaz tahta ve gelişmiş loglama özellikleri sunar.
 
 ## ✨ Özellikler
 
 ### 🎯 Temel Özellikler
 - **Gerçek Zamanlı Video/Audio Konferans**: Agora SDK ile düşük gecikme süreli iletişim
 - **Ekran Paylaşımı**: Tam ekran veya pencere bazlı paylaşım
+- **Beyaz Tahta**: Netless Whiteboard ile gelişmiş çizim araçları
 - **Çoklu Layout Desteği**: Grid, Spotlight, Presentation layout'ları
 - **Kayıt Sistemi**: Konferans kayıtları ve yönetimi
 - **Responsive Tasarım**: Tüm cihazlarda mükemmel deneyim
@@ -14,9 +15,10 @@ Modern, özelleştirilebilir ve güçlü video konferans uygulaması. Agora SDK 
 ### 🔧 Gelişmiş Özellikler
 - **Modüler Mimari**: ES6 modülleri ve Vue 3 Composition API
 - **Configurable Logging**: LocalStorage ve LocalFolder storage seçenekleri
-- **Theme Sistemi**: Dinamik tema değiştirme
+- **Theme Sistemi**: 15+ hazır tema ile dinamik tema değiştirme
 - **Device Management**: Kamera, mikrofon ve hoparlör kontrolü
 - **Quality Monitoring**: Stream kalite takibi ve optimizasyonu
+- **Whiteboard Integration**: Gerçek zamanlı beyaz tahta senkronizasyonu
 
 ### 🚀 Teknik Özellikler
 - **Vue 3 + Vite**: Modern frontend stack
@@ -29,24 +31,27 @@ Modern, özelleştirilebilir ve güçlü video konferans uygulaması. Agora SDK 
 ```
 v5/
 ├── src/
-│   ├── modules/
-│   │   └── agora/
-│   │       ├── components/          # Vue bileşenleri
-│   │       │   ├── core/            # Ana konferans bileşenleri
-│   │       │   ├── controls/        # Kontrol bileşenleri
-│   │       │   ├── layouts/         # Layout bileşenleri
-│   │       │   ├── modals/          # Modal bileşenleri
-│   │       │   ├── ui/              # UI bileşenleri
-│   │       │   └── video/           # Video bileşenleri
-│   │       ├── composables/         # Vue composables
-│   │       ├── services/            # Servis katmanı
-│   │       ├── store/               # State management
-│   │       └── utils/               # Yardımcı fonksiyonlar
-│   ├── assets/                      # Statik dosyalar
-│   └── App.vue                      # Ana uygulama
-├── docs/                            # Dokümantasyon
-├── logs/                            # Log dosyaları (localFolder mode)
-└── public/                          # Public assets
+├── modules/
+│   └── agora/                    # Ana Agora modülü
+│       ├── assets/               # Tema ve stil dosyaları
+│       │   └── themes.css        # 15+ hazır tema
+│       ├── components/           # Vue bileşenleri
+│       │   ├── core/            # Ana konferans bileşenleri
+│       │   ├── controls/        # Kontrol bileşenleri
+│       │   ├── layouts/         # Layout bileşenleri
+│       │   ├── modals/          # Modal bileşenleri
+│       │   ├── ui/              # UI bileşenleri
+│       │   ├── video/           # Video bileşenleri
+│       │   └── whiteboard/      # Beyaz tahta bileşenleri
+│       ├── composables/         # Vue 3 composables
+│       ├── services/            # Servis katmanı
+│       ├── store/               # Pinia state yönetimi
+│       ├── utils/               # Yardımcı fonksiyonlar
+│       └── constants.js         # Konfigürasyon sabitleri
+├── assets/                      # Global stil dosyaları
+├── docs/                        # Detaylı dokümantasyon
+├── logs/                        # Log dosyaları (localFolder mode)
+└── public/                      # Public assets
 ```
 
 ## 🚀 Kurulum
@@ -106,6 +111,11 @@ Uygulama içinden Settings > Log Ayarları bölümünden:
 - Tam ekran veya pencere seç
 - Paylaşımı başlat
 
+### Beyaz Tahta
+- Beyaz tahta butonuna tıkla
+- Çizim araçlarını kullan
+- Gerçek zamanlı senkronizasyon
+
 ## 🛠️ Geliştirme
 
 ### Kod Standartları
@@ -145,6 +155,8 @@ echo "export { default as NewComponent } from './NewComponent.vue'" >> src/modul
 - `useVideo`: Video stream yönetimi
 - `useRecording`: Kayıt işlemleri
 - `useScreenShare`: Ekran paylaşımı
+- `useNetlessWhiteboard`: Beyaz tahta yönetimi
+- `useTheme`: Tema sistemi yönetimi
 - `useDeviceSettings`: Cihaz ayarları
 
 ### Event Sistemi
@@ -210,10 +222,72 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 - [Vue.js](https://vuejs.org) - Frontend framework
 - [Vite](https://vitejs.dev) - Build tool
 
+## 🗺️ Roadmap & Gelecek Özellikler
+
+### 🎨 **UI/UX İyileştirmeleri**
+- [ ] **Gelişmiş Tema Sistemi**: Daha fazla özelleştirilebilir tema seçenekleri
+- [ ] **Dark/Light Mode Toggle**: Dinamik tema değiştirme butonu
+- [ ] **Responsive İyileştirmeler**: Mobile-first tasarım optimizasyonları
+- [ ] **Loading States**: Daha güzel loading animasyonları ve progress bar'lar
+
+### 📱 **Yeni Özellikler**
+- [ ] **Chat Sistemi**: Gerçek zamanlı metin mesajlaşma
+- [ ] **File Sharing**: Dosya paylaşım sistemi
+- [ ] **Background Effects**: Virtual background, blur effects
+- [ ] **Picture-in-Picture**: Küçük pencerede video görüntüleme
+- [ ] **Polls/Voting**: Anket ve oylama sistemi
+
+### 🔧 **Developer Experience**
+- [ ] **TypeScript Support**: Type safety için TypeScript entegrasyonu
+- [ ] **Storybook**: Component dokümantasyonu ve test ortamı
+- [ ] **Testing**: Unit test ve E2E test yazma
+- [ ] **ESLint/Prettier**: Kod kalitesi için linting rules
+
+### 🌐 **Entegrasyonlar**
+- [ ] **API Genişletmeleri**: Recording API, Analytics API
+- [ ] **Third-party Entegrasyonları**: YouTube Live, Twitch streaming
+- [ ] **Calendar Integration**: Google Calendar, Outlook entegrasyonu
+- [ ] **SSO Authentication**: Single Sign-On sistemi
+
+### 📊 **Analytics & Monitoring**
+- [ ] **Real-time Analytics**: Katılımcı istatistikleri, bağlantı kalitesi
+- [ ] **Error Tracking**: Sentry veya benzeri error monitoring
+- [ ] **Performance Monitoring**: Sayfa yüklenme süreleri, API response times
+- [ ] **Usage Statistics**: Kullanım raporları ve dashboard
+
+### 🎯 **Performans Optimizasyonları**
+- [ ] **Code Splitting**: Lazy loading ve bundle optimization
+- [ ] **CDN Integration**: Static asset'ler için CDN kullanımı
+- [ ] **Service Worker**: Offline support ve caching
+- [ ] **Memory Optimization**: Memory leak'lerin önlenmesi
+
+### 🔒 **Güvenlik & Privacy**
+- [ ] **End-to-End Encryption**: Gelişmiş şifreleme
+- [ ] **Room Password**: Oda şifre koruması
+- [ ] **Waiting Room**: Host onayı ile giriş sistemi
+- [ ] **Privacy Controls**: Kamera/mikrofon izin yönetimi
+
+### 🌍 **Internationalization**
+- [ ] **Multi-language Support**: Türkçe, İngilizce, diğer diller
+- [ ] **RTL Support**: Arapça, İbranice gibi sağdan sola diller
+- [ ] **Locale-specific Features**: Bölgesel özellikler
+
+### 🏆 **Öncelikli Geliştirmeler**
+1. **Chat Sistemi** - Kolay implementasyon, yüksek fayda
+2. **TypeScript Desteği** - Kod kalitesi ve maintainability
+3. **Gelişmiş Tema Sistemi** - Kullanıcı deneyimi
+4. **Unit Testing** - Kod güvenilirliği
+
+## 📚 Detaylı Dokümantasyon
+
+Daha detaylı bilgi için [docs/README.md](docs/README.md) dosyasına bakın.
+
 ## 📞 İletişim
 
 - **Proje Linki**: [https://github.com/umranterece/v5](https://github.com/umranterece/v5)
 - **Issues**: [GitHub Issues](https://github.com/umranterece/v5/issues)
+- **Geliştirici**: Umran Terece
+- **Website**: [rehberimsensin.com](https://rehberimsensin.com)
 
 ---
 

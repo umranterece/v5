@@ -90,7 +90,7 @@ import { UsersIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAgoraStore } from '../../store/index.js'
 import { isScreenShareUser } from '../../constants.js'
-import VideoItem from '../video/VideoItem.vue'
+import { VideoItem } from '../video/index.js'
 
 // Props
 const props = defineProps({
@@ -155,7 +155,7 @@ const mainSpeaker = computed(() => {
   const screenShareUser = props.users.find(u => isScreenShareUser(u.uid))
   
   if (screenShareUser) {
-    console.log('🟢 [SPOTLIGHT] Ekran paylaşımı kullanıcısı bulundu:', screenShareUser.uid)
+    props.logger.debug('Ekran paylaşımı kullanıcısı bulundu:', screenShareUser.uid)
     
     // Ekran paylaşımı kullanıcısı için track'i store'dan al
     const agoraStore = useAgoraStore()
@@ -188,7 +188,7 @@ const otherParticipants = computed(() => {
   // Ekran paylaşımı kullanıcıları da katılımcılar listesinde yer alabilir
   const filteredParticipants = props.users.filter(u => u.uid !== mainSpeaker.value.uid)
   
-  console.log('🟢 [SPOTLIGHT] Katılımcılar filtrelendi:', {
+  props.logger.debug('Katılımcılar filtrelendi:', {
     totalUsers: props.users.length,
     mainSpeakerUid: mainSpeaker.value?.uid,
     mainSpeakerIsScreenShare: isScreenShareUser(mainSpeaker.value?.uid),
@@ -289,7 +289,7 @@ const getUserTrack = (user) => {
     if (user.isLocal) {
       // Yerel ekran paylaşımı için local tracks'dan al
       const track = agoraStore.tracks.local.screen.video
-      console.log('🟢 [SPOTLIGHT] Katılımcı yerel ekran paylaşımı track\'i:', {
+      props.logger.debug('Katılımcı yerel ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -298,7 +298,7 @@ const getUserTrack = (user) => {
     } else {
       // Uzak ekran paylaşımı için remote tracks'dan al
       const track = agoraStore.tracks.remote.get(user.uid)?.screen
-      console.log('🟢 [SPOTLIGHT] Katılımcı uzak ekran paylaşımı track\'i:', {
+      props.logger.debug('Katılımcı uzak ekran paylaşımı track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -309,7 +309,7 @@ const getUserTrack = (user) => {
     // Normal video kullanıcısı için
     if (user.isLocal) {
       const track = agoraStore.tracks.local.video.video
-      console.log('🟢 [SPOTLIGHT] Katılımcı yerel video track\'i:', {
+      props.logger.debug('Katılımcı yerel video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id
@@ -317,7 +317,7 @@ const getUserTrack = (user) => {
       return track
     } else {
       const track = agoraStore.tracks.remote.get(user.uid)?.video
-      console.log('🟢 [SPOTLIGHT] Katılımcı uzak video track\'i:', {
+      props.logger.debug('Katılımcı uzak video track\'i:', {
         uid: user.uid,
         hasTrack: !!track,
         trackId: track?.id

@@ -157,8 +157,8 @@
 
 <script>
 import { computed } from 'vue'
-import { useRecording } from '../../composables/useRecording.js'
-import { fileLogger } from '../../services/fileLogger.js'
+import { useRecording } from '../../composables/index.js'
+import { fileLogger } from '../../services/index.js'
 import { formatDuration as formatDurationFromUtils, formatFileSize as formatFileSizeFromUtils } from '../../utils/index.js'
 
 export default {

@@ -263,7 +263,7 @@
 
 <script>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useFileLogger } from '../../composables/useFileLogger.js'
+import { useFileLogger } from '../../composables/index.js'
 
 export default {
   name: 'LogModal',

@@ -76,7 +76,7 @@
 <script setup>
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useTheme } from '../../composables/useTheme.js'
+import { useTheme } from '../../composables/index.js'
 
 const {
   currentTheme,

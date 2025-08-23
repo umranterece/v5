@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { fileLogger, LOG_CATEGORIES } from '../services/fileLogger.js'
+import { fileLogger, LOG_CATEGORIES } from '../services/index.js'
 import { AGORA_EVENTS } from '../constants.js'
 
 /**

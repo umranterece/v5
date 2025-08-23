@@ -326,9 +326,9 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useStreamQuality } from '../../composables/useStreamQuality.js'
+import { useStreamQuality } from '../../composables/index.js'
 import { watch } from 'vue'
-import { useAgoraStore } from '../../store/agora.js'
+import { useAgoraStore } from '../../store/index.js'
 import { 
   PresentationChartBarIcon,
   TvIcon,
