@@ -249,6 +249,11 @@ export function useRTM(agoraStore = null) {
       currentUserId.value = userId
       currentUserName.value = userName
       isConnected.value = true
+      
+      // Store'a RTM durumunu güncelle
+      store.setRTMConnected(true)
+      store.setRTMUserInfo(userId, userName)
+      store.setRTMConnectionState('connected')
 
       // Kanal belirtilmişse katıl
       if (channelName) {
@@ -316,6 +321,10 @@ export function useRTM(agoraStore = null) {
       if (success) {
         currentChannelName.value = channelName
         isChannelJoined.value = true
+        
+        // Store'a RTM channel durumunu güncelle
+        store.setRTMChannelJoined(true)
+        store.setRTMChannelName(channelName)
         
         // Message history'yi temizle
         messageHistory.value = []
@@ -713,6 +722,13 @@ export function useRTM(agoraStore = null) {
     unreadCount.value = 0
     channelMembers.value.clear()
     memberCount.value = 0
+    
+    // Store'a RTM durumunu güncelle
+    store.setRTMConnected(false)
+    store.setRTMChannelJoined(false)
+    store.setRTMUserInfo(null, null)
+    store.setRTMChannelName(null)
+    store.setRTMConnectionState('disconnected')
     
     // Metrics'i sıfırla
     metrics.value = {

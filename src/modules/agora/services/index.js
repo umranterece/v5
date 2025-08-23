@@ -19,7 +19,7 @@ export {
 export { recordingService } from './recordingService.js'
 
 // Netless Whiteboard servisi - Gerçek zamanlı işbirlikli whiteboard
-export { netlessService, NetlessService } from './netlessService.js'
+export { netlessService } from './netlessService.js'
 
 // RTM servisi - Real-time messaging
 export { rtmService } from './rtmService.js'

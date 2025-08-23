@@ -6,7 +6,7 @@
 
 import { ref, computed, onUnmounted, nextTick, readonly } from 'vue'
 import { createFastboard } from '@netless/fastboard'
-import { NETLESS_CONFIG, NETLESS_EVENTS } from '../constants.js'
+import { NETLESS_CONFIG, NETLESS_EVENTS, RTM_MESSAGE_TYPES } from '../constants.js'
 import { centralEmitter, createSafeTimeout } from '../utils/index.js'
 import { fileLogger, LOG_CATEGORIES, netlessService } from '../services/index.js'
 
@@ -80,10 +80,11 @@ export function useNetlessWhiteboard(agoraStore) {
   })
 
   /**
-   * Netless room'a bağlan
+   * 🆕 Channel-based whiteboard room'a bağlan
    * @param {Object} options - Bağlantı seçenekleri
-   * @param {string} options.uuid - Room UUID (opsiyonel, yoksa yeni room oluşturulur)
-   * @param {string} options.token - Room token (opsiyonel, yoksa yeni token oluşturulur)
+   * @param {string} options.channelName - Agora channel adı (zorunlu)
+   * @param {string} options.uuid - Room UUID (opsiyonel, mevcut room için)
+   * @param {string} options.token - Room token (opsiyonel, mevcut room için)
    * @param {HTMLElement} options.container - Container element
    * @param {string} options.userId - Kullanıcı ID
    * @param {string} options.userName - Kullanıcı adı
@@ -96,68 +97,66 @@ export function useNetlessWhiteboard(agoraStore) {
         return false
       }
 
+      if (!options.channelName) {
+        throw new Error('Channel name gerekli - channel-based whiteboard room için')
+      }
+
       isConnecting.value = true
       connectionError.value = null
       
-      const userId = options.userId || agoraStore.localUser?.uid?.toString() || `user-${Date.now()}`
-      const userName = options.userName || agoraStore.localUser?.name || 'Agora User'
+      const userId = options.userId || agoraStore.users?.local?.video?.uid?.toString() || `user-${Date.now()}`
+      const userName = options.userName || agoraStore.users?.local?.video?.name || 'Agora User'
+      const channelName = options.channelName
       
-      logInfo('Netless room bağlantısı başlatılıyor', { 
+      logInfo('🚀 Channel-based whiteboard room bağlantısı başlatılıyor', { 
+        channelName,
         hasUuid: !!options.uuid,
         hasToken: !!options.token,
         userId,
         userName
       })
 
-      let roomData, token
+      let roomData, token, isExistingRoom = false
 
-      // 🚀 ROOM LOGIC: UUID ve TOKEN kontrolü ile mevcut room'a katıl veya yeni oluştur
+      // Room logic: Mevcut room'a katıl veya yeni oluştur
       if (options.uuid && options.token) {
-        // ✅ UUID VE TOKEN VAR → Direkt kullan
-        logInfo('Mevcut Netless room\'a katılım başlatılıyor (token mevcut)', { uuid: options.uuid })
+        // ✅ UUID VE TOKEN VAR → Direkt kullan (mevcut room)
+        logInfo('Mevcut Netless room\'a katılım başlatılıyor (token mevcut)', { 
+          uuid: options.uuid,
+          channelName 
+        })
         
         roomData = { uuid: options.uuid }
         token = options.token
+        isExistingRoom = true
         
         logInfo('Mevcut room için token kullanılıyor', { 
           uuid: options.uuid,
-          hasToken: true
+          hasToken: true,
+          channelName
         })
       } else if (options.uuid) {
-        // ✅ UUID VAR AMA TOKEN YOK → Token al
-        logInfo('Mevcut Netless room\'a katılım başlatılıyor (token alınıyor)', { uuid: options.uuid })
+        // ✅ UUID VAR AMA TOKEN YOK → Token al (mevcut room)
+        logInfo('Mevcut Netless room\'a katılım başlatılıyor (token alınıyor)', { 
+          uuid: options.uuid,
+          channelName 
+        })
         
         // Mevcut room için token al
         const userToken = await netlessService.getRoomToken(options.uuid, userId, 'writer')
         roomData = { uuid: options.uuid }
         token = userToken.token || userToken
+        isExistingRoom = true
         
         logInfo('Mevcut room için token alındı', { 
           uuid: options.uuid,
-          hasToken: !!token
+          hasToken: !!token,
+          channelName
         })
       } else {
-        // 🆕 NE UUID NE TOKEN → Yeni room oluştur
-        logInfo('Yeni Netless room oluşturuluyor')
-        
-        const roomResponse = await netlessService.createRoomWithToken({
-          roomName: `agora-whiteboard-${Date.now()}`,
-          userId,
-          role: 'writer',
-          agoraInfo: {
-            channelName: agoraStore.session?.videoChannelName || 'unknown',
-            videoUID: agoraStore.users?.local?.video?.uid,
-            userName: agoraStore.users?.local?.video?.name || userName
-          }
-        })
-        
-        roomData = roomResponse
-        token = roomResponse.token
-        
-        logInfo('Yeni room oluşturuldu', { 
-          uuid: roomData.uuid, 
-          name: roomData.name 
-        })
+        // ❌ UUID ve token gerekli
+        logInfo('UUID ve token gerekli', { channelName })
+        throw new Error('UUID ve token gerekli - Room bilgileri eksik')
       }
 
       // Room UUID ve token'ı sakla
@@ -253,6 +252,33 @@ export function useNetlessWhiteboard(agoraStore) {
       // ✅ RTM bildirimi artık netlessService seviyesinde yönetiliyor
       logInfo('Whiteboard room bağlantısı başarılı, RTM bildirimi service seviyesinde yönetiliyor')
 
+      // RTM bildirimi: Room'a katıldığını bildir
+      try {
+        const channelName = agoraStore.session?.videoChannelName
+        if (channelName && roomData.uuid) {
+          await netlessService.sendRTMMessage({
+            messageType: RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED,
+            data: {
+              channelName,
+              roomUuid: roomData.uuid,
+              userId,
+              userName,
+              timestamp: new Date().toISOString()
+            }
+          })
+          logInfo('✅ RTM whiteboard room joined mesajı gönderildi', { 
+            channelName,
+            roomUuid: roomData.uuid,
+            userId
+          })
+        }
+      } catch (rtmError) {
+        logError('❌ RTM whiteboard room joined mesajı gönderilemedi', { 
+          error: rtmError.message,
+          channelName: agoraStore.session?.videoChannelName
+        })
+      }
+      
       // Central emitter'a event gönder
       centralEmitter.emit(NETLESS_EVENTS.ROOM_JOINED, {
         uuid: roomData.uuid,
@@ -323,8 +349,32 @@ export function useNetlessWhiteboard(agoraStore) {
       agoraStore.setWhiteboardConnected(false)
       agoraStore.setWhiteboardClient(null)
 
-      // ✅ RTM bildirimi artık netlessService seviyesinde yönetiliyor
-      logInfo('Whiteboard room\'dan ayrılma başarılı, RTM bildirimi service seviyesinde yönetiliyor')
+      // RTM bildirimi: Room'dan ayrıldığını bildir
+      try {
+        const channelName = agoraStore.session?.videoChannelName
+        if (channelName && roomUuid.value) {
+          await netlessService.sendRTMMessage({
+            messageType: RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT,
+            data: {
+              channelName,
+              roomUuid: roomUuid.value,
+              userId: agoraStore.users?.local?.video?.uid || 'unknown',
+              timestamp: new Date().toISOString()
+              }
+            })
+          logInfo('✅ RTM whiteboard room left mesajı gönderildi', { 
+            channelName,
+            roomUuid: roomUuid.value
+          })
+        }
+      } catch (rtmError) {
+        logError('❌ RTM whiteboard room left mesajı gönderilemedi', { 
+          error: rtmError.message,
+          channelName: agoraStore.session?.videoChannelName
+        })
+      }
+      
+      logInfo('Whiteboard room\'dan ayrılma başarılı')
 
       logInfo('Netless room\'dan başarıyla ayrıldı')
       
@@ -579,8 +629,8 @@ export function useNetlessWhiteboard(agoraStore) {
       centralEmitter.emit(NETLESS_EVENTS.ROOM_DISCONNECTED, { error })
     })
 
-    // 🚀 RTM whiteboard auto-join request event'ini dinle - DOĞRU EVENT ADI
-    centralEmitter.on('rtm-whiteboard-auto-join', async (data) => {
+    // RTM whiteboard room management event'lerini dinle
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, async (data) => {
       const { roomInfo, userInfo, source, trigger } = data
       
       logInfo('🚀 Whiteboard auto-join request alındı', { 
@@ -601,14 +651,14 @@ export function useNetlessWhiteboard(agoraStore) {
           await leaveRoom()
         }
 
-              // Yeni room'a otomatik katıl
-      // 🚀 SADECE UUID KULLAN, TOKEN OTOMATİK ALINSIN
-      const joinResult = await joinRoom({
-        uuid: roomInfo.uuid,  // ✅ UUID var, mevcut room'a katılacak
-        container: document.getElementById('whiteboard-container') || document.body,
-        userId: agoraStore.users?.local?.video?.uid || 'unknown',
-        userName: agoraStore.users?.local?.video?.name || 'Unknown User'
-      })
+        // Yeni room'a otomatik katıl
+        const joinResult = await joinRoom({
+          channelName: agoraStore.session?.videoChannelName || 'unknown',
+          uuid: roomInfo.uuid,  // UUID var, mevcut room'a katılacak
+          container: document.getElementById('whiteboard-container') || document.body,
+          userId: agoraStore.users?.local?.video?.uid || 'unknown',
+          userName: agoraStore.users?.local?.video?.name || 'Unknown User'
+        })
 
         if (joinResult) {
           logInfo('✅ Whiteboard auto-join başarılı', { 
@@ -644,6 +694,121 @@ export function useNetlessWhiteboard(agoraStore) {
       }
     })
 
+        // RTM whiteboard room created event'ini dinle
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED, async (data) => {
+      const { channelName, roomInfo, userInfo, timestamp } = data
+      
+      logInfo('🎨 RTM whiteboard room oluşturulma bildirimi alındı', { 
+        channelName,
+        roomInfo, 
+        userInfo, 
+        timestamp: new Date(timestamp).toISOString()
+      })
+      
+      // Eğer bu channel'daysak ve henüz whiteboard'a bağlı değilsek, otomatik katıl
+      if (agoraStore.session?.videoChannelName === channelName && !isConnected.value) {
+        logInfo('🚀 Aynı channel\'da whiteboard room oluşturuldu, otomatik katılım başlatılıyor', { 
+          channelName,
+          roomUuid: roomInfo.uuid
+        })
+        
+        try {
+          const joinResult = await joinRoom({
+            channelName,
+            uuid: roomInfo.uuid,
+            container: document.getElementById('whiteboard-container') || document.body,
+            userId: agoraStore.users?.local?.video?.uid || 'unknown',
+            userName: agoraStore.users?.local?.video?.name || 'Unknown User'
+          })
+
+          if (joinResult) {
+            logInfo('✅ Otomatik whiteboard room katılımı başarılı', { 
+              channelName,
+              roomUuid: roomInfo.uuid
+            })
+          } else {
+            logError('❌ Otomatik whiteboard room katılımı başarısız', { 
+              channelName,
+              roomUuid: roomInfo.uuid
+            })
+          }
+        } catch (error) {
+          logError('Otomatik whiteboard room katılım hatası', { 
+            error: error.message,
+            channelName,
+            roomInfo
+          })
+        }
+      }
+    })
+    
+    // RTM whiteboard room joined event'ini dinle
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED, async (data) => {
+      const { channelName, userId, timestamp } = data
+      
+      logInfo('🎨 RTM whiteboard room katılım bildirimi alındı', { 
+        channelName,
+        userId,
+        timestamp: new Date(timestamp).toISOString()
+      })
+      
+      // Store'da member count güncellendi, UI'ı güncelle
+      if (agoraStore.session?.videoChannelName === channelName) {
+        logInfo('✅ Whiteboard room member count güncellendi', { 
+          channelName,
+          userId
+        })
+      }
+    })
+    
+    // RTM whiteboard room left event'ini dinle
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT, async (data) => {
+      const { channelName, userId, timestamp } = data
+      
+      logInfo('🎨 RTM whiteboard room ayrılma bildirimi alındı', { 
+        channelName,
+        userId,
+          timestamp: new Date(timestamp).toISOString()
+      })
+      
+      // Store'da member count güncellendi, UI'ı güncelle
+      if (agoraStore.session?.videoChannelName === channelName) {
+        logInfo('✅ Whiteboard room member count güncellendi', { 
+          channelName,
+          userId
+        })
+      }
+    })
+    
+    // RTM whiteboard room deleted event'ini dinle
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_DELETED, async (data) => {
+      const { channelName, timestamp } = data
+      
+      logInfo('🎨 RTM whiteboard room silinme bildirimi alındı', { 
+        channelName,
+        timestamp: new Date(timestamp).toISOString()
+      })
+      
+      // Eğer bu channel'daysak ve whiteboard'a bağlıysak, bağlantıyı kes
+      if (agoraStore.session?.videoChannelName === channelName && isConnected.value) {
+        logInfo('🚫 Whiteboard room silindi, bağlantı kesiliyor', { 
+          channelName
+        })
+        
+        try {
+          await leaveRoom()
+          logInfo('✅ Whiteboard room silinme sonrası bağlantı kesildi', { 
+            channelName
+          })
+        } catch (error) {
+          logError('❌ Whiteboard room silinme sonrası bağlantı kesme hatası', { 
+            error: error.message,
+            channelName
+          })
+        }
+      }
+    })
+
     logDebug('Event listeners kuruldu')
   }
 
@@ -656,9 +821,13 @@ export function useNetlessWhiteboard(agoraStore) {
       logDebug('Event listeners kaldırıldı')
     }
     
-    // 🚀 RTM whiteboard auto-join request event listener'ını kaldır - DOĞRU EVENT ADI
-    centralEmitter.off('rtm-whiteboard-auto-join')
-    logDebug('Whiteboard auto-join event listener kaldırıldı')
+    // RTM whiteboard room management event listener'larını kaldır
+    centralEmitter.off(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN)
+    centralEmitter.off(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED)
+    centralEmitter.off(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED)
+    centralEmitter.off(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT)
+    centralEmitter.off(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_DELETED)
+    logDebug('Whiteboard room management event listener\'lar kaldırıldı')
   }
 
   /**

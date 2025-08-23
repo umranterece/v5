@@ -234,7 +234,7 @@ const toggleMicrophone = () => {
   }
 }
 
-// Whiteboard toggle function - 🚀 RTM NOTIFICATION EKLENDİ
+// Whiteboard toggle function - 🚀 CHANNEL-BASED WHITEBOARD ROOM MANAGEMENT
 const toggleWhiteboard = async () => {
   const newWhiteboardState = !isWhiteboardActive.value
   props.logger.info('Whiteboard değiştir', {
@@ -242,16 +242,35 @@ const toggleWhiteboard = async () => {
     newState: newWhiteboardState ? 'active' : 'inactive'
   })
   
-  // Store'a bildir
-  agoraStore.setWhiteboardActive(newWhiteboardState)
-  
-  // Layout'u otomatik değiştir
   if (newWhiteboardState) {
-    // Whiteboard açılıyorsa WhiteboardLayout'a geç
-    layoutStore.switchLayoutWithSave('whiteboard')
-    props.logger.info('Layout WhiteboardLayout\'a değiştirildi')
+    // Whiteboard açılıyorsa
+    try {
+      props.logger.info('🚀 Channel-based whiteboard room yönetimi başlatılıyor', {
+        channelName: agoraStore.session?.videoChannelName
+      })
+      
+      // Store'a bildir
+      agoraStore.setWhiteboardActive(true)
+      
+      // Layout'u WhiteboardLayout'a geç
+      layoutStore.switchLayoutWithSave('whiteboard')
+      props.logger.info('Layout WhiteboardLayout\'a değiştirildi')
+      
+      // Whiteboard room'a bağlan (channel-based)
+      // Bu işlem WhiteboardLayout'ta yapılacak
+      props.logger.info('Whiteboard room bağlantısı WhiteboardLayout\'ta yapılacak')
+      
+    } catch (error) {
+      props.logger.error('Whiteboard açma hatası', { error: error.message })
+      // Hata durumunda state'i geri al
+      agoraStore.setWhiteboardActive(false)
+      layoutStore.switchLayoutWithSave('grid')
+    }
   } else {
-    // Whiteboard kapanıyorsa Grid Layout'a geri dön
+    // Whiteboard kapanıyorsa
+    agoraStore.setWhiteboardActive(false)
+    
+    // Layout'u Grid Layout'a geri dön
     layoutStore.switchLayoutWithSave('grid')
     props.logger.info('Layout Grid Layout\'a geri döndürüldü')
   }

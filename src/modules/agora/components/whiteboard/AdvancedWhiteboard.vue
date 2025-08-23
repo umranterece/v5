@@ -7,6 +7,12 @@
         <h3>Whiteboard Yükleniyor...</h3>
         <p>{{ loadingStatus }}</p>
         
+        <!-- 🆕 Channel Info in Loading -->
+        <div v-if="agoraStore.session?.videoChannelName" class="channel-loading-info">
+          <span class="channel-label">Channel:</span>
+          <span class="channel-name">{{ agoraStore.session.videoChannelName }}</span>
+        </div>
+        
         <!-- Progress Bar -->
         <div class="progress-container">
           <div class="progress-bar">
@@ -74,13 +80,21 @@
         </svg>
       </button>
       
+      <!-- 🆕 Channel Info -->
+      <div class="status-badge channel-info">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="channel-text">{{ agoraStore.session?.videoChannelName || 'unknown' }}</span>
+      </div>
+      
       <!-- Member Count -->
       <div class="status-badge member-count" v-if="memberCount > 0">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          <path d="M16 3.13a4 0 0 1 0 7.75"/>
         </svg>
         <span class="member-text">{{ memberCount }} katılımcı</span>
       </div>
@@ -659,37 +673,82 @@ const connectToNetless = async () => {
     // Container hazır olduğunda kısa bir bekleme
     await new Promise(resolve => setTimeout(resolve, 500))
     
-    // 2. TOKEN VE ROOM OLUŞTURULUYOR (istek gönderilirken seçili)
+    const userId = agoraStore.localUser?.uid || `user-${Date.now()}`
+    const channelName = agoraStore.session?.videoChannelName || 'unknown'
+    
+    // 2. Whiteboard room hazırlanıyor
     loadingStep.value = 'token'
     loadingProgress.value = '50%'
-    loadingProgressText.value = 'Token ve Room oluşturuluyor...'
-    loadingStatus.value = 'Token ve Room oluşturuluyor...'
+    loadingProgressText.value = 'Channel whiteboard room aranıyor/oluşturuluyor...'
+    loadingStatus.value = `Channel "${channelName}" için whiteboard room aranıyor/oluşturuluyor...`
     
-    const userId = agoraStore.localUser?.uid || `user-${Date.now()}`
-    const roomResponse = await netlessService.createRoomWithToken({
-      roomName: `agora-whiteboard-${Date.now()}`,
-      userId,
-      role: 'writer',
-      agoraInfo: {
-        channelName: agoraStore.session?.videoChannelName || 'unknown',
-        videoUID: agoraStore.users?.local?.video?.uid,
-        userName: agoraStore.users?.local?.video?.name || userName
+    console.log('🚀 Whiteboard room yönetimi başlatılıyor', { channelName })
+    
+    // Store'da mevcut room var mı kontrol et
+    const existingRoom = agoraStore.getChannelWhiteboardRoom(channelName)
+    console.log('🔍 Store\'da mevcut room kontrolü:', {
+      channelName,
+      existingRoom: existingRoom ? 'VAR' : 'YOK',
+      roomDetails: existingRoom
+    })
+    
+    let roomResponse
+    
+    if (existingRoom && existingRoom.uuid && existingRoom.token) {
+      // ✅ ROOM ZATEN VAR → Sadece bağlan, create yapma!
+      console.log('🎯 Mevcut room bulundu, sadece bağlanılıyor:', existingRoom)
+      roomResponse = {
+        uuid: existingRoom.uuid,
+        token: existingRoom.token,
+        name: existingRoom.name || `whiteboard-${channelName}`,
+        isExisting: true,
+        channelName: channelName
       }
-    })
+    } else {
+      // ❌ ROOM YOK → Yeni oluştur
+      console.log('🚀 Yeni room oluşturuluyor:', channelName)
+      
+      roomResponse = await netlessService.getOrCreateChannelWhiteboardRoom(
+        channelName,
+        {
+          userId,
+          videoUID: agoraStore.users?.local?.video?.uid,
+          userName: agoraStore.users?.local?.video?.name || userId
+        },
+        agoraStore  // ✅ Store referansını parametre olarak geç
+      )
+      
+      console.log('🎯 getOrCreateChannelWhiteboardRoom sonucu:', roomResponse)
+    }
     
-    // Room bilgilerini store'a kaydet
-    agoraStore.setWhiteboardRoom({
-      uuid: roomResponse.uuid,
-      token: roomResponse.token,
-      name: roomResponse.name
-    })
-    
-    // Debug: Store'a kaydedilen bilgileri kontrol et
-    props.logger.info('Whiteboard room bilgileri store\'a kaydedildi', {
-      uuid: roomResponse.uuid,
-      hasToken: !!roomResponse.token,
-      storeRoom: agoraStore.whiteboardRoom
-    })
+          // Room bilgilerini store'a kaydet
+      agoraStore.setWhiteboardRoom({
+        uuid: roomResponse.uuid,
+        token: roomResponse.token,
+        name: roomResponse.name,
+        channelName: channelName,
+        isExisting: roomResponse.isExisting || false
+      })
+      
+      // Store'da channel mapping'i güncelle
+      agoraStore.setChannelWhiteboardRoom(channelName, {
+        uuid: roomResponse.uuid,
+        token: roomResponse.token,
+        name: roomResponse.name,
+        createdBy: userId,
+        createdAt: Date.now(),
+        isActive: true
+      })
+      
+      // Debug: Store'a kaydedilen bilgileri kontrol et
+      props.logger.info('🚀 Whiteboard room bilgileri store\'a kaydedildi', {
+        uuid: roomResponse.uuid,
+        channelName: channelName,
+        isExisting: roomResponse.isExisting,
+        hasToken: !!roomResponse.token,
+        storeRoom: agoraStore.whiteboardRoom,
+        channelRoom: agoraStore.getChannelWhiteboardRoom(channelName)
+      })
     
     // 3. WHITEBOARD HAZIRLANIYOR (istek başarılı olunca seçili)
     loadingStep.value = 'ready'
@@ -698,12 +757,22 @@ const connectToNetless = async () => {
     loadingStatus.value = 'Whiteboard hazırlanıyor...'
     
     // Netless'e bağlan
+    console.log('🔗 joinRoom çağrısı yapılıyor:', {
+      container: netlessContainer.value,
+      uuid: roomResponse.uuid,
+      token: roomResponse.token,
+      userId: userId,
+      userName: agoraStore.localUser?.name || 'Agora User',
+      roomResponse: roomResponse
+    })
+    
     const success = await joinRoom({
       container: netlessContainer.value,
       uuid: roomResponse.uuid,
       token: roomResponse.token,
       userId: userId,
-      userName: agoraStore.localUser?.name || 'Agora User'
+      userName: agoraStore.localUser?.name || 'Agora User',
+      channelName: channelName
     })
     
     console.log('🔗 joinRoom sonucu:', success)
@@ -711,7 +780,15 @@ const connectToNetless = async () => {
     if (success) {
       loadingProgress.value = '100%'
       loadingProgressText.value = 'Hazırlanıyor...'
-      console.log('✅ Room bağlantısı başarılı, hazırlanıyor...')
+      console.log('✅ Whiteboard room bağlantısı başarılı, hazırlanıyor...')
+      
+      // Whiteboard room başarı log'u
+      console.log('🎯 Whiteboard room başarılı:', {
+        channelName: channelName,
+        roomUuid: roomResponse.uuid,
+        isExisting: roomResponse.isExisting,
+        roomName: roomResponse.name
+      })
       
       // Room durumunu kontrol et
       console.log('🔍 Room durumu:', {
@@ -723,17 +800,24 @@ const connectToNetless = async () => {
       
       await nextTick()
       isReady.value = true
-      props.logger.info('Advanced whiteboard başarıyla başlatıldı')
+      props.logger.info('🚀 Advanced whiteboard başarıyla başlatıldı', {
+        channelName: channelName,
+        roomUuid: roomResponse.uuid,
+        isExisting: roomResponse.isExisting
+      })
       console.log('🎉 AdvancedWhiteboard başarıyla başlatıldı!')
     } else {
-      throw new Error('Room bağlantısı başarısız')
+      throw new Error('Whiteboard room bağlantısı başarısız')
     }
     
   } catch (error) {
     console.error('❌ AdvancedWhiteboard başlatma hatası:', error)
-    props.logger.error('Advanced whiteboard başlatma hatası', { error: error.message })
+    props.logger.error('Advanced whiteboard başlatma hatası', { 
+      error: error.message,
+      channelName: agoraStore.session?.videoChannelName
+    })
     loadingStatus.value = `Hata: ${error.message}`
-    loadingProgressText.value = 'Bağlantı hatası!'
+    loadingProgressText.value = 'Whiteboard room bağlantı hatası!'
   }
 }
 
@@ -1479,10 +1563,12 @@ onUnmounted(() => {
   background: var(--whiteboard-border, #dee2e6);
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 .stroke-slider-compact::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -2020,5 +2106,51 @@ onUnmounted(() => {
   width: 16px;
   height: 16px;
   color: currentColor;
+}
+
+/* 🆕 Channel Info Styling */
+.channel-info {
+  background: var(--rs-agora-transparent-white-15);
+  border: 1px solid var(--rs-agora-border-secondary);
+  color: var(--rs-agora-text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.channel-text {
+  font-weight: 500;
+  color: var(--rs-agora-accent-primary);
+}
+
+/* Channel Loading Info */
+.channel-loading-info {
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: var(--rs-agora-transparent-white-10);
+  border-radius: 8px;
+  border: 1px solid var(--rs-agora-border-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-label {
+  color: var(--rs-agora-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.channel-name {
+  color: var(--rs-agora-accent-primary);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 4px 8px;
+  background: var(--rs-agora-transparent-white-15);
+  border-radius: 4px;
+  border: 1px solid var(--rs-agora-border-secondary);
 }
 </style>

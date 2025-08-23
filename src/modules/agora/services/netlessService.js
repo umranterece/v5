@@ -1,239 +1,200 @@
-/**
- * Netless Whiteboard Service
- * Netless API ile room ve token yönetimi
- * @module services/netlessService
- */
-
-import { NETLESS_CONFIG } from '../constants.js'
-import { fileLogger, LOG_CATEGORIES } from './fileLogger.js'
+import { NETLESS_CONFIG, RTM_MESSAGE_TYPES } from '../constants.js'
 import { rtmService } from './rtmService.js'
+import { centralEmitter } from '../utils/centralEmitter.js'
 
 /**
- * Netless Service Class
- * Room oluşturma, token alma ve API yönetimi
+ * 🎯 Netless Whiteboard Service
+ * Channel-based whiteboard room yönetimi
  */
 class NetlessService {
   constructor() {
-    this.appIdentifier = NETLESS_CONFIG.SDK.APP_IDENTIFIER
-    this.apiToken = NETLESS_CONFIG.SDK.API_TOKEN
-    this.apiBaseUrl = NETLESS_CONFIG.SDK.API_BASE_URL
     this.phpBackendUrl = NETLESS_CONFIG.SDK.PHP_BACKEND_URL
-    this.logInfo = (message, data) => fileLogger.log('info', LOG_CATEGORIES.WHITEBOARD, message, data)
-    this.logError = (message, data) => fileLogger.log('error', LOG_CATEGORIES.WHITEBOARD, message, data)
+    this.channelWhiteboardRooms = new Map() // channelName -> roomInfo mapping
+    this.logInfo = console.log
+    this.logError = console.error
   }
 
   /**
-   * Yeni bir Netless room oluştur
-   * @param {Object} options - Room seçenekleri
-   * @param {string} options.name - Room adı
-   * @param {number} options.limit - Maksimum katılımcı sayısı
+   * 🆕 Channel için whiteboard room adı oluştur
+   * @param {string} channelName - Agora channel adı
+   * @returns {string} Whiteboard room adı
+   */
+  generateWhiteboardRoomName(channelName) {
+    return `whiteboard-${channelName}`
+  }
+
+
+
+  /**
+   * 🆕 Channel için whiteboard room oluştur veya mevcut olana katıl
+   * @param {string} channelName - Agora channel adı
+   * @param {Object} userInfo - Kullanıcı bilgileri
+   * @param {Object} agoraStore - Agora store referansı (zorunlu)
    * @returns {Promise<Object>} Room bilgileri
    */
-  async createRoom(options = {}) {
-    const {
-      name = `agora-whiteboard-${Date.now()}`,
-      limit = NETLESS_CONFIG.ROOM.LIMIT
-    } = options
-
+  async getOrCreateChannelWhiteboardRoom(channelName, userInfo = {}, agoraStore = null) {
     try {
-      this.logInfo('Netless room oluşturuluyor', { name, limit })
-
-      const response = await fetch(`${this.apiBaseUrl}/rooms`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': this.appIdentifier
-        },
-        body: JSON.stringify({
-          name,
-          limit,
-          mode: NETLESS_CONFIG.ROOM.MODE
-        })
+      this.logInfo('Channel için whiteboard room alınıyor/oluşturuluyor', { 
+        channelName, 
+        userInfo 
       })
 
-      if (!response.ok) {
-        throw new Error(`Room creation failed: ${response.status} ${response.statusText}`)
+      // 1. Store'dan mevcut room'u kontrol et
+      if (!agoraStore) {
+        throw new Error('Agora store referansı gerekli')
+      }
+      
+      const existingRoom = agoraStore.getChannelWhiteboardRoom(channelName)
+      
+      if (existingRoom && existingRoom.uuid) {
+        this.logInfo('Store\'da mevcut whiteboard room bulundu, katılım yapılıyor', { 
+          channelName, 
+          roomUuid: existingRoom.uuid,
+          memberCount: existingRoom.memberCount,
+          isActive: existingRoom.isActive
+        })
+        
+        // Mevcut room için token al
+        const tokenResult = await this.getRoomToken(existingRoom.uuid, userInfo.userId || 'unknown', 'writer')
+        
+        return {
+          ...existingRoom,
+          token: tokenResult.token || tokenResult,
+          isExisting: true,
+          channelName
+        }
       }
 
-      const roomData = await response.json()
+      // 2. Yeni room oluştur
+      this.logInfo('Yeni whiteboard room oluşturuluyor', { channelName })
       
-      this.logInfo('Netless room oluşturuldu', { 
-        uuid: roomData.uuid, 
-        name: roomData.name 
+      // PHP backend'den yeni room oluştur
+      const newRoom = await this.createRoomWithToken({
+        roomName: this.generateWhiteboardRoomName(channelName),
+        userId: userInfo.userId || 'unknown',
+        role: 'writer',
+        agoraInfo: {
+          channelName,
+          videoUID: userInfo.videoUID,
+          userName: userInfo.userName
+        }
+      })
+      
+      // Cache'e ekle
+      this.channelWhiteboardRooms.set(channelName, newRoom)
+      
+              // RTM üzerinden yeni room bildirimi gönder
+        await this.notifyWhiteboardRoomCreated(channelName, newRoom, userInfo, agoraStore)
+
+      this.logInfo('✅ Yeni whiteboard room oluşturuldu', { 
+        channelName, 
+        roomUuid: newRoom.uuid,
+        roomName: newRoom.name
       })
 
       return {
-        uuid: roomData.uuid,
-        name: roomData.name,
-        appIdentifier: this.appIdentifier,
-        createdAt: new Date().toISOString(),
-        mode: NETLESS_CONFIG.ROOM.MODE,
-        limit
+        ...newRoom,
+        isExisting: false,
+        channelName
       }
 
     } catch (error) {
-      this.logError('Room oluşturma hatası', { 
+      this.logError('Channel whiteboard room alma/oluşturma hatası', { 
         error: error.message, 
-        name, 
-        limit 
+        channelName,
+        userInfo 
       })
       throw error
     }
   }
 
   /**
-   * Room için room token oluştur
-   * @param {Object} options - Token seçenekleri
-   * @param {string} options.uuid - Room UUID
-   * @param {string} options.userId - Kullanıcı ID
-   * @param {string} options.role - Kullanıcı rolü ('admin', 'writer', 'reader')
-   * @returns {Promise<string>} Room token
+   * 🔔 RTM üzerinden yeni whiteboard room bildirimi gönder
+   * @param {string} channelName - Channel adı
+   * @param {Object} roomData - Room bilgileri
+   * @param {Object} userInfo - Kullanıcı bilgileri
+   * @param {Object} agoraStore - Agora store referansı
    */
-  async createRoomToken(options = {}) {
-    const {
-      uuid,
-      userId = `user-${Date.now()}`,
-      role = 'writer'
-    } = options
-
-    if (!uuid) {
-      throw new Error('Room UUID gerekli')
-    }
-
+  async notifyWhiteboardRoomCreated(channelName, roomData, userInfo, agoraStore) {
     try {
-      this.logInfo('Room token oluşturuluyor', { uuid, userId, role })
-
-      const response = await fetch(`${this.apiBaseUrl}/tokens/rooms/${uuid}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': this.appIdentifier
-        },
-        body: JSON.stringify({
-          lifespan: 3600000, // 1 hour in milliseconds
-          role
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Token creation failed: ${response.status} ${response.statusText}`)
+      // RTM connection check
+      if (!rtmService.isClientConnected) {
+        this.logError('❌ RTM client bağlı değil, mesaj gönderilemedi!', { channelName })
+        return
+      }
+      
+      if (!rtmService.isChannelSubscribed) {
+        this.logError('❌ RTM channel\'a abone değil, mesaj gönderilemedi!', { channelName })
+        return
       }
 
-      const tokenData = await response.json()
-      
-      this.logInfo('Room token oluşturuldu', { 
-        uuid, 
-        userId, 
-        role,
-        hasToken: !!tokenData.token 
+      const message = {
+        type: RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED,
+        channelName,
+        roomInfo: {
+          uuid: roomData.uuid,
+          name: roomData.name,
+          channelName,
+          createdAt: new Date().toISOString(), // ✅ Her zaman ISO string format
+          createdBy: userInfo.userId || 'unknown',
+          memberCount: 1,
+          isActive: true  // ✅ Whiteboard aktif olduğunda true
+        },
+        timestamp: Date.now()
+      }
+
+      this.logInfo('🚀 RTM mesajı gönderiliyor...', { 
+        channelName, 
+        roomUuid: roomData.uuid,
+        messageType: message.type,
+        rtmConnected: rtmService.isClientConnected,
+        rtmSubscribed: rtmService.isChannelSubscribed
       })
 
-      return tokenData.token
+      await rtmService.sendChannelMessage(message.type, message)
+      this.logInfo('✅ RTM üzerinden whiteboard room bildirimi gönderildi', { 
+        channelName, 
+        roomUuid: roomData.uuid,
+        messageType: message.type,
+        message: message
+      })
 
     } catch (error) {
-      this.logError('Token oluşturma hatası', { 
+      this.logError('RTM whiteboard room bildirimi hatası', { 
         error: error.message, 
-        uuid, 
-        userId, 
-        role 
+        channelName 
       })
-      throw error
     }
   }
 
   /**
-   * Room ve token'ı birlikte oluştur (PHP backend ile)
-   * @param {Object} options - Seçenekler
-   * @param {string} options.roomName - Room adı
-   * @param {string} options.userId - Kullanıcı ID
-   * @param {string} options.role - Kullanıcı rolü
-   * @param {Object} options.agoraInfo - Agora bilgileri (RTM bildirimi için)
-   * @returns {Promise<Object>} Room ve token bilgileri
+   * 🗑️ Channel whiteboard room'unu cache'den kaldır
+   * @param {string} channelName - Channel adı
    */
-  async createRoomWithToken(options = {}) {
-    const {
-      roomName,
-      userId = `user-${Date.now()}`,
-      role = 'writer',
-      agoraInfo = null
-    } = options
-
-    try {
-      this.logInfo('PHP backend ile room ve token oluşturuluyor', { roomName, userId, role })
-
-      const response = await fetch(`${this.phpBackendUrl}?action=create_room`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ roomName, userId, role })
-      })
-
-      if (!response.ok) {
-        throw new Error(`PHP backend hatası: ${response.status} ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      
-      if (!result.success) {
-        throw new Error(`PHP backend işlem hatası: ${result.error}`)
-      }
-
-
-
-      this.logInfo('PHP backend ile room ve token başarıyla oluşturuldu', result.room)
-      
-      // 🚀 RTM BİLDİRİMİ: Whiteboard aktivasyon bildirimi gönder (eğer agora bilgileri varsa)
-      if (agoraInfo) {
-        try {
-          this.logInfo('RTM whiteboard aktivasyon bildirimi gönderiliyor...', { roomUuid: result.room.uuid })
-          
-          const whiteboardData = {
-            roomUuid: result.room.uuid,
-            timestamp: Date.now(),
-            userInfo: {
-              videoUID: agoraInfo.videoUID || 'unknown',
-              userName: agoraInfo.userName || userId || 'Unknown User'
-            },
-            whiteboardInfo: {
-              roomUuid: result.room.uuid,
-              roomToken: result.room.token, // ✅ result.room.token olarak düzeltildi
-              appIdentifier: this.appIdentifier
-            }
-          }
-          
-
-          
-          const notificationSent = await rtmService.notifyWhiteboardActivated(whiteboardData)
-          
-          if (notificationSent) {
-            this.logInfo('RTM whiteboard aktivasyon bildirimi başarıyla gönderildi', whiteboardData)
-          } else {
-            this.logInfo('RTM whiteboard aktivasyon bildirimi gönderilemedi (RTM bağlı değil)')
-          }
-        } catch (rtmError) {
-          // RTM hatası whiteboard'ı durdurmasın, sadece log'la
-          this.logInfo('RTM whiteboard aktivasyon bildirimi hatası (whiteboard devam ediyor)', { error: rtmError.message })
-        }
-      } else {
-        this.logInfo('Agora bilgileri olmadığı için RTM bildirimi gönderilmedi')
-      }
-
-      return result.room
-
-    } catch (error) {
-      this.logError('PHP backend room ve token oluşturma hatası', { 
-        error: error.message, 
-        roomName, 
-        userId, 
-        role
-      })
-      throw error
-    }
+  removeChannelWhiteboardRoom(channelName) {
+    this.channelWhiteboardRooms.delete(channelName)
+    this.logInfo('Channel whiteboard room cache\'den kaldırıldı', { channelName })
   }
 
   /**
-   * Mevcut room için token al (PHP backend ile)
+   * 🧹 Tüm channel whiteboard room cache'ini temizle
+   */
+  clearAllChannelWhiteboardRooms() {
+    this.channelWhiteboardRooms.clear()
+    this.logInfo('Tüm channel whiteboard room cache temizlendi')
+  }
+
+  /**
+   * 📊 Channel whiteboard room durumunu al
+   * @param {string} channelName - Channel adı
+   * @returns {Object|null} Room durumu
+   */
+  getChannelWhiteboardRoomStatus(channelName) {
+    return this.channelWhiteboardRooms.get(channelName) || null
+  }
+
+  /**
+   * 🔑 Room için token al
    * @param {string} roomUuid - Room UUID
    * @param {string} userId - Kullanıcı ID
    * @param {string} role - Kullanıcı rolü
@@ -241,121 +202,126 @@ class NetlessService {
    */
   async getRoomToken(roomUuid, userId, role = 'writer') {
     try {
-      this.logInfo('PHP backend ile token alınıyor', { roomUuid, userId, role })
-
-      const response = await fetch(`${this.phpBackendUrl}?action=get_token`, {
+      // NOT: PHP backend şu an sadece room creation + token döndürüyor
+      const response = await fetch(`${this.phpBackendUrl}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ roomUuid, userId, role })
+        body: JSON.stringify({
+          action: 'get_token',  // ✅ Action parametresi eklendi
+          roomUuid,
+          userId,
+          role
+        })
       })
 
-      if (!response.ok) {
-        throw new Error(`PHP backend hatası: ${response.status} ${response.statusText}`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          this.logInfo('Room token başarıyla alındı', { 
+            roomUuid, 
+            userId, 
+            role,
+            token: result.data?.token ? 'VAR' : 'YOK'
+          })
+          return result.data  // ✅ result.data olarak değişti
+        } else {
+          throw new Error(result.error || 'Token alınamadı')
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-
-      const result = await response.json()
-      
-      if (!result.success) {
-        throw new Error(`PHP backend işlem hatası: ${result.error}`)
-      }
-
-      this.logInfo('PHP backend ile token başarıyla alındı', result)
-      return result
 
     } catch (error) {
-      this.logError('PHP backend token alma hatası', { 
-        error: error.message,
-        roomUuid,
-        userId,
-        role
+      this.logError('Room token alma hatası', { 
+        error: error.message, 
+        roomUuid, 
+        userId 
       })
       throw error
     }
   }
 
   /**
-   * Mevcut room bilgilerini al
-   * @param {string} uuid - Room UUID
+   * 🆕 Room oluştur ve token al
+   * @param {Object} options - Room oluşturma seçenekleri
    * @returns {Promise<Object>} Room bilgileri
    */
-  async getRoomInfo(uuid) {
-    if (!uuid) {
-      throw new Error('Room UUID gerekli')
-    }
-
+  async createRoomWithToken(options = {}) {
     try {
-      this.logInfo('Room bilgileri alınıyor', { uuid })
+      const {
+        roomName,
+        userId,
+        role = 'writer',
+        agoraInfo = {}
+      } = options
 
-      const response = await fetch(`${this.apiBaseUrl}/rooms/${uuid}`, {
-        method: 'GET',
-        headers: {
-          'token': this.appIdentifier
-        }
+      this.logInfo('Whiteboard room oluşturuluyor', { 
+        roomName, 
+        userId, 
+        role 
       })
 
-      if (!response.ok) {
-        throw new Error(`Get room info failed: ${response.status} ${response.statusText}`)
+      const response = await fetch(`${this.phpBackendUrl}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'create_room',  // ✅ Action parametresi eklendi
+          roomName,
+          userId,
+          role,
+          agoraInfo
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          this.logInfo('Whiteboard room başarıyla oluşturuldu', { 
+            roomName, 
+            roomUuid: result.data.uuid,
+            channelName: result.data.channelName,
+            memberCount: result.data.memberCount,
+            isActive: result.data.isActive
+          })
+          return result.data  // ✅ result.data olarak değişti
+        } else {
+          throw new Error(result.error || 'Room oluşturulamadı')
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      const roomData = await response.json()
-      
-      this.logInfo('Room bilgileri alındı', { 
-        uuid, 
-        name: roomData.name,
-        memberCount: roomData.memberCount || 0
-      })
-
-      return roomData
-
     } catch (error) {
-      this.logError('Room bilgileri alma hatası', { 
+      this.logError('Whiteboard room oluşturma hatası', { 
         error: error.message, 
-        uuid 
+        options 
       })
       throw error
     }
   }
 
   /**
-   * SDK test bağlantısı
-   * @returns {Promise<boolean>} Bağlantı durumu
+   * 📤 RTM mesajı gönder
+   * @param {string} messageType - Mesaj tipi
+   * @param {Object} data - Mesaj verisi
    */
-  async testConnection() {
+  async sendRTMMessage(messageType, data) {
     try {
-      this.logInfo('Netless SDK bağlantısı test ediliyor')
-
-      // Basit bir API call ile test et
-      const response = await fetch(`${this.apiBaseUrl}/rooms`, {
-        method: 'GET',
-        headers: {
-          'token': this.appIdentifier
-        }
-      })
-
-      const isConnected = response.ok
-      
-      this.logInfo('Netless SDK bağlantı testi', { 
-        success: isConnected,
-        status: response.status
-      })
-
-      return isConnected
-
+      await rtmService.sendChannelMessage(messageType, data)
+      this.logInfo('RTM mesajı gönderildi', { messageType, data })
     } catch (error) {
-      this.logError('Netless SDK bağlantı test hatası', { 
-        error: error.message 
+      this.logError('RTM mesajı gönderme hatası', { 
+        error: error.message, 
+        messageType, 
+        data 
       })
-      return false
     }
   }
 }
 
 // Singleton instance
 export const netlessService = new NetlessService()
-
-// Named exports
-export {
-  NetlessService
-}

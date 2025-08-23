@@ -110,7 +110,9 @@ export const useAgoraStore = defineStore('agora', () => {
     appId: null,
     whiteboardRoomId: null,  // 🆕 YENİ
     whiteboardSessionId: null,  // 🆕 YENİ
-    whiteboardRoom: null  // 🆕 YENİ - Room bilgileri
+    whiteboardRoom: null,  // 🆕 YENİ - Room bilgileri
+    // 🆕 CHANNEL-BASED WHITEBOARD ROOM STATE
+    channelWhiteboardRooms: new Map() // channelName -> roomInfo mapping
   })
 
   // Device State - Cihaz durumu
@@ -736,13 +738,67 @@ export const useAgoraStore = defineStore('agora', () => {
     session.value.whiteboardRoom = roomData
   }
 
+  // 🆕 CHANNEL-BASED WHITEBOARD ROOM METHODS
+  const setChannelWhiteboardRoom = (channelName, roomInfo) => {
+    // ✅ Mevcut room varsa merge et, yoksa yeni oluştur
+    const existingRoom = session.value.channelWhiteboardRooms.get(channelName)
+    
+    if (existingRoom) {
+      // Mevcut room'u güncelle
+      const updatedRoom = {
+        ...existingRoom,
+        ...roomInfo,
+        lastUpdated: new Date().toISOString()
+      }
+      session.value.channelWhiteboardRooms.set(channelName, updatedRoom)
+      logInfo('Channel whiteboard room store\'da güncellendi', { 
+        channelName, 
+        roomUuid: roomInfo.uuid,
+        memberCount: updatedRoom.memberCount,
+        isActive: updatedRoom.isActive
+      })
+    } else {
+      // Yeni room oluştur
+      const newRoom = {
+        ...roomInfo,
+        createdAt: roomInfo.createdAt || new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      }
+      session.value.channelWhiteboardRooms.set(channelName, newRoom)
+      logInfo('Channel whiteboard room store\'a eklendi', { 
+        channelName, 
+        roomUuid: roomInfo.uuid,
+        memberCount: newRoom.memberCount,
+        isActive: newRoom.isActive
+      })
+    }
+  }
+
+  const getChannelWhiteboardRoom = (channelName) => {
+    return session.value.channelWhiteboardRooms.get(channelName) || null
+  }
+
+  const removeChannelWhiteboardRoom = (channelName) => {
+    if (session.value.channelWhiteboardRooms.has(channelName)) {
+      session.value.channelWhiteboardRooms.delete(channelName)
+      logInfo('Channel whiteboard room store\'dan kaldırıldı', { channelName })
+    }
+  }
+
+  const clearAllChannelWhiteboardRooms = () => {
+    session.value.channelWhiteboardRooms.clear()
+    logInfo('Tüm channel whiteboard room\'lar store\'dan temizlendi')
+  }
+
   const resetSession = () => {
     session.value = {
       videoChannelName: null,
       appId: null,
       whiteboardRoomId: null,  // 🆕 YENİ
       whiteboardSessionId: null,  // 🆕 YENİ
-      whiteboardRoom: null  // 🆕 YENİ
+      whiteboardRoom: null,  // 🆕 YENİ
+      // 🆕 CHANNEL-BASED WHITEBOARD ROOM STATE
+      channelWhiteboardRooms: new Map() // channelName -> roomInfo mapping
     }
   }
 
@@ -838,6 +894,11 @@ export const useAgoraStore = defineStore('agora', () => {
     setWhiteboardRoomId,       // 🆕 YENİ
     setWhiteboardSessionId,    // 🆕 YENİ
     setWhiteboardRoom,         // 🆕 YENİ
+    // 🆕 CHANNEL-BASED WHITEBOARD ROOM METHODS
+    setChannelWhiteboardRoom,  // 🆕 YENİ
+    getChannelWhiteboardRoom,  // 🆕 YENİ
+    removeChannelWhiteboardRoom, // 🆕 YENİ
+    clearAllChannelWhiteboardRooms, // 🆕 YENİ
     
     // RTM Actions - 🚀 YENİ
     setRTMClient,

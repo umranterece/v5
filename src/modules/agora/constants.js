@@ -680,6 +680,13 @@ export const RTM_MESSAGE_TYPES = {
   WHITEBOARD_ACTIVATED: 'whiteboard_activated',
   WHITEBOARD_DEACTIVATED: 'whiteboard_deactivated',
   
+  // 🆕 Whiteboard Room Management Messages
+  WHITEBOARD_ROOM_CREATED: 'rtm-whiteboard-room-created',
+  WHITEBOARD_ROOM_JOINED: 'rtm-whiteboard-room-joined',
+  WHITEBOARD_ROOM_LEFT: 'rtm-whiteboard-room-left',
+  WHITEBOARD_ROOM_DELETED: 'rtm-whiteboard-room-deleted',
+  WHITEBOARD_AUTO_JOIN: 'rtm-whiteboard-auto-join',
+  
   // Chat Messages
   CHAT_MESSAGE: 'chat_message',
   CHAT_FILE_SHARE: 'chat_file_share',

@@ -175,8 +175,9 @@
       position="top-right"
       :max-visible="5"
     />
-
-
+    
+    <!-- Debug Panel -->
+    <DebugPanel />
 
   </div>
 </template>
@@ -185,14 +186,14 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useMeeting } from '../../composables/index.js'
 import { useRTM, useDeviceSettings } from '../../composables/index.js'
-import { useLayoutStore } from '../../store/index.js'
+import { useAgoraStore, useLayoutStore } from '../../store/index.js'
 import { AgoraVideo } from './index.js'
 import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
-import { NotificationContainer } from '../ui/index.js'
+import { NotificationContainer, DebugPanel } from '../ui/index.js'
 import { createBothTokens, fileLogger, notification } from '../../services/index.js'
-import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG } from '../../constants.js'
+import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG, RTM_MESSAGE_TYPES } from '../../constants.js'
 
 // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
 const logDebug = (message, data) => fileLogger.log('debug', 'SYSTEM', message, data)
@@ -262,6 +263,9 @@ const emit = defineEmits([
   'change'
 ])
 
+// Store'ları initialize et
+const agoraStore = useAgoraStore()
+
 const {
   joinChannel,
   leaveChannel,
@@ -323,7 +327,7 @@ const {
   initialize: initializeRTM,
   joinChannel: joinRTMChannel,
   disconnect: disconnectRTM
-} = useRTM()
+} = useRTM(agoraStore)
 
 // Layout store initialization
 const layoutStore = useLayoutStore()
@@ -750,7 +754,7 @@ const setupEventListeners = () => {
     })
 
     // 🚀 RTM whiteboard auto-join event'ini dinle
-    centralEmitter.on('rtm-whiteboard-auto-join', async (data) => {
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, async (data) => {
       const { roomInfo, userInfo, source, trigger } = data
       
       logInfo('🚀 RTM whiteboard auto-join event\'i alındı', { 
@@ -832,7 +836,7 @@ const setupEventListeners = () => {
     })
 
     // 🚀 RTM whiteboard auto-join event'ini dinle (whiteboard component yüklenmeden önce)
-    centralEmitter.on('rtm-whiteboard-auto-join', async (data) => {
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, async (data) => {
       const { roomInfo, userInfo, source, trigger } = data
       
       logInfo('🚀 RTM whiteboard auto-join event\'i AgoraConference\'da alındı', { 

@@ -13,4 +13,5 @@
 // UI Components
 export { default as ThemeSelector } from './ThemeSelector.vue'
 export { default as NotificationContainer } from './NotificationContainer.vue'
+export { default as DebugPanel } from './DebugPanel.vue'
 

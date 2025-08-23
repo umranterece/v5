@@ -25,6 +25,7 @@ import {
 import { fileLogger, LOG_CATEGORIES } from './fileLogger.js'
 import { notification } from './notificationService.js'
 import { centralEmitter } from '../utils/index.js'
+import { useAgoraStore } from '../store/agora.js'
 
 // Logger helper'ları (modül seviyesi - tutarlı kullanım)
 const logDebug = (message, data) => fileLogger.log('debug', LOG_CATEGORIES.RTM, message, data)
@@ -859,7 +860,23 @@ class RTMService {
         })
       }
       
+      // 🆕 Whiteboard room management mesajlarını işle
+      if (type === RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED ||
+          type === RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED ||
+          type === RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT ||
+          type === RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_DELETED) {
+        logInfo('🎨 Whiteboard room management mesajı alındı - işleniyor', { 
+          type,
+          data,
+          publisherId,
+          timestamp: new Date().toISOString()
+        })
+      }
+      
       this._handleWhiteboardMessage(type, data, publisherId)
+      
+      // 🆕 Whiteboard room management mesajlarını özel olarak işle
+      this._handleWhiteboardRoomMessage(type, data, publisherId)
 
     } catch (error) {
       logError('❌ RTM mesaj işleme hatası - v2.2.2', { 
@@ -1050,6 +1067,202 @@ class RTMService {
   }
 
   /**
+   * 🆕 Whiteboard room management mesajlarını işle - RTM v2.2.2 için
+   * @param {string} messageType - Mesaj tipi
+   * @param {Object} data - Mesaj verisi
+   * @param {string} senderId - Gönderen ID
+   * @private
+   */
+  _handleWhiteboardRoomMessage(messageType, data, senderId) {
+    try {
+      logDebug('🎨 Whiteboard room management mesajı işleniyor - v2.2.2', { 
+        messageType, 
+        data, 
+        senderId,
+        timestamp: new Date().toISOString()
+      })
+
+      switch (messageType) {
+        case RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED:
+          logInfo('🎨 Whiteboard room oluşturulma mesajı işleniyor', { 
+            channelName: data.channelName,
+            roomUuid: data.roomInfo?.uuid,
+            senderId,
+            timestamp: new Date().toISOString()
+          })
+          
+          // 🆕 STORE GÜNCELLEMESİ: Agora store'a whiteboard room bilgilerini kaydet
+          try {
+            // Agora store'a erişim için useAgoraStore kullan
+            try {
+              const agoraStore = useAgoraStore()
+              agoraStore.setChannelWhiteboardRoom(data.channelName, {
+                ...data.roomInfo,  // ✅ Tüm field'ları kopyala (memberCount, isActive dahil)
+                channelName: data.channelName,
+                createdAt: data.roomInfo.createdAt || new Date().toISOString(),
+                createdBy: senderId,
+                lastUpdated: new Date().toISOString()
+              })
+              logInfo('✅ Whiteboard room bilgileri store\'a kaydedildi', { 
+                channelName: data.channelName,
+                roomUuid: data.roomInfo.uuid,
+                memberCount: data.roomInfo.memberCount,
+                isActive: data.roomInfo.isActive
+              })
+            } catch (storeError) {
+              logWarn('⚠️ Agora store erişim hatası, whiteboard room bilgileri kaydedilemedi', { 
+                channelName: data.channelName,
+                error: storeError.message
+              })
+            }
+          } catch (storeError) {
+            logError('❌ Store güncelleme hatası', { 
+              error: storeError.message,
+              channelName: data.channelName
+            })
+          }
+          
+          // 🚀 NOTIFICATION GÖSTER: Whiteboard room oluşturulduğunda bildirim göster
+          try {
+            const senderName = data.roomInfo?.createdBy || senderId || 'Bilinmeyen Kullanıcı'
+            this._showWhiteboardNotification('ACTIVATED', senderName, {
+              whiteboardInfo: {
+                roomUuid: data.roomInfo?.uuid,
+                roomName: data.roomInfo?.name
+              },
+              userInfo: {
+                videoUID: senderId,
+                userName: senderName
+              }
+            })
+            logInfo('✅ Whiteboard room oluşturulma bildirimi gösterildi', { 
+              channelName: data.channelName,
+              senderName,
+              roomUuid: data.roomInfo?.uuid
+            })
+          } catch (notificationError) {
+            logError('❌ Whiteboard notification gösterme hatası', { 
+              error: notificationError.message,
+              channelName: data.channelName
+            })
+          }
+          
+          // Central emitter ile whiteboard room created event'i tetikle
+          centralEmitter.emit(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_CREATED, data)
+          break
+          
+        // 🚫 Eski message types kaldırıldı
+          
+        case RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED:
+          logInfo('🎨 Whiteboard room katılım mesajı işleniyor', { 
+            channelName: data.channelName,
+            userId: data.userId,
+            senderId,
+            timestamp: new Date().toISOString()
+          })
+          
+          // 🆕 STORE GÜNCELLEMESİ: Member count artır
+          try {
+            const agoraStore = useAgoraStore()
+            const room = agoraStore.getChannelWhiteboardRoom(data.channelName)
+            if (room) {
+              room.memberCount = (room.memberCount || 0) + 1
+              agoraStore.setChannelWhiteboardRoom(data.channelName, room)
+              logInfo('✅ Whiteboard room member count güncellendi', { 
+                channelName: data.channelName,
+                newMemberCount: room.memberCount
+              })
+            }
+          } catch (storeError) {
+            logError('❌ Store güncelleme hatası', { 
+              error: storeError.message,
+              channelName: data.channelName
+            })
+          }
+          
+          // Central emitter ile joined event'i tetikle
+          centralEmitter.emit(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED, data)
+          break
+          
+        case RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT:
+          logInfo('🎨 Whiteboard room ayrılma mesajı işleniyor', { 
+            channelName: data.channelName,
+            userId: data.userId,
+            senderId,
+            timestamp: new Date().toISOString()
+          })
+          
+          // 🆕 STORE GÜNCELLEMESİ: Member count azalt
+          try {
+            const agoraStore = useAgoraStore()
+            const room = agoraStore.getChannelWhiteboardRoom(data.channelName)
+            if (room) {
+              room.memberCount = Math.max(0, (room.memberCount || 1) - 1)
+              agoraStore.setChannelWhiteboardRoom(data.channelName, room)
+              logInfo('✅ Whiteboard room member count güncellendi', { 
+                channelName: data.channelName,
+                newMemberCount: room.memberCount
+              })
+            }
+          } catch (storeError) {
+            logError('❌ Store güncelleme hatası', { 
+              error: storeError.message,
+              channelName: data.channelName
+            })
+          }
+          
+          // Central emitter ile left event'i tetikle
+          centralEmitter.emit(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_LEFT, data)
+          break
+          
+        case RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_DELETED:
+          logInfo('🎨 Whiteboard room silinme mesajı işleniyor', { 
+            channelName: data.channelName,
+            senderId,
+            timestamp: new Date().toISOString()
+          })
+          
+          // 🆕 STORE GÜNCELLEMESİ: Room'u sil
+          try {
+            const agoraStore = useAgoraStore()
+            agoraStore.removeChannelWhiteboardRoom(data.channelName)
+            logInfo('✅ Whiteboard room store\'dan silindi', { 
+              channelName: data.channelName
+            })
+          } catch (storeError) {
+            logError('❌ Store silme hatası', { 
+              error: storeError.message,
+              channelName: data.channelName
+            })
+          }
+          
+          // Central emitter ile deleted event'i tetikle
+          centralEmitter.emit(RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_DELETED, data)
+          break
+          
+        default:
+          logDebug('ℹ️ Whiteboard room management olmayan mesaj tipi', { 
+            messageType, 
+            senderId,
+            timestamp: new Date().toISOString()
+          })
+          break
+      }
+    } catch (error) {
+      logError('❌ Whiteboard room management mesaj işleme hatası - v2.2.2', { 
+        error: error.message || error,
+        errorStack: error.stack,
+        messageType, 
+        data, 
+        senderId,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }
+
+  // 🚫 Eski method kaldırıldı - artık kullanılmıyor
+
+  /**
    * Whiteboard bildirimi göster - RTM v2.2.2 için güncellendi
    * @param {string} action - Aksiyon tipi (ACTIVATED, DEACTIVATED)
    * @param {string} userName - Kullanıcı adı
@@ -1129,7 +1342,7 @@ class RTMService {
           })
           
           // Central emitter ile auto-join event'i tetikle
-          centralEmitter.emit('rtm-whiteboard-auto-join', {
+          centralEmitter.emit(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, {
             roomInfo: {
               uuid: whiteboardData.whiteboardInfo?.roomUuid || whiteboardData.roomUuid
             },
