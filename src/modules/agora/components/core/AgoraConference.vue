@@ -176,8 +176,7 @@
       :max-visible="5"
     />
     
-    <!-- Debug Panel -->
-    <DebugPanel />
+
 
   </div>
 </template>
@@ -191,7 +190,7 @@ import { AgoraVideo } from './index.js'
 import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
-import { NotificationContainer, DebugPanel } from '../ui/index.js'
+import { NotificationContainer } from '../ui/index.js'
 import { createBothTokens, fileLogger, notification } from '../../services/index.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG, RTM_MESSAGE_TYPES } from '../../constants.js'
 
