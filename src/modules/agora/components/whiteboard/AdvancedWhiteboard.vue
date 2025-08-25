@@ -671,7 +671,7 @@ const connectToNetless = async () => {
     loadingStatus.value = 'Container hazırlanıyor...'
     
     // Container hazır olduğunda kısa bir bekleme
-    await new Promise(resolve => setTimeout(resolve, 500))
+    //await new Promise(resolve => setTimeout(resolve, 500))
     
     const userId = agoraStore.localUser?.uid || `user-${Date.now()}`
     const channelName = agoraStore.session?.videoChannelName || 'unknown'

@@ -744,6 +744,10 @@ const setupEventListeners = () => {
       // Layout store'u güncelle
       if (layoutStore && layoutStore.switchLayoutWithSave) {
         layoutStore.switchLayoutWithSave(layoutId)
+
+        agoraStore.setWhiteboardActive(true)
+        alert('✅ 1')
+
         logInfo('✅ Layout RTM event ile güncellendi', { 
           layoutId, 
           source: 'rtm-event',
@@ -752,11 +756,11 @@ const setupEventListeners = () => {
       }
     })
 
-    // 🚀 RTM whiteboard auto-join event'ini dinle
+    // 🚀 RTM whiteboard auto-join event'ini dinle (BİRLEŞTİRİLMİŞ)
     centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, async (data) => {
       const { roomInfo, userInfo, source, trigger } = data
       
-      logInfo('🚀 RTM whiteboard auto-join event\'i alındı', { 
+      logInfo('🚀 RTM whiteboard auto-join event\'i alındı (BİRLEŞTİRİLMİŞ)', { 
         roomInfo, 
         userInfo, 
         source, 
@@ -765,20 +769,7 @@ const setupEventListeners = () => {
       })
 
       try {
-        // Whiteboard auto-join request event'i centralEmitter ile gönder
-        centralEmitter.emit('whiteboard-auto-join-request', {
-          roomInfo,
-          userInfo,
-          source: 'rtm-auto-join'
-        })
-        
-        logInfo('✅ Whiteboard auto-join request event\'i centralEmitter ile gönderildi', { 
-          roomUuid: roomInfo.uuid,
-          userName: userInfo.userName,
-          timestamp: new Date().toISOString()
-        })
-        
-        // Bildirim göster
+        // 1. Notification göster
         notification.info(
           '🎨 Whiteboard Otomatik Katılım',
           `${userInfo.userName} whiteboard açtı, otomatik katılım sağlanıyor...`,
@@ -789,6 +780,28 @@ const setupEventListeners = () => {
             autoDismissDelay: 3000
           }
         )
+        
+        // 2. Layout'u whiteboard'a geçir
+        if (layoutStore && layoutStore.switchLayoutWithSave) {
+          layoutStore.switchLayoutWithSave('whiteboard')
+          agoraStore.setWhiteboardActive(true)
+          
+          logInfo('✅ Layout whiteboard\'a geçirildi + state aktif edildi', { 
+            roomUuid: roomInfo.uuid,
+            source,
+            trigger,
+            timestamp: new Date().toISOString()
+          })
+        }
+        
+        // 3. Auto-join request event'i emit et (DEAD CODE KALDIRILDI)
+        // centralEmitter.emit('whiteboard-auto-join-request', { ... })
+        
+        logInfo('✅ Whiteboard auto-join request event\'i kaldırıldı (dead code)', { 
+          roomUuid: roomInfo.uuid,
+          userName: userInfo.userName,
+          timestamp: new Date().toISOString()
+        })
         
       } catch (error) {
         logError('❌ Whiteboard auto-join işlemi hatası', { 
@@ -813,7 +826,7 @@ const setupEventListeners = () => {
     })
 
     // 🚀 Layout change request event'ini dinle (whiteboard auto-join'dan gelir)
-    centralEmitter.on('layout-change-request', (data) => {
+    centralEmitter.on(RTM_MESSAGE_TYPES.LAYOUT_CHANGE_REQUEST, (data) => {
       const { layoutId, source, trigger } = data
       
       logInfo('🎯 Layout change request event\'i alındı', { 
@@ -826,6 +839,17 @@ const setupEventListeners = () => {
       // Layout store'u güncelle
       if (layoutStore && layoutStore.switchLayoutWithSave) {
         layoutStore.switchLayoutWithSave(layoutId)
+        // �� WHITEBOARD STATE'İ GÜNCELLENMELİ!
+      if (layoutId === 'whiteboard') {
+        agoraStore.setWhiteboardActive(true) // ✅ Control butonları aktif olacak
+        logInfo('✅ Whiteboard state aktif edildi (karşı kullanıcıda)')
+      } else if (layoutId === 'grid') {
+        agoraStore.setWhiteboardActive(false) // ✅ Whiteboard kapatıldığında
+        logInfo('✅ Whiteboard state pasif edildi (karşı kullanıcıda)')
+      }
+
+        
+        
         logInfo('✅ Layout change request ile güncellendi', { 
           layoutId, 
           source: 'layout-request',
@@ -834,40 +858,8 @@ const setupEventListeners = () => {
       }
     })
 
-    // 🚀 RTM whiteboard auto-join event'ini dinle (whiteboard component yüklenmeden önce)
-    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_AUTO_JOIN, async (data) => {
-      const { roomInfo, userInfo, source, trigger } = data
-      
-      logInfo('🚀 RTM whiteboard auto-join event\'i AgoraConference\'da alındı', { 
-        roomInfo, 
-        userInfo, 
-        source, 
-        trigger,
-        timestamp: new Date().toISOString()
-      })
-      
-      try {
-        // Layout'u whiteboard'a geçir
-        if (layoutStore && layoutStore.switchLayoutWithSave) {
-          layoutStore.switchLayoutWithSave('whiteboard')
-          logInfo('✅ Layout whiteboard\'a geçirildi (AgoraConference)', { 
-            roomUuid: roomInfo.uuid,
-            source,
-            trigger,
-            timestamp: new Date().toISOString()
-          })
-        }
-      } catch (error) {
-        logError('❌ Layout değiştirme hatası (AgoraConference)', { 
-          error: error.message,
-          roomInfo,
-          userInfo,
-          source,
-          trigger,
-          timestamp: new Date().toISOString()
-        })
-      }
-    })
+    // 🚫 Duplicate WHITEBOARD_AUTO_JOIN event listener kaldırıldı - BİRLEŞTİRİLDİ!
+    // Artık tek bir listener'da tüm işlevler yapılıyor
 
     logInfo('🚀 RTM event listener\'ları centralEmitter ile eklendi')
   }

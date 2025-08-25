@@ -687,6 +687,9 @@ export const RTM_MESSAGE_TYPES = {
   WHITEBOARD_ROOM_DELETED: 'rtm-whiteboard-room-deleted',
   WHITEBOARD_AUTO_JOIN: 'rtm-whiteboard-auto-join',
   
+  // 🆕 Layout Management Messages
+  LAYOUT_CHANGE_REQUEST: 'rtm-layout-change-request',
+  
   // Chat Messages
   CHAT_MESSAGE: 'chat_message',
   CHAT_FILE_SHARE: 'chat_file_share',

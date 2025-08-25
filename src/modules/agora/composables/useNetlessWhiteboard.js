@@ -136,27 +136,55 @@ export function useNetlessWhiteboard(agoraStore) {
           channelName
         })
       } else if (options.uuid) {
-        // ✅ UUID VAR AMA TOKEN YOK → Token al (mevcut room)
-        logInfo('Mevcut Netless room\'a katılım başlatılıyor (token alınıyor)', { 
-          uuid: options.uuid,
-          channelName 
-        })
+        // ✅ UUID VAR AMA TOKEN YOK → Store'dan kontrol et
+        const existingRoom = agoraStore.whiteboardRoom
         
-        // Mevcut room için token al
-        const userToken = await netlessService.getRoomToken(options.uuid, userId, 'writer')
-        roomData = { uuid: options.uuid }
-        token = userToken.token || userToken
-        isExistingRoom = true
-        
-        logInfo('Mevcut room için token alındı', { 
-          uuid: options.uuid,
-          hasToken: !!token,
-          channelName
-        })
+        if (existingRoom && existingRoom.uuid === options.uuid && existingRoom.token) {
+          // ✅ Store'da token var → Kullan (hızlı!)
+          logInfo('Store\'da mevcut token bulundu, yeniden kullanılıyor', { 
+            uuid: options.uuid,
+            hasStoredToken: !!existingRoom.token,
+            channelName
+          })
+          
+          roomData = { uuid: options.uuid }
+          token = existingRoom.token
+          isExistingRoom = true
+          
+        } else {
+          // ❌ Store'da token yok → Yeni al
+          logInfo('Store\'da token bulunamadı, yeni token alınıyor', { 
+            uuid: options.uuid,
+            hasStoredRoom: !!existingRoom,
+            channelName
+          })
+          
+          // Mevcut room için token al
+          const userToken = await netlessService.getRoomToken(options.uuid, userId, 'writer')
+          roomData = { uuid: options.uuid }
+          token = userToken.token || userToken
+          isExistingRoom = true
+          
+          // ✅ YENİ TOKEN'ı STORE'A KAYDET!
+          agoraStore.setWhiteboardRoom({
+            uuid: options.uuid,
+            token: token, // ✅ Token'ı kaydet
+            appIdentifier: NETLESS_CONFIG.SDK.APP_IDENTIFIER,
+            region: NETLESS_CONFIG.SDK.REGION,
+            name: `agora-whiteboard-${Date.now()}`,
+            channelName: agoraStore.session?.videoChannelName || 'unknown'
+          })
+          
+          logInfo('✅ Yeni token alındı ve store\'a kaydedildi', { 
+            uuid: options.uuid,
+            hasToken: !!token,
+            channelName
+          })
+        }
       } else {
-        // ❌ UUID ve token gerekli
-        logInfo('UUID ve token gerekli', { channelName })
-        throw new Error('UUID ve token gerekli - Room bilgileri eksik')
+        // ❌ UUID gerekli
+        logInfo('UUID gerekli', { channelName })
+        throw new Error('UUID gerekli - Room bilgileri eksik')
       }
 
       // Room UUID ve token'ı sakla
@@ -669,7 +697,7 @@ export function useNetlessWhiteboard(agoraStore) {
           })
           
           // Layout'u whiteboard'a geçir
-          centralEmitter.emit('layout-change-request', {
+          centralEmitter.emit(RTM_MESSAGE_TYPES.LAYOUT_CHANGE_REQUEST, {
             layoutId: 'whiteboard',
             source: 'whiteboard-auto-join',
             trigger: 'rtm-message'
