@@ -455,9 +455,9 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 
 .control-button:hover {
   border-color: var(--rs-agora-primary);
-  transform: translateY(-3px);
   box-shadow: 0 8px 25px var(--rs-agora-primary);
-  background: var(--rs-agora-transparent-white-10);
+  background: var(--rs-agora-transparent-primary-20);
+  color: var(--rs-agora-white);
 }
 
 .control-button.active {
@@ -471,7 +471,6 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   border-color: var(--rs-agora-primary);
   background: var(--rs-agora-transparent-primary-30);
   box-shadow: 0 8px 25px var(--rs-agora-primary);
-  transform: translateY(-3px);
   color: var(--rs-agora-white);
 }
 
@@ -499,7 +498,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .control-button.active .icon,
-.control-button.active:hover .icon {
+.control-button.active:hover .icon,
+.control-button:hover .icon {
   color: var(--rs-agora-white);
 }
 
@@ -511,7 +511,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .control-button.active .label,
-.control-button.active:hover .label {
+.control-button.active:hover .label,
+.control-button:hover .label {
   color: var(--rs-agora-white);
 }
 
