@@ -288,8 +288,8 @@ const toggleCamera = async () => {
   
   try {
     await props.onToggleCamera(newVideoOffState)
-    // Loading state'i kaldır (camera hazır olduğunda)
-    // Bu işlem parent component'te yapılacak
+    // Loading state'i kaldır - başarılı işlem sonrası
+    isCameraLoading.value = false
   } catch (error) {
     props.logger.error('Kamera toggle hatası', { error: error.message })
     // Hata durumunda loading state'i kaldır
@@ -317,8 +317,8 @@ const toggleMicrophone = async () => {
     
     try {
       await props.onToggleMicrophone(newMutedState)
-      // Loading state'i kaldır (microphone hazır olduğunda)
-      // Bu işlem parent component'te yapılacak
+      // Loading state'i kaldır - başarılı işlem sonrası
+      isMicrophoneLoading.value = false
     } catch (error) {
       props.logger.error('Mikrofon toggle hatası', { error: error.message })
       // Hata durumunda loading state'i kaldır
@@ -326,6 +326,8 @@ const toggleMicrophone = async () => {
     }
   }
 }
+
+
 
 // Whiteboard toggle function - 🚀 CHANNEL-BASED WHITEBOARD ROOM MANAGEMENT
 const toggleWhiteboard = async () => {
