@@ -63,7 +63,7 @@
       >
         <!-- Loading Spinner -->
         <div v-if="isCameraLoading" class="loading-spinner">
-          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="var(--rs-agora-primary)" stroke-width="2">
             <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
           </svg>
         </div>
@@ -89,7 +89,7 @@
       >
         <!-- Loading Spinner -->
         <div v-if="isMicrophoneLoading" class="loading-spinner">
-          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="var(--rs-agora-primary)" stroke-width="2">
             <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
           </svg>
         </div>
@@ -120,12 +120,12 @@
         :class="['control-button', { active: isWhiteboardActive, loading: isWhiteboardLoading }]"
         :title="isWhiteboardLoading ? 'Beyaz Tahta Yükleniyor...' : 'Beyaz Tahta'"
       >
-        <!-- Loading Spinner -->
-        <div v-if="isWhiteboardLoading" class="loading-spinner">
-          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
+                  <!-- Loading Spinner -->
+          <div v-if="isWhiteboardLoading" class="loading-spinner">
+            <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="var(--rs-agora-primary)" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
           </svg>
-        </div>
+          </div>
         
         <!-- Normal Icon -->
         <PencilIcon v-else class="icon" />
@@ -1129,7 +1129,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   width: 20px;
   height: 20px;
   animation: spin 1s linear infinite;
-  color: currentColor;
+  color: var(--rs-agora-primary);
+  stroke: var(--rs-agora-primary);
 }
 
 @keyframes spin {
@@ -1137,13 +1138,15 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   100% { transform: rotate(360deg); }
 }
 
-/* Loading state for whiteboard button */
+/* Loading state for control buttons */
 .control-button.loading {
   background: var(--rs-agora-gradient-primary);
   color: white;
   cursor: wait;
   position: relative;
   overflow: hidden;
+  border-color: var(--rs-agora-primary);
+  box-shadow: 0 0 20px var(--rs-agora-primary);
 }
 
 .control-button.loading::before {
@@ -1153,12 +1156,18 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
   animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
   0% { left: -100%; }
   100% { left: 100%; }
+}
+
+/* Loading state specific colors */
+.control-button.loading .spinner {
+  color: white;
+  stroke: white;
 }
 </style> 
