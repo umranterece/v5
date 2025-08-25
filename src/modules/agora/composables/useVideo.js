@@ -942,12 +942,18 @@ export function useVideo(agoraStore) {
           if (remoteUser?.isScreenShare) {
             logInfo('Ekran paylaşımı için hızlı retry başlatılıyor', { uid: user.uid })
             
-            // Layout'u presentation'a geç (eğer ekran paylaşımı varsa)
+            // Layout'u presentation'a geç (eğer ekran paylaşımı varsa ve beyaz tahta kapalıysa)
             const layoutStore = useLayoutStore()
             const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+            const isWhiteboardActive = agoraStore.isWhiteboardActive
+            
             if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-              logInfo('Ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
-              layoutStore.switchLayoutWithSave('presentation')
+              if (isWhiteboardActive) {
+                logInfo('Ekran paylaşımı kullanıcısı yayınlandı ama beyaz tahta aktif, layout değiştirilmiyor:', user.uid)
+              } else {
+                logInfo('Ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
+                layoutStore.switchLayoutWithSave('presentation')
+              }
             }
             
             // Hemen dene
@@ -989,12 +995,18 @@ export function useVideo(agoraStore) {
           if (remoteUser?.isScreenShare) {
             logInfo('Ekran paylaşımı için hızlı retry başlatılıyor (mevcut kullanıcı)', { uid: user.uid })
             
-            // Layout'u presentation'a geç (eğer ekran paylaşımı varsa)
+            // Layout'u presentation'a geç (eğer ekran paylaşımı varsa ve beyaz tahta kapalıysa)
             const layoutStore = useLayoutStore()
             const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+            const isWhiteboardActive = agoraStore.isWhiteboardActive
+            
             if (hasScreenShare && layoutStore.currentLayout !== 'presentation') {
-              logInfo('Mevcut ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
-              layoutStore.switchLayoutWithSave('presentation')
+              if (isWhiteboardActive) {
+                logInfo('Mevcut ekran paylaşımı kullanıcısı yayınlandı ama beyaz tahta aktif, layout değiştirilmiyor:', user.uid)
+              } else {
+                logInfo('Mevcut ekran paylaşımı kullanıcısı yayınlandı, layout presentation\'a geçiliyor:', user.uid)
+                layoutStore.switchLayoutWithSave('presentation')
+              }
             }
             
             // Hemen dene
@@ -1055,11 +1067,18 @@ export function useVideo(agoraStore) {
           // Ekran paylaşımı kullanıcısı yayından kaldırıldığında layout'u kontrol et
           const layoutStore = useLayoutStore()
           if (layoutStore.currentLayout === 'presentation') {
-            // Eğer başka ekran paylaşımı kullanıcısı yoksa grid'e dön
+            // Eğer başka ekran paylaşımı kullanıcısı yoksa önceki layout'a dön
             const remainingScreenUsers = agoraStore.users.remote.filter(u => u.isScreenShare)
             if (remainingScreenUsers.length === 0) {
-              logInfo('Uzak ekran paylaşımı kullanıcısı yayından kaldırıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
-              layoutStore.switchLayoutWithSave('grid')
+              // Eğer beyaz tahta aktifse, whiteboard layout'una dön
+              if (agoraStore.isWhiteboardActive) {
+                logInfo('Uzak ekran paylaşımı kullanıcısı yayından kaldırıldı, beyaz tahta aktif, layout whiteboard\'a dönülüyor')
+                layoutStore.switchLayoutWithSave('whiteboard')
+              } else {
+                // Beyaz tahta aktif değilse grid'e dön
+                logInfo('Uzak ekran paylaşımı kullanıcısı yayından kaldırıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor')
+                layoutStore.switchLayoutWithSave('grid')
+              }
             }
           }
         } else {

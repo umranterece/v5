@@ -687,6 +687,10 @@ export const RTM_MESSAGE_TYPES = {
   WHITEBOARD_ROOM_DELETED: 'rtm-whiteboard-room-deleted',
   WHITEBOARD_AUTO_JOIN: 'rtm-whiteboard-auto-join',
   
+  // 🆕 Whiteboard Status Sync Messages
+  WHITEBOARD_STATUS_REQUEST: 'rtm-whiteboard-status-request',
+  WHITEBOARD_STATUS_RESPONSE: 'rtm-whiteboard-status-response',
+  
   // 🆕 Layout Management Messages
   LAYOUT_CHANGE_REQUEST: 'rtm-layout-change-request',
   

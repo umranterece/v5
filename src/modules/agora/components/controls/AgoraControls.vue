@@ -53,23 +53,53 @@
       <!-- Camera Toggle -->
       <button 
         @click="toggleCamera"
-        :class="['control-button', { active: !isLocalVideoOff && canUseCamera, disabled: !canUseCamera }]"
-        :disabled="!canUseCamera"
-        :title="getCameraTitle"
+        :disabled="!canUseCamera || isCameraLoading"
+        :class="['control-button', { 
+          active: !isLocalVideoOff && canUseCamera, 
+          disabled: !canUseCamera,
+          loading: isCameraLoading 
+        }]"
+        :title="isCameraLoading ? 'Kamera Yükleniyor...' : getCameraTitle"
       >
-        <VideoCameraIcon class="icon" />
-        <span class="label">{{ getCameraLabel }}</span>
+        <!-- Loading Spinner -->
+        <div v-if="isCameraLoading" class="loading-spinner">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
+          </svg>
+        </div>
+        
+        <!-- Normal Icon -->
+        <VideoCameraIcon v-else class="icon" />
+        
+        <span class="label">
+          {{ isCameraLoading ? 'Yükleniyor...' : getCameraLabel }}
+        </span>
       </button>
 
       <!-- Microphone Toggle -->
       <button 
         @click="toggleMicrophone"
-        :class="['control-button', { active: !isLocalAudioMuted && canUseCamera, disabled: !canUseMicrophone }]"
-        :disabled="!canUseMicrophone"
-        :title="getMicrophoneTitle"
+        :disabled="!canUseMicrophone || isMicrophoneLoading"
+        :class="['control-button', { 
+          active: !isLocalAudioMuted && canUseCamera, 
+          disabled: !canUseMicrophone,
+          loading: isMicrophoneLoading 
+        }]"
+        :title="isMicrophoneLoading ? 'Mikrofon Yükleniyor...' : getMicrophoneTitle"
       >
-        <MicrophoneIcon class="icon" />
-        <span class="label">{{ getMicrophoneLabel }}</span>
+        <!-- Loading Spinner -->
+        <div v-if="isMicrophoneLoading" class="loading-spinner">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
+          </svg>
+        </div>
+        
+        <!-- Normal Icon -->
+        <MicrophoneIcon v-else class="icon" />
+        
+        <span class="label">
+          {{ isMicrophoneLoading ? 'Yükleniyor...' : getMicrophoneLabel }}
+        </span>
       </button>
 
       <!-- Screen Share Toggle - Only show on desktop -->
@@ -86,11 +116,23 @@
       <!-- Whiteboard Toggle - 🆕 YENİ -->
       <button
         @click="toggleWhiteboard"
-        :class="['control-button', { active: isWhiteboardActive }]"
-        title="Beyaz Tahta"
+        :disabled="isWhiteboardLoading"
+        :class="['control-button', { active: isWhiteboardActive, loading: isWhiteboardLoading }]"
+        :title="isWhiteboardLoading ? 'Beyaz Tahta Yükleniyor...' : 'Beyaz Tahta'"
       >
-        <PencilIcon class="icon" />
-        <span class="label">Beyaz Tahta</span>
+        <!-- Loading Spinner -->
+        <div v-if="isWhiteboardLoading" class="loading-spinner">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" stroke-linecap="round"/>
+          </svg>
+        </div>
+        
+        <!-- Normal Icon -->
+        <PencilIcon v-else class="icon" />
+        
+        <span class="label">
+          {{ isWhiteboardLoading ? 'Yükleniyor...' : 'Beyaz Tahta' }}
+        </span>
       </button>
 
       <!-- Leave Button -->
@@ -110,9 +152,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAgoraStore, useLayoutStore } from '../../store/index.js'
 import { rtmService } from '../../services/index.js'
+import { centralEmitter } from '../../utils/index.js'
+import { AGORA_EVENTS } from '../../constants.js'
 import { 
   ViewColumnsIcon, 
   Cog6ToothIcon, 
@@ -128,6 +172,29 @@ import {
 // Store
 const agoraStore = useAgoraStore()
 const layoutStore = useLayoutStore()
+
+// Loading states
+const isWhiteboardLoading = ref(false)
+const isCameraLoading = ref(false)
+const isMicrophoneLoading = ref(false)
+
+// Event listeners
+onMounted(() => {
+  // Whiteboard ready event
+  centralEmitter.on('whiteboard-ready', () => {
+    isWhiteboardLoading.value = false
+  })
+  
+  // Camera ready event
+  centralEmitter.on(AGORA_EVENTS.LOCAL_VIDEO_READY, () => {
+    isCameraLoading.value = false
+  })
+  
+  // Microphone ready event
+  centralEmitter.on(AGORA_EVENTS.LOCAL_AUDIO_READY, () => {
+    isMicrophoneLoading.value = false
+  })
+})
 
 // Props
 const props = defineProps({
@@ -202,8 +269,12 @@ const leaveChannel = async () => {
   }
 }
 
-const toggleCamera = () => {
+const toggleCamera = async () => {
   const newVideoOffState = !props.isLocalVideoOff
+  
+  // Loading state'i aktif et
+  isCameraLoading.value = true
+  
   props.logger.info('Kamera değiştir', {
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on',
@@ -214,12 +285,25 @@ const toggleCamera = () => {
     currentState: props.isLocalVideoOff ? 'off' : 'on',
     newState: newVideoOffState ? 'off' : 'on'
   })
-  props.onToggleCamera(newVideoOffState)
+  
+  try {
+    await props.onToggleCamera(newVideoOffState)
+    // Loading state'i kaldır (camera hazır olduğunda)
+    // Bu işlem parent component'te yapılacak
+  } catch (error) {
+    props.logger.error('Kamera toggle hatası', { error: error.message })
+    // Hata durumunda loading state'i kaldır
+    isCameraLoading.value = false
+  }
 }
 
-const toggleMicrophone = () => {
+const toggleMicrophone = async () => {
   if (props.canUseMicrophone) {
     const newMutedState = !props.isLocalAudioMuted
+    
+    // Loading state'i aktif et
+    isMicrophoneLoading.value = true
+    
     props.logger.info('Mikrofon değiştir', {
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted',
@@ -230,7 +314,16 @@ const toggleMicrophone = () => {
       currentState: props.isLocalAudioMuted ? 'muted' : 'unmuted',
       newState: newMutedState ? 'muted' : 'unmuted'
     })
-    props.onToggleMicrophone(newMutedState)
+    
+    try {
+      await props.onToggleMicrophone(newMutedState)
+      // Loading state'i kaldır (microphone hazır olduğunda)
+      // Bu işlem parent component'te yapılacak
+    } catch (error) {
+      props.logger.error('Mikrofon toggle hatası', { error: error.message })
+      // Hata durumunda loading state'i kaldır
+      isMicrophoneLoading.value = false
+    }
   }
 }
 
@@ -245,6 +338,9 @@ const toggleWhiteboard = async () => {
   if (newWhiteboardState) {
     // Whiteboard açılıyorsa
     try {
+      // Loading state'i aktif et
+      isWhiteboardLoading.value = true
+      
       props.logger.info('🚀 Channel-based whiteboard room yönetimi başlatılıyor', {
         channelName: agoraStore.session?.videoChannelName
       })
@@ -252,19 +348,26 @@ const toggleWhiteboard = async () => {
       // Store'a bildir
       agoraStore.setWhiteboardActive(true)
       
-      // Layout'u WhiteboardLayout'a geç
+      // 🆕 Layout'u WhiteboardLayout'a geç (ekran paylaşımı olsa bile)
+      // Ekran paylaşımı varsa bile beyaz tahta moduna geç
       layoutStore.switchLayoutWithSave('whiteboard')
-      props.logger.info('Layout WhiteboardLayout\'a değiştirildi')
+      props.logger.info('Layout WhiteboardLayout\'a değiştirildi (ekran paylaşımı olsa bile)')
       
       // Whiteboard room'a bağlan (channel-based)
       // Bu işlem WhiteboardLayout'ta yapılacak
       props.logger.info('Whiteboard room bağlantısı WhiteboardLayout\'ta yapılacak')
+      
+      // Loading state'i kaldır (whiteboard hazır olduğunda)
+      // Bu işlem AdvancedWhiteboard component'inde yapılacak
       
     } catch (error) {
       props.logger.error('Whiteboard açma hatası', { error: error.message })
       // Hata durumunda state'i geri al
       agoraStore.setWhiteboardActive(false)
       layoutStore.switchLayoutWithSave('grid')
+      
+      // Loading state'i kaldır
+      isWhiteboardLoading.value = false
     }
   } else {
     // Whiteboard kapanıyorsa
@@ -273,6 +376,9 @@ const toggleWhiteboard = async () => {
     // Layout'u Grid Layout'a geri dön
     layoutStore.switchLayoutWithSave('grid')
     props.logger.info('Layout Grid Layout\'a geri döndürüldü')
+    
+    // Loading state'i kaldır
+    isWhiteboardLoading.value = false
   }
 }
 
@@ -1003,8 +1109,54 @@ const emit = defineEmits(['open-settings', 'open-logs'])
     padding: 10px;
   }
   
-  .info-row, .network-item, .device-item {
+  .info-row, .network-item,   .device-item {
     font-size: 12px;
   }
+}
+
+/* Loading Spinner Styles */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  color: currentColor;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Loading state for whiteboard button */
+.control-button.loading {
+  background: var(--rs-agora-gradient-primary);
+  color: white;
+  cursor: wait;
+  position: relative;
+  overflow: hidden;
+}
+
+.control-button.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 </style> 

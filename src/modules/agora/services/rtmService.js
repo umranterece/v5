@@ -435,6 +435,93 @@ class RTMService {
   }
 
   /**
+   * Peer mesajı gönder - Belirli bir kullanıcıya özel mesaj
+   * @param {string} peerId - Alıcı kullanıcı ID'si
+   * @param {string} messageType - Mesaj tipi (RTM_MESSAGE_TYPES'dan)
+   * @param {Object} data - Mesaj verisi
+   * @param {Object} options - Gönderim seçenekleri
+   * @returns {Promise<boolean>} Başarı durumu
+   */
+  async sendPeerMessage(peerId, messageType, data = {}, options = {}) {
+    try {
+      if (!this.isClientConnected) {
+        throw new Error('RTM client bağlı değil')
+      }
+
+      if (!peerId) {
+        throw new Error('Peer ID gerekli')
+      }
+
+      // Mesaj payload'unu oluştur
+      const messagePayload = {
+        type: messageType,
+        data: {
+          ...data,
+          senderId: this.currentUserId,
+          senderName: this.currentUserName,
+          timestamp: Date.now()
+        },
+        priority: options.priority || 'normal',
+        messageId: this._generateMessageId()
+      }
+
+      // Mesaj boyut kontrolü
+      const messageString = JSON.stringify(messagePayload)
+      if (messageString.length > RTM_CONFIG.MESSAGE.MAX_SIZE) {
+        throw new Error(`Mesaj çok büyük: ${messageString.length} bytes`)
+      }
+
+      logDebug('RTM peer mesajı gönderiliyor - v2.2.2', { 
+        peerId,
+        messageType, 
+        messageId: messagePayload.messageId,
+        dataSize: messageString.length 
+      })
+
+      // RTM v2.2.2 dokümantasyonuna göre: sendMessageToPeer(peerId, message)
+      // Eğer bu metod yoksa, kanal üzerinden gönder
+      if (typeof this.client.sendMessageToPeer === 'function') {
+        await this.client.sendMessageToPeer(peerId, messageString)
+      } else {
+        // Fallback: Kanal üzerinden gönder ama peer ID'yi belirt
+        const fullChannelName = `${RTM_CONFIG.CHANNEL.PREFIX}${this.currentChannelName}`
+        const peerMessagePayload = {
+          ...messagePayload,
+          data: {
+            ...messagePayload.data,
+            targetPeerId: peerId,
+            isPeerMessage: true
+          }
+        }
+        const peerMessageString = JSON.stringify(peerMessagePayload)
+        await this.client.publish(fullChannelName, peerMessageString)
+        
+        logDebug('Peer message kanal üzerinden gönderildi (fallback)', { 
+          peerId,
+          channelName: this.currentChannelName
+        })
+      }
+
+      // Metrics güncelle
+      this.metrics.messagesSent++
+      this.metrics.lastMessageTime = Date.now()
+
+      logInfo('RTM peer mesajı başarıyla gönderildi - v2.2.2', { 
+        peerId,
+        messageType, 
+        messageId: messagePayload.messageId 
+      })
+
+      return true
+
+    } catch (error) {
+      this.metrics.messagesFailed++
+      logError('RTM peer mesajı gönderme hatası - v2.2.2', { error, peerId, messageType })
+      return false
+    }
+  }
+
+  /**
    * Ekran paylaşımı başlama bildirimi gönder
    * @param {Object} screenData - Ekran paylaşımı verisi
    * @returns {Promise<boolean>} Başarı durumu
@@ -616,6 +703,28 @@ class RTMService {
         this._handleIncomingMessage(event.message, event.publisher, this.currentChannelName)
       } else {
         logWarn('⚠️ RTM message event\'te publisher veya message bulunamadı', { 
+          event,
+          timestamp: new Date().toISOString()
+        })
+      }
+    })
+
+    // Peer message event handler - Dokümantasyona göre: event.senderId, event.message
+    this.client.addEventListener("peerMessage", event => {
+      this.metrics.messagesReceived++
+      logDebug('📨 RTM peer message event alındı - v2.2.2 dokümantasyonuna göre', { 
+        event,
+        senderId: event.senderId,
+        message: event.message,
+        timestamp: new Date().toISOString(),
+        userId: this.currentUserId
+      })
+      
+      // Dokümantasyona göre: event.senderId ve event.message kullan
+      if (event.senderId && event.message) {
+        this._handleIncomingMessage(event.message, event.senderId, 'peer')
+      } else {
+        logWarn('⚠️ RTM peer message event\'te senderId veya message bulunamadı', { 
           event,
           timestamp: new Date().toISOString()
         })
@@ -877,6 +986,20 @@ class RTMService {
       
       // 🆕 Whiteboard room management mesajlarını özel olarak işle
       this._handleWhiteboardRoomMessage(type, data, publisherId)
+
+      // 🆕 Whiteboard status sync mesajlarını işle
+      if (type === RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_REQUEST ||
+          type === RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_RESPONSE) {
+        logInfo('🎨 Whiteboard status sync mesajı alındı - işleniyor', { 
+          type,
+          data,
+          publisherId,
+          timestamp: new Date().toISOString()
+        })
+        
+        // Central emitter ile event'i tetikle
+        centralEmitter.emit(type, data)
+      }
 
     } catch (error) {
       logError('❌ RTM mesaj işleme hatası - v2.2.2', { 

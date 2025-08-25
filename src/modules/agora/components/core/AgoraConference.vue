@@ -191,7 +191,7 @@ import { AgoraControls } from '../controls/index.js'
 import { JoinForm } from '../forms/index.js'
 import { InfoModal, SettingsModal, LogModal, LayoutModal } from '../modals/index.js'
 import { NotificationContainer } from '../ui/index.js'
-import { createBothTokens, fileLogger, notification } from '../../services/index.js'
+import { createBothTokens, fileLogger, notification, rtmService } from '../../services/index.js'
 import { AGORA_EVENTS, USER_ID_RANGES, API_ENDPOINTS, LOG_CONFIG, RTM_MESSAGE_TYPES } from '../../constants.js'
 
 // Logger fonksiyonları - FileLogger'dan al (tüm seviyeler için)
@@ -330,6 +330,9 @@ const {
 
 // Layout store initialization
 const layoutStore = useLayoutStore()
+
+// 🆕 Whiteboard status sync kontrolü - sadece bir kez çalışsın
+const hasWhiteboardStatusSynced = ref(false)
 
 const channelName = ref(props.options.channelName || '')
 
@@ -709,6 +712,33 @@ const setupEventListeners = () => {
         type: 'user-joined',
         data: data
       })
+
+      // 🆕 Yeni kullanıcı katıldığında whiteboard durumu sorgula
+      // Sadece kendimiz değilse ve kanalda başka kullanıcılar varsa
+      if (data.uid !== agoraStore.clients?.rtm?.currentUserId && 
+          agoraStore.connectedUsersCount > 1) {
+        
+        logInfo('🎨 Yeni kullanıcı katıldı - whiteboard durumu sorgulanıyor', { 
+          newUserId: data.uid,
+          currentUsersCount: agoraStore.connectedUsersCount,
+          timestamp: new Date().toISOString()
+        })
+
+        // Kısa bir delay ile whiteboard status request gönder
+        setTimeout(async () => {
+          try {
+            await requestWhiteboardStatus()
+            logInfo('✅ Yeni kullanıcı için whiteboard status request gönderildi', { 
+              newUserId: data.uid 
+            })
+          } catch (error) {
+            logError('❌ Yeni kullanıcı için whiteboard status request hatası', { 
+              error: error.message || error,
+              newUserId: data.uid 
+            })
+          }
+        }, 1000) // 1 saniye bekle
+      }
     })
 
     centralEmitter.on(AGORA_EVENTS.USER_LEFT, (data) => {
@@ -746,7 +776,7 @@ const setupEventListeners = () => {
         layoutStore.switchLayoutWithSave(layoutId)
 
         agoraStore.setWhiteboardActive(true)
-        alert('✅ 1')
+        
 
         logInfo('✅ Layout RTM event ile güncellendi', { 
           layoutId, 
@@ -822,6 +852,78 @@ const setupEventListeners = () => {
             autoDismissDelay: 5000
           }
         )
+      }
+    })
+
+    // 🆕 Whiteboard Status Request Event Listener
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_REQUEST, async (data) => {
+      const { requester, channelName: requestChannelName, timestamp } = data
+      
+      logInfo('🎨 Whiteboard status request alındı', { 
+        requester, 
+        requestChannelName,
+        currentChannel: agoraStore.videoChannelName,
+        timestamp: new Date().toISOString()
+      })
+
+      // Alert: Whiteboard status request alındı
+
+      // Sadece aynı kanaldan gelen istekleri işle
+      if (requestChannelName === agoraStore.videoChannelName) {
+        try {
+          await sendWhiteboardStatusResponse(requester)
+          logInfo('✅ Whiteboard status response gönderildi', { requester })
+        } catch (error) {
+          logError('❌ Whiteboard status response gönderme hatası', { 
+            error: error.message || error,
+            requester 
+          })
+        }
+      } else {
+        logWarn('⚠️ Farklı kanaldan whiteboard status request - ignore edildi', { 
+          requestChannel: requestChannelName,
+          currentChannel: agoraStore.videoChannelName
+        })
+      }
+    })
+
+    // 🆕 Whiteboard Status Response Event Listener
+    centralEmitter.on(RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_RESPONSE, async (data) => {
+      const { hasActiveWhiteboard, roomUuid, roomInfo, channelName: responseChannelName, timestamp } = data
+      
+      logInfo('🎨 Whiteboard status response alındı', { 
+        hasActiveWhiteboard, 
+        roomUuid,
+        roomInfo,
+        responseChannelName,
+        currentChannel: agoraStore.videoChannelName,
+        timestamp: new Date().toISOString()
+      })
+
+   
+
+      // Sadece aynı kanaldan gelen cevapları işle
+      if (responseChannelName === agoraStore.videoChannelName) {
+        try {
+          if (hasActiveWhiteboard && roomUuid) {
+            // Whiteboard açıksa otomatik katılım sağla
+            await autoJoinExistingWhiteboard(roomUuid, roomInfo)
+            logInfo('✅ Mevcut whiteboard\'a otomatik katılım sağlandı', { roomUuid, roomInfo })
+          } else {
+            logInfo('ℹ️ Whiteboard kapalı - normal akış devam ediyor')
+          }
+        } catch (error) {
+          logError('❌ Whiteboard otomatik katılım hatası', { 
+            error: error.message || error,
+            roomUuid,
+            roomInfo
+          })
+        }
+      } else {
+        logWarn('⚠️ Farklı kanaldan whiteboard status response - ignore edildi', { 
+          responseChannel: responseChannelName,
+          currentChannel: agoraStore.videoChannelName
+        })
       }
     })
 
@@ -977,6 +1079,301 @@ onUnmounted(() => {
   cleanup()
 })
 
+// 🆕 Whiteboard Status Sync Functions
+const requestWhiteboardStatus = async () => {
+  try {
+    // 🆕 Sadece bir kez çalışsın ve remote kullanıcı varsa
+    if (hasWhiteboardStatusSynced.value) {
+      logInfo('🎨 Whiteboard status sync zaten yapıldı, tekrar çalıştırılmıyor')
+      return false
+    }
+
+    if (!agoraStore.videoChannelName) {
+      logWarn('⚠️ Kanal adı yok - whiteboard status request gönderilemedi')
+      return false
+    }
+
+    // 🆕 Remote kullanıcı yoksa whiteboard status sync yapma
+    if (agoraStore.connectedUsersCount <= 1) {
+      logInfo('🎨 Remote kullanıcı yok, whiteboard status sync yapılmıyor')
+      hasWhiteboardStatusSynced.value = true // Tekrar çalışmasın
+      return false
+    }
+
+    logInfo('🎨 Whiteboard status request gönderiliyor', { 
+      channelName: agoraStore.videoChannelName,
+      timestamp: new Date().toISOString()
+    })
+
+    // RTM üzerinden durum sorgula
+    const success = await rtmService.sendChannelMessage(
+      RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_REQUEST,
+      { 
+        requester: agoraStore.clients?.rtm?.currentUserId || 'unknown', 
+        channelName: agoraStore.videoChannelName,
+        timestamp: Date.now()
+      }
+    )
+
+    if (success) {
+      // 🆕 Başarılı olduğunda flag'i set et
+      hasWhiteboardStatusSynced.value = true
+      logInfo('✅ Whiteboard status request başarıyla gönderildi ve sync tamamlandı')
+      return true
+    } else {
+      logWarn('⚠️ Whiteboard status request gönderilemedi')
+      return false
+    }
+  } catch (error) {
+    logError('❌ Whiteboard status request hatası', { 
+      error: error.message || error,
+      channelName: agoraStore.videoChannelName
+    })
+    return false
+  }
+}
+
+const sendWhiteboardStatusResponse = async (requesterId) => {
+  try {
+    if (!agoraStore.videoChannelName) {
+      logWarn('⚠️ Kanal adı yok - whiteboard status response gönderilemedi')
+      return false
+    }
+
+    // Mevcut kanalda whiteboard room var mı kontrol et
+    const channelWhiteboardRoom = agoraStore.getChannelWhiteboardRoom(agoraStore.videoChannelName)
+    const hasActiveWhiteboard = !!channelWhiteboardRoom && channelWhiteboardRoom.isActive
+    const roomUuid = channelWhiteboardRoom?.uuid || null
+
+    // Eğer whiteboard açıksa, tüm gerekli bilgileri gönder
+    let responseData = {
+      hasActiveWhiteboard,
+      roomUuid,
+      channelName: agoraStore.videoChannelName,
+      timestamp: Date.now()
+    }
+
+    // Whiteboard açıksa ek bilgileri ekle
+    if (hasActiveWhiteboard && channelWhiteboardRoom) {
+      responseData = {
+        ...responseData,
+        roomInfo: {
+          uuid: channelWhiteboardRoom.uuid,
+          name: channelWhiteboardRoom.name || 'Whiteboard Room',
+          memberCount: channelWhiteboardRoom.memberCount || 1,
+          isActive: channelWhiteboardRoom.isActive,
+          createdAt: channelWhiteboardRoom.createdAt,
+          createdBy: channelWhiteboardRoom.createdBy
+        },
+        // Mevcut kullanıcı bilgileri
+        currentUser: {
+          userId: agoraStore.clients?.rtm?.currentUserId || 'unknown',
+          userName: agoraStore.clients?.rtm?.currentUserName || 'Unknown User'
+        }
+      }
+    }
+
+    logInfo('🎨 Whiteboard status response hazırlanıyor', { 
+      requesterId,
+      hasActiveWhiteboard,
+      roomUuid,
+      responseData,
+      channelName: agoraStore.videoChannelName,
+      timestamp: new Date().toISOString()
+    })
+
+    // RTM üzerinden peer message gönder
+    const success = await rtmService.sendPeerMessage(
+      requesterId,
+      RTM_MESSAGE_TYPES.WHITEBOARD_STATUS_RESPONSE,
+      responseData
+    )
+
+    if (success) {
+      
+      
+      logInfo('✅ Whiteboard status response başarıyla gönderildi', { 
+        requesterId,
+        hasActiveWhiteboard,
+        roomUuid,
+        responseData
+      })
+      return true
+    } else {
+      logWarn('⚠️ Whiteboard status response gönderilemedi', { requesterId })
+      return false
+    }
+  } catch (error) {
+    logError('❌ Whiteboard status response hatası', { 
+      error: error.message || error,
+      requesterId,
+      channelName: agoraStore.videoChannelName
+    })
+    return false
+  }
+}
+
+const autoJoinExistingWhiteboard = async (roomUuid, roomInfo = null) => {
+  try {
+    if (!roomUuid) {
+      logWarn('⚠️ Room UUID yok - whiteboard otomatik katılım yapılamadı')
+      return false
+    }
+
+    logInfo('🎨 Mevcut whiteboard\'a otomatik katılım başlatılıyor', { 
+      roomUuid,
+      timestamp: new Date().toISOString()
+    })
+
+    // 1. Notification göster
+    notification.info(
+      '🎨 Whiteboard Otomatik Katılım',
+      `Mevcut whiteboard oda bulundu (UUID: ${roomUuid}), otomatik katılım sağlanıyor...`,
+      {
+        category: 'whiteboard',
+        priority: 'normal',
+        autoDismiss: true,
+        autoDismissDelay: 3000
+      }
+    )
+
+    // 2. Layout'u whiteboard'a geçir (sadece ekran paylaşımı yoksa)
+    if (layoutStore && layoutStore.switchLayoutWithSave) {
+      // 🆕 Ekran paylaşımı varsa layout'u değiştirme, sadece state'i aktif et
+      const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+      
+      if (hasScreenShare) {
+        logInfo('🎨 Ekran paylaşımı aktif, layout değiştirilmiyor, sadece whiteboard state aktif ediliyor', { 
+          roomUuid,
+          hasScreenShare: true,
+          timestamp: new Date().toISOString()
+        })
+        agoraStore.setWhiteboardActive(true)
+      } else {
+        // Ekran paylaşımı yoksa layout'u whiteboard'a geçir
+        layoutStore.switchLayoutWithSave('whiteboard')
+        agoraStore.setWhiteboardActive(true)
+        
+        logInfo('✅ Layout whiteboard\'a geçirildi + state aktif edildi', { 
+          roomUuid,
+          hasScreenShare: false,
+          timestamp: new Date().toISOString()
+        })
+      }
+    }
+
+    // 3. Mevcut whiteboard room'a gerçek katılım yap (yeni room oluşturma!)
+    try {
+      // Eğer roomInfo varsa, onu kullanarak store'u güncelle
+      if (roomInfo) {
+        // Response'dan gelen room bilgilerini kullan
+        const updatedRoom = {
+          ...roomInfo,
+          memberCount: (roomInfo.memberCount || 1) + 1, // Yeni katılım
+          lastUpdated: new Date().toISOString(),
+          isActive: true
+        }
+        
+        // Store'a room bilgilerini kaydet
+        agoraStore.setChannelWhiteboardRoom(agoraStore.videoChannelName, updatedRoom)
+        
+        // Store'da whiteboard room ID'yi set et (yeni room oluşturmak yerine mevcut olanı kullan)
+        agoraStore.setWhiteboardRoomId(roomUuid)
+        agoraStore.setWhiteboardRoom(updatedRoom)
+        
+        logInfo('✅ Response\'dan gelen room bilgileri ile katılım yapıldı', { 
+          roomUuid,
+          roomInfo,
+          newMemberCount: updatedRoom.memberCount,
+          note: 'Yeni room oluşturulmadı, response\'dan gelen room bilgileri kullanıldı'
+        })
+      } else {
+        // roomInfo yoksa, mevcut store'dan kontrol et
+        const existingRoom = agoraStore.getChannelWhiteboardRoom(agoraStore.videoChannelName)
+        if (existingRoom && existingRoom.uuid === roomUuid) {
+          // Room zaten var, member count güncelle ve katılım yap
+          const updatedRoom = {
+            ...existingRoom,
+            memberCount: (existingRoom.memberCount || 0) + 1,
+            lastUpdated: new Date().toISOString(),
+            isActive: true
+          }
+          agoraStore.setChannelWhiteboardRoom(agoraStore.videoChannelName, updatedRoom)
+          
+          // Store'da whiteboard room ID'yi set et
+          agoraStore.setWhiteboardRoomId(roomUuid)
+          agoraStore.setWhiteboardRoom(existingRoom)
+          
+          logInfo('✅ Store\'daki mevcut room bilgileri ile katılım yapıldı', { 
+            roomUuid,
+            newMemberCount: updatedRoom.memberCount,
+            note: 'Yeni room oluşturulmadı, store\'daki room kullanıldı'
+          })
+        } else {
+          // Room store'da yoksa, sadece UUID'yi set et (yeni room oluşturmak yerine)
+          agoraStore.setWhiteboardRoomId(roomUuid)
+          
+          logInfo('✅ Whiteboard room UUID set edildi (mevcut room kullanılacak)', { 
+            roomUuid,
+            note: 'Yeni room oluşturulmayacak, mevcut room UUID kullanılacak'
+          })
+        }
+      }
+
+      // 4. RTM üzerinden whiteboard room joined mesajı gönder
+      const rtmSuccess = await rtmService.sendChannelMessage(
+        RTM_MESSAGE_TYPES.WHITEBOARD_ROOM_JOINED,
+        {
+          channelName: agoraStore.videoChannelName,
+          userId: agoraStore.clients?.rtm?.currentUserId || 'unknown',
+          roomUuid: roomUuid,
+          action: 'auto-join-existing',
+          timestamp: Date.now()
+        }
+      )
+
+      if (rtmSuccess) {
+        logInfo('✅ RTM whiteboard room joined mesajı gönderildi', { roomUuid })
+      } else {
+        logWarn('⚠️ RTM whiteboard room joined mesajı gönderilemedi', { roomUuid })
+      }
+
+    } catch (roomError) {
+      logError('❌ Whiteboard room katılım hatası', { 
+        error: roomError.message || roomError,
+        roomUuid 
+      })
+      // Room hatası olsa bile devam et
+    }
+
+    logInfo('✅ Whiteboard otomatik katılım başarıyla tamamlandı', { 
+      roomUuid,
+      note: 'Mevcut room kullanıldı, yeni room oluşturulmadı'
+    })
+    return true
+
+  } catch (error) {
+    logError('❌ Whiteboard otomatik katılım hatası', { 
+      error: error.message || error,
+      roomUuid,
+      timestamp: new Date().toISOString()
+    })
+
+    // Hata bildirimi göster
+    notification.error(
+      '❌ Whiteboard Katılım Hatası',
+      'Mevcut whiteboard\'a otomatik katılım sağlanamadı.',
+      {
+        category: 'whiteboard',
+        priority: 'high',
+        autoDismiss: true,
+        autoDismissDelay: 5000
+      }
+    )
+    return false
+  }
+}
+
 // Expose methods for parent component
 defineExpose({
   joinChannel: handleJoin,
@@ -990,8 +1387,14 @@ defineExpose({
   connectedUsersCount,
   localUser,
   remoteUsers,
-  allUsers
+  allUsers,
+  // 🆕 Whiteboard Status Sync Methods
+  requestWhiteboardStatus,
+  sendWhiteboardStatusResponse,
+  autoJoinExistingWhiteboard
 })
+
+
 </script>
 
 <style scoped>

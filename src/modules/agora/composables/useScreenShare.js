@@ -380,11 +380,19 @@ export function useScreenShare(agoraStore) {
         // Sadece log'da göster, kullanıcıya bildirme
       }
       
-      // Layout mantığı: Ekran paylaşımı başladığında presentation'a geç
+      // Layout mantığı: Yerel ekran paylaşımı başladığında presentation'a geç (beyaz tahta kapalıysa)
       const layoutStore = useLayoutStore()
+      const isWhiteboardActive = agoraStore.isWhiteboardActive
+      
       if (layoutStore.currentLayout !== 'presentation') {
-        logInfo('Yerel ekran paylaşımı başladı, layout presentation\'a geçiliyor')
-        layoutStore.switchLayoutWithSave('presentation')
+        if (isWhiteboardActive) {
+          logInfo('Yerel ekran paylaşımı başladı ama beyaz tahta aktif, layout değiştirilmiyor')
+        } else {
+          logInfo('Yerel ekran paylaşımı başladı, layout presentation\'a geçiliyor')
+          layoutStore.switchLayoutWithSave('presentation')
+        }
+      } else {
+        logInfo('Yerel ekran paylaşımı başladı, layout zaten presentation modunda')
       }
       
       logInfo('Ekran paylaşımı kullanıcısı tüm kullanıcılara eklendi:', agoraStore.users.local.screen)
@@ -465,13 +473,27 @@ export function useScreenShare(agoraStore) {
         agoraStore.setLocalTrack('screen', 'video', null)
         agoraStore.setScreenSharing(false)
         
-        // Layout mantığı: Ekran paylaşımı durduğunda grid'e dön (eğer başka ekran paylaşımı yoksa)
+        // Layout mantığı: Ekran paylaşımı durduğunda önceki layout'a dön
         const layoutStore = useLayoutStore()
         const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
+        const isWhiteboardActive = agoraStore.isWhiteboardActive
         
         if (!hasScreenShare && layoutStore.currentLayout === 'presentation') {
-          logInfo('Yerel ekran paylaşımı durdu, ekran paylaşımı yok, layout grid\'e zorlanıyor')
-          layoutStore.switchLayoutWithSave('grid')
+          // Eğer beyaz tahta aktifse, whiteboard layout'una dön
+          if (isWhiteboardActive) {
+            logInfo('Yerel ekran paylaşımı durdu, beyaz tahta aktif, layout whiteboard\'a dönülüyor')
+            layoutStore.switchLayoutWithSave('whiteboard')
+            
+            // 🆕 Karşı kullanıcıların da beyaz tahta moduna dönmesi için store state'i güncelle
+            // Bu sayede useVideo.js'deki USER_UNPUBLISHED event'i tetiklenecek
+            // ve karşı kullanıcılar da beyaz tahta moduna dönecek
+            logInfo('Karşı kullanıcıların beyaz tahta moduna dönmesi için store state güncelleniyor')
+          } else {
+            // Beyaz tahta aktif değilse, önceki layout'a dön (localStorage'dan)
+            const previousLayout = localStorage.getItem('agora-layout-preference') || 'grid'
+            logInfo('Yerel ekran paylaşımı durdu, önceki layout\'a dönülüyor:', previousLayout)
+            layoutStore.switchLayoutWithSave(previousLayout)
+          }
         }
         
         // 🆕 RTM notification gönder - Ekran paylaşımı durduğunda

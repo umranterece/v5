@@ -14,6 +14,7 @@
       @set-local-video-ref="setLocalVideoRef"
       @set-local-screen-ref="setLocalScreenRef"
       @video-click="handleVideoClick"
+      @whiteboard-ready="handleWhiteboardReady"
     />
     
     <!-- Layout Modal -->
@@ -37,6 +38,7 @@ import { useAgoraStore, useLayoutStore } from '../../store/index.js'
 import { LayoutModal, SettingsModal } from '../modals/index.js'
 import { GridLayout, SpotlightLayout, PresentationLayout, WhiteboardLayout } from '../layouts/index.js'
 import { AGORA_EVENTS } from '../../constants.js'
+import { centralEmitter } from '../../utils/index.js'
 
 // Props
 const props = defineProps({
@@ -110,9 +112,16 @@ const handleVideoClick = (user) => {
   
   // Eğer spotlight modundaysa, layout'a video-click event'ini ilet
   if (layoutStore.currentLayout === 'spotlight') {
-    // Spotlight layout'ta zaten handle ediliyor
+    // Spotlight layout'ta zaten handle ediyor
     props.logger.info('Spotlight modunda video tıklandı, layout handle ediyor')
   }
+}
+
+// Whiteboard ready handler
+const handleWhiteboardReady = () => {
+  props.logger.info('Whiteboard hazır oldu, loading state kaldırılıyor')
+  // Bu event'i AgoraControls'a iletmek için centralEmitter kullan
+  centralEmitter.emit('whiteboard-ready')
 }
 
 // Refs

@@ -80,14 +80,6 @@
         </svg>
       </button>
       
-      <!-- 🆕 Channel Info -->
-      <div class="status-badge channel-info">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <span class="channel-text">{{ agoraStore.session?.videoChannelName || 'unknown' }}</span>
-      </div>
-      
       <!-- Member Count -->
       <div class="status-badge member-count" v-if="memberCount > 0">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -414,7 +406,8 @@ const emit = defineEmits([
   'set-video-ref',
   'set-local-video-ref',
   'set-local-screen-ref',
-  'video-click'
+  'video-click',
+  'whiteboard-ready' // 🆕 Whiteboard hazır olduğunda
 ])
 
 // Store
@@ -800,6 +793,10 @@ const connectToNetless = async () => {
       
       await nextTick()
       isReady.value = true
+      
+      // 🆕 Whiteboard hazır olduğunda event emit et
+      emit('whiteboard-ready')
+      
       props.logger.info('🚀 Advanced whiteboard başarıyla başlatıldı', {
         channelName: channelName,
         roomUuid: roomResponse.uuid,
@@ -2108,23 +2105,7 @@ onUnmounted(() => {
   color: currentColor;
 }
 
-/* 🆕 Channel Info Styling */
-.channel-info {
-  background: var(--rs-agora-transparent-white-15);
-  border: 1px solid var(--rs-agora-border-secondary);
-  color: var(--rs-agora-text-secondary);
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 
-.channel-text {
-  font-weight: 500;
-  color: var(--rs-agora-accent-primary);
-}
 
 /* Channel Loading Info */
 .channel-loading-info {

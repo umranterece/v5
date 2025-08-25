@@ -4,6 +4,7 @@
     <AdvancedWhiteboard 
       :users="users"
       :logger="logger"
+      @whiteboard-ready="handleWhiteboardReady"
     />
   </div>
 </template>
@@ -21,10 +22,19 @@ const props = defineProps({
       info: () => {},
       warn: () => {},
       error: () => {},
+      fatal: () => {},
       fatal: () => {}
     })
   }
 })
+
+// Emits
+const emit = defineEmits(['whiteboard-ready'])
+
+// Event handlers
+const handleWhiteboardReady = () => {
+  emit('whiteboard-ready')
+}
 </script>
 
 <style scoped>
