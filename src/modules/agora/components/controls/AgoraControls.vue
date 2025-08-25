@@ -461,16 +461,18 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .control-button.active {
-  border-color: var(--rs-agora-success);
-  background: var(--rs-agora-transparent-success-20);
-  box-shadow: 0 0 20px var(--rs-agora-success);
+  border-color: var(--rs-agora-primary);
+  background: var(--rs-agora-transparent-primary-20);
+  box-shadow: 0 0 20px var(--rs-agora-primary);
+  color: var(--rs-agora-white);
 }
 
 .control-button.active:hover {
-  border-color: var(--rs-agora-success);
-  background: var(--rs-agora-transparent-success-30);
-  box-shadow: 0 8px 25px var(--rs-agora-success);
+  border-color: var(--rs-agora-primary);
+  background: var(--rs-agora-transparent-primary-30);
+  box-shadow: 0 8px 25px var(--rs-agora-primary);
   transform: translateY(-3px);
+  color: var(--rs-agora-white);
 }
 
 .control-button.leave-button {
@@ -496,11 +498,21 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   color: currentColor;
 }
 
+.control-button.active .icon,
+.control-button.active:hover .icon {
+  color: var(--rs-agora-white);
+}
+
 .label {
   font-size: 10px;
   font-weight: 600;
   text-align: center;
   color: var(--rs-agora-text-primary);
+}
+
+.control-button.active .label,
+.control-button.active:hover .label {
+  color: var(--rs-agora-white);
 }
 
 
@@ -797,7 +809,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 .info-button-top:hover,
 .info-button-top.active {
   background: var(--rs-agora-dark-surface-60);
-  box-shadow: 0 4px 12px var(--rs-agora-transparent-success-25), 0 0 0 4px var(--rs-agora-success);
+  box-shadow: 0 4px 12px var(--rs-agora-transparent-primary-25), 0 0 0 4px var(--rs-agora-primary);
   transform: scale(1.1);
 }
 
@@ -964,8 +976,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--rs-agora-success);
-  box-shadow: 0 0 8px var(--rs-agora-transparent-success-50);
+  background: var(--rs-agora-primary);
+  box-shadow: 0 0 8px var(--rs-agora-transparent-primary-50);
   animation: statusPulse 2s infinite;
 }
 
@@ -975,7 +987,7 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .status-text {
-  color: var(--rs-agora-success);
+  color: var(--rs-agora-primary);
 }
 
 .device-item {
@@ -1010,8 +1022,8 @@ const emit = defineEmits(['open-settings', 'open-logs'])
 }
 
 .device-status.available {
-  color: var(--rs-agora-success);
-  background: var(--rs-agora-transparent-success-10);
+  color: var(--rs-agora-primary);
+  background: var(--rs-agora-transparent-primary-10);
 }
 
 .device-status.unavailable {
