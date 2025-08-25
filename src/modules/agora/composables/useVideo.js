@@ -822,14 +822,17 @@ export function useVideo(agoraStore) {
           layoutStore.switchLayoutWithSave('presentation')
         }
       } else {
-        // Normal kullanıcı için grid layout'a zorla (eğer ekran paylaşımı yoksa)
+        // Normal kullanıcı katıldığında layout'u değiştirme - kullanıcı tercihini koru
+        // Sadece presentation modundaysa grid'e geç (ekran paylaşımı yoksa)
         const layoutStore = useLayoutStore()
         const hasScreenShare = agoraStore.users.remote.some(u => u.isScreenShare) || agoraStore.isScreenSharing
         
-        if (!hasScreenShare && layoutStore.currentLayout !== 'grid') {
-          logInfo('Normal kullanıcı katıldı, ekran paylaşımı yok, layout grid\'e zorlanıyor', { uid: user.uid })
+        if (layoutStore.currentLayout === 'presentation' && !hasScreenShare) {
+          logInfo('Presentation modundan grid\'e geçiliyor (ekran paylaşımı yok)', { uid: user.uid })
           layoutStore.switchLayoutWithSave('grid')
         }
+        // Diğer layout'larda (spotlight, whiteboard, grid) değişiklik yapma
+        // Kullanıcının layout tercihi korunuyor
       }
       
       logInfo('Uzak kullanıcı store\'a eklendi', { user: remoteUser })

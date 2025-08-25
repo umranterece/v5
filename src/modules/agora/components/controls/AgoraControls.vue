@@ -87,10 +87,10 @@
       <button
         @click="toggleWhiteboard"
         :class="['control-button', { active: isWhiteboardActive }]"
-        :title="isWhiteboardActive ? 'Whiteboard\'ı Kapat' : 'Whiteboard\'ı Aç'"
+        title="Beyaz Tahta"
       >
         <PencilIcon class="icon" />
-        <span class="label">{{ isWhiteboardActive ? 'Whiteboard Kapat' : 'Whiteboard Aç' }}</span>
+        <span class="label">Beyaz Tahta</span>
       </button>
 
       <!-- Leave Button -->

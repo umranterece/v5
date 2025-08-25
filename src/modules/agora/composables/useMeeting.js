@@ -178,12 +178,14 @@ export function useMeeting() {
         agoraStore.setAppId(appId)
       }
       
-      // Layout'u kanala ilk kez katıldığında grid'e sıfırla
+      // Layout'u sadece presentation modundaysa grid'e sıfırla
+      // Diğer layout'larda (spotlight, whiteboard, grid) değişiklik yapma
       const layoutStore = useLayoutStore()
-      if (layoutStore.currentLayout !== 'grid') {
-        logInfo('Kanala ilk kez katılındı, layout grid\'e sıfırlanıyor')
+      if (layoutStore.currentLayout === 'presentation') {
+        logInfo('Presentation modundan grid\'e geçiliyor (kanala ilk katılım)')
         layoutStore.switchLayoutWithSave('grid')
       }
+      // Diğer layout'larda kullanıcı tercihi korunuyor
       
       // Video client ile kanala katıl
       await joinVideoChannel({
